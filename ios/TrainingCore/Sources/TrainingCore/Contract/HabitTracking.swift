@@ -1,26 +1,36 @@
 // HabitTracking.swift
 //
-// The three per-habit fields the vault is adding to the projection
-// (add-interactive-habits design D2; additive, still v1) so the phone can
-// show a habit's streak and history without computing them:
+// The three per-habit fields the vault added to the projection on
+// 2026-10-01 (its change add-training-load-and-gates; additive, still v1;
+// add-interactive-habits design D2), so the phone shows a habit's streak
+// and history without computing what the vault computes:
 //
-//   streak     { current, best, unit: day|week|occurrence, lastDone }
-//   history    [ { date, expected, done } ]   (84 days, oldest first)
-//   adherence  { d7, d14, d30, d84 }          (percent)
+//   streak     { current, best, unit: day|week|occurrence, lastDone } | null
+//   history    [ { date, expected, done } ]   (84 days ending asOf)
+//   adherence  { d7, d14, d30, d84: int|null } | null   (whole percents)
 //
-// The vault's contract for these is still in progress, so decoding is as
-// tolerant as the rest of the projection AND tolerant about the shapes
-// that are not settled yet:
+// What the vault promises (the contract's semantics 21), relied on by
+// HabitTimeline:
+//   - all three are filled only on an ACTIVE habit (`null` / `[]` / `null`
+//     on a next or later step);
+//   - `history` lists every day where something was expected or done. A
+//     past expected day with nothing logged is listed with `done: 0` (the
+//     streak treats a silent day as a miss); today appears once logged; a
+//     day that is not listed expected nothing;
+//   - `done` is the uncapped count; `expected` is 0 for a weekly-count
+//     habit (its target is per week, not per day);
+//   - `best` is the longest streak inside the 84 days, not a lifetime
+//     record;
+//   - `adherence` keeps the gate's arithmetic ("unrecorded is not zero"),
+//     over complete days ending yesterday; `null` in a window where nothing
+//     was expected on a recorded day.
 //
-//   - `expected` / `done` may be a count (`2`) or a flag (`true`):
-//     `HabitCount` keeps what was written, and the timeline resolves a flag
-//     against the habit's doses per day;
-//   - an adherence window may be a percent (`86`) or an object with `pct`
-//     (the shape `window14` already has);
-//   - a history entry without a readable `date` is dropped and counted
-//     (`LossyArray`); every other field is lenient;
-//   - absent fields stay `nil`, which is what switches the phone to its own
-//     limited fallback (Plan/HabitTimeline.swift).
+// Decoding is as tolerant as the rest of the projection: a missing key, a
+// `null` or a value of the wrong type reads as `nil`, a history entry
+// without a readable `date` is dropped and counted (`LossyArray`), a
+// negative count reads as 0 and a percent is kept inside 0...100. An absent
+// `history` (an older cached file) stays `nil`, which is what switches the
+// phone to its own limited fallback (Plan/HabitTimeline.swift).
 //
 // Nothing here is shown directly: HabitTimeline merges it with the phone's
 // own ticks.
@@ -43,6 +53,7 @@ public struct HabitStreak: Equatable, Sendable, Decodable {
     public var current: Int?
     public var best: Int?
     public var unit: OpenEnum<HabitStreakUnit>?
+    /// The last day with anything done.
     public var lastDone: LocalDate?
 
     public init(current: Int? = nil, best: Int? = nil, unit: OpenEnum<HabitStreakUnit>? = nil, lastDone: LocalDate? = nil) {
@@ -63,47 +74,16 @@ public struct HabitStreak: Equatable, Sendable, Decodable {
     }
 }
 
-/// A count (`2`) or a flag (`true`), whichever the vault wrote.
-public enum HabitCount: Equatable, Sendable, Decodable {
-    case count(Int)
-    case flag(Bool)
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        // Bool first: Foundation refuses to read `true` as a number and `1`
-        // as a Bool, so the order only matters for clarity.
-        if let value = try? container.decode(Bool.self) {
-            self = .flag(value)
-        } else if let value = try? container.decode(Int.self) {
-            self = .count(value)
-        } else {
-            let value = try container.decode(Double.self)
-            guard value.isFinite, abs(value) < Double(Int32.max) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: "not a count")
-            }
-            self = .count(Int(value.rounded()))
-        }
-    }
-
-    /// The count, with a `true` flag read as `full`.
-    public func resolved(full: Int) -> Int {
-        switch self {
-        case .count(let value): return max(value, 0)
-        case .flag(let value): return value ? max(full, 1) : 0
-        }
-    }
-}
-
 public struct HabitHistoryDay: Equatable, Sendable, Decodable, ProjectionElement {
     public static let elementName = "habit history day"
 
     public var date: LocalDate
-    /// `nil`: the vault did not say whether the day expected the habit.
-    public var expected: HabitCount?
-    /// `nil`: not recorded.
-    public var done: HabitCount?
+    /// Doses expected that day (0: nothing was); `nil` when unreadable.
+    public var expected: Int?
+    /// Doses done, uncapped; `nil` when unreadable.
+    public var done: Int?
 
-    public init(date: LocalDate, expected: HabitCount? = nil, done: HabitCount? = nil) {
+    public init(date: LocalDate, expected: Int? = nil, done: Int? = nil) {
         self.date = date
         self.expected = expected
         self.done = done
@@ -114,12 +94,13 @@ public struct HabitHistoryDay: Equatable, Sendable, Decodable, ProjectionElement
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         date = try c.decode(LocalDate.self, forKey: .date)
-        expected = c.lenient(HabitCount.self, .expected)
-        done = c.lenient(HabitCount.self, .done)
+        expected = c.lenientInt(.expected).map { max($0, 0) }
+        done = c.lenientInt(.done).map { max($0, 0) }
     }
 }
 
-/// Percent done of expected over the last 7, 14, 30 and 84 days.
+/// Whole percents done of expected over the last 7, 14, 30 and 84 complete
+/// days; `nil` where the vault has no percent for that window.
 public struct HabitAdherence: Equatable, Sendable, Decodable {
     public static let windows = [7, 14, 30, 84]
 
@@ -139,14 +120,14 @@ public struct HabitAdherence: Equatable, Sendable, Decodable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        func percent(_ key: CodingKeys) -> Int? {
-            let value = c.lenientInt(key) ?? c.lenient(HabitWindow.self, key)?.pct
-            return value.map { min(max($0, 0), 100) }
-        }
-        d7 = percent(.d7)
-        d14 = percent(.d14)
-        d30 = percent(.d30)
-        d84 = percent(.d84)
+        d7 = HabitAdherence.clamped(c.lenientInt(.d7))
+        d14 = HabitAdherence.clamped(c.lenientInt(.d14))
+        d30 = HabitAdherence.clamped(c.lenientInt(.d30))
+        d84 = HabitAdherence.clamped(c.lenientInt(.d84))
+    }
+
+    static func clamped(_ value: Int?) -> Int? {
+        value.map { min(max($0, 0), 100) }
     }
 
     /// The vault's percent for a window of `days`; `nil` for any other.

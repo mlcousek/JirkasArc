@@ -319,7 +319,9 @@ final class TrainingModel {
         )
         // add-training-checkins: the phone's events over the plan, and
         // whether it may record at all.
-        let checkIns = await events.recorder.overlay(acks: cached?.projection.acks ?? [:])
+        // (add-interactive-habits: `outcomes` name the habit ticks the vault
+        // refused, so they are not shown as done.)
+        let checkIns = await events.recorder.overlay(acks: cached?.projection.acks ?? [:], outcomes: cached?.projection.outcomes ?? [])
         // add-plan-editing: the phone's plan commands and the vault's
         // answers; plan edits under the same guard as the check-ins.
         let planEdits = await events.recorder.planEdits(acks: cached?.projection.acks ?? [:], outcomes: cached?.projection.outcomes ?? [])

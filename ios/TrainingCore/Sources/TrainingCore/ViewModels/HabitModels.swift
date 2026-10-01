@@ -12,12 +12,16 @@
 //   - `detail(_:)`      one habit: today's control, the current and best
 //                       streak, adherence over 7/14/30/84 days, a 12-week
 //                       calendar (done, partly, missed, not planned, no
-//                       record; today open), the recent entries, and how
-//                       far back a day may still be filled in;
+//                       record; today open), the recent entries, how far
+//                       back a day may still be filled in, and the ticks
+//                       the vault refused with its reason;
 //   - `dayControl`      the control for one day: today's big one, the
 //                       calendar's selected day (back-fill), a row of
 //                       Today's card. It says whether the day can be
-//                       changed and why not;
+//                       changed and why not: no working vault connection,
+//                       a habit the vault measures itself, a day that
+//                       hasn't come, a day older than the vault's 14, a
+//                       day the plan doesn't expect the habit on;
 //   - `todayChecks`     Today's Habits card: per habit the check, its
 //                       streak, and whether everything expected is done.
 //
@@ -66,6 +70,9 @@ public struct HabitDayControlModel: Equatable, Sendable, Identifiable {
     public let isPending: Bool
     /// "Saved on phone" / "Sent" / "Received by the vault" for the phone's tick.
     public let deliveryText: String?
+    /// The vault refused the phone's latest tick for this day: its reason
+    /// in the app's language (a plain sentence when it gave none).
+    public let refusedText: String?
     /// "Mark done" / "Mark not done": the back-fill buttons.
     public let markDoneText: String
     public let markNotDoneText: String
@@ -273,7 +280,21 @@ public struct HabitDetailModel: Equatable, Sendable, Identifiable {
     public let log: [HabitLogEntryModel]
     /// "Nothing logged yet".
     public let logEmptyText: String?
+    /// How many days back a day may still be filled in (the vault's 14).
     public let backfillDays: Int
+    /// "Not accepted by the vault".
+    public let refusalsTitle: String
+    /// The phone's ticks the vault refused, newest day first.
+    public let refusals: [HabitRefusalModel]
+}
+
+/// A tick the vault refused, and why.
+public struct HabitRefusalModel: Equatable, Sendable, Identifiable {
+    public var id: LocalDate { date }
+    public let date: LocalDate
+    public let dateText: String
+    /// The vault's reason in the app's language.
+    public let reasonText: String
 }
 
 // MARK: - Today's card
@@ -394,18 +415,26 @@ public struct HabitsBuilder: Sendable {
         return control(habit: habit, record: record, snapshot: snapshot)
     }
 
+    func refusalText(_ refusal: HabitTickRefusal) -> String {
+        refusal.reason.resolvedText(format.language) ?? text(.habitRefusedFallback)
+    }
+
     func control(habit: Habit, record: HabitDayRecord, snapshot: TrainingSnapshot) -> HabitDayControlModel {
-        let window = HabitBackfill.windowDays(snapshot.habits)
         var locked: String?
         if !snapshot.capabilities.canTickHabits {
             locked = text(.habitLockedReadOnly)
+        } else if HabitBackfill.isMeasured(habit) {
+            locked = text(.habitLockedMeasured)
+        } else if record.date > today {
+            locked = text(.habitLockedFuture)
+        } else if !HabitBackfill.allows(record.date, today: today) {
+            locked = text.format(.habitLockedWindow, HabitBackfill.windowDays)
         } else if record.state == .unknown {
             locked = text(.habitLockedUnknown)
         } else if record.state == .notExpected {
             locked = text(.habitLockedNotPlanned)
-        } else if !HabitBackfill.allows(record.date, today: today, windowDays: window) {
-            locked = text.format(.habitLockedWindow, window)
         }
+        let refusal = snapshot.checkIns.refusedHabitTick(on: record.date, habitId: habit.id)
         let isToday = record.date == today
         return HabitDayControlModel(
             habitID: habit.id,
@@ -424,6 +453,7 @@ public struct HabitsBuilder: Sendable {
             stateText: stateText(record),
             isPending: record.local?.delivery == .savedOnPhone,
             deliveryText: format.deliveryLine(record.local?.delivery),
+            refusedText: refusal.map { refusalText($0) },
             markDoneText: text(.habitMarkDone),
             markNotDoneText: text(.habitMarkNotDone),
             addDoseText: text(.habitDoseAdd),
@@ -554,8 +584,8 @@ public struct HabitsBuilder: Sendable {
         let habit = habits.ladder[index]
         let facts = stepFacts(habit, index: index, habits: habits)
         let line = timeline(habit, snapshot)
-        let window = HabitBackfill.windowDays(habits)
-        let canRecord = snapshot.capabilities.canTickHabits && facts.kind != .locked
+        let window = HabitBackfill.windowDays
+        let canRecord = snapshot.capabilities.canTickHabits && facts.kind != .locked && !HabitBackfill.isMeasured(habit)
 
         var control: HabitDayControlModel?
         if facts.kind != .locked, let record = line.records.last {
@@ -598,6 +628,17 @@ public struct HabitsBuilder: Sendable {
                 )
             }
 
+        let refusals = snapshot.checkIns.refusedHabitTicks
+            .filter { $0.key.habitId == habit.id }
+            .sorted { $0.key.date > $1.key.date }
+            .map { entry in
+                HabitRefusalModel(
+                    date: entry.key.date,
+                    dateText: format.dates.short(entry.key.date),
+                    reasonText: refusalText(entry.value)
+                )
+            }
+
         return HabitDetailModel(
             id: habit.id,
             icon: habit.icon,
@@ -620,7 +661,9 @@ public struct HabitsBuilder: Sendable {
             logTitle: text(.habitLogTitle),
             log: Array(entries),
             logEmptyText: entries.isEmpty ? text(.habitLogEmpty) : nil,
-            backfillDays: window
+            backfillDays: window,
+            refusalsTitle: text(.habitRefusedTitle),
+            refusals: refusals
         )
     }
 
@@ -644,7 +687,7 @@ public struct HabitsBuilder: Sendable {
                     state: state,
                     isToday: date == today,
                     isPending: record?.local?.delivery == .savedOnPhone,
-                    isInBackfillWindow: date <= today && HabitBackfill.allows(date, today: today, windowDays: backfillDays),
+                    isInBackfillWindow: HabitBackfill.allows(date, today: today),
                     accessibilityLabel: stateName.isEmpty ? dateName : text.format(.habitDayA11y, dateName, stateName)
                 ))
             }
@@ -727,20 +770,22 @@ public enum HabitQuickTick {
         case unknownHabit
     }
 
-    /// The ladder's active habits, in step order.
+    /// The ladder's active habits that take a tick (not the ones the vault
+    /// measures itself), in step order.
     public static func choices(projection: Projection?, language: TrainingLanguage) -> [Choice] {
         (projection?.habits.ladder ?? [])
-            .filter { $0.state?.known == .active }
+            .filter { $0.state?.known == .active && !HabitBackfill.isMeasured($0) }
             .map { Choice(id: $0.id, label: $0.label.resolvedText(language) ?? $0.id, icon: $0.icon) }
     }
 
     /// "Done" for `habitID` on today's training day.
     public static func tick(habitID: String, projection: Projection?, language: TrainingLanguage, now: Date, deviceTimeZone: TimeZone) -> Outcome {
-        guard let projection, let habit = projection.habits.habit(habitID) else { return .unknownHabit }
+        guard let projection, let habit = projection.habits.habit(habitID), !HabitBackfill.isMeasured(habit) else { return .unknownHabit }
         let label = habit.label.resolvedText(language) ?? habit.id
         let date = CheckInPlanning.trainingDay(now: now, athlete: projection.athlete, deviceTimeZone: deviceTimeZone)
-        let day = projection.plan.flatMap { EffectivePlan(plan: $0).day(date) }
-        guard day?.habitsExpected.contains(habitID) == true else { return .notPlannedToday(label: label) }
+        // The same day lookup as every Habits screen (HabitTimeline).
+        let record = HabitTimeline.record(for: habit, on: date, snapshot: TrainingSnapshot(projection: projection), today: date)
+        guard record.expected > 0 else { return .notPlannedToday(label: label) }
         return .tick(HabitTickPayload(date: date, habitId: habitID, done: true), label: label)
     }
 }

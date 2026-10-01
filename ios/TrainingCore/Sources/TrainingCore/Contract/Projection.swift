@@ -21,10 +21,12 @@
 // filled it on 2026-09-29 (additive, still v1): it is `OptionWatch`; that
 // change also added `done.source: "activity-name"` and `workout.watchName`.
 // Day `pains` came with the vault's morning pain score on 2026-09-30
-// (add-checkin-pain-score, additive in v1). Habit `streak` / `history` /
-// `adherence` and `habits.backfillDays` (add-interactive-habits, additive
-// in v1, the vault's side still in progress) are in HabitTracking.swift. Vault paths (`folder`, `note`, `ref`) are decoded
+// (add-checkin-pain-score, additive in v1). Vault paths (`folder`, `note`, `ref`) are decoded
 // but never shown: the phone has no vault checkout.
+//
+// Habit `streak` / `history` / `adherence` came on 2026-10-01
+// (add-interactive-habits, additive in v1); their types and the vault's
+// promises about them are in HabitTracking.swift.
 //
 // Depended on by: ProjectionDecoder, TrainingSnapshot and every builder.
 // Tests: ProjectionDecodingTests (both vault fixtures, the edge fixtures).
@@ -1160,8 +1162,10 @@ public struct Habit: Equatable, Sendable, Decodable, ProjectionElement {
     /// Reserved (`null` in v1).
     public var gateBlockedBy: JSONValue?
     /// add-interactive-habits (HabitTracking.swift): the vault's streak,
-    /// 84-day history and adherence. `nil` when the vault doesn't publish
-    /// them (yet); the phone then falls back to what it knows.
+    /// 84-day history (oldest first) and adherence. `streak` and
+    /// `adherence` are `nil` unless the habit is active; `history` is `nil`
+    /// only when the file has no such key (an older cached file) -- the
+    /// phone then falls back to the days it knows.
     public var streak: HabitStreak?
     public var history: [HabitHistoryDay]?
     public var adherence: HabitAdherence?
@@ -1198,18 +1202,13 @@ public struct Habits: Equatable, Sendable, Decodable {
     public var gate: HabitGate
     /// In step order.
     public var ladder: [Habit]
-    /// add-interactive-habits: how many days back a tick may still be
-    /// recorded; `nil` when the vault doesn't say (the phone then uses
-    /// `HabitTimeline.defaultBackfillDays`).
-    public var backfillDays: Int?
 
-    public init(gate: HabitGate = HabitGate(), ladder: [Habit] = [], backfillDays: Int? = nil) {
+    public init(gate: HabitGate = HabitGate(), ladder: [Habit] = []) {
         self.gate = gate
         self.ladder = ladder
-        self.backfillDays = backfillDays
     }
 
-    enum CodingKeys: String, CodingKey { case gate, ladder, backfillDays }
+    enum CodingKeys: String, CodingKey { case gate, ladder }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -1217,7 +1216,6 @@ public struct Habits: Equatable, Sendable, Decodable {
         ladder = c.lossyList(Habit.self, .ladder).enumerated().sorted { lhs, rhs in
             (lhs.element.step ?? Int.max, lhs.offset) < (rhs.element.step ?? Int.max, rhs.offset)
         }.map(\.element)
-        backfillDays = c.lenientInt(.backfillDays).flatMap { $0 >= 0 ? $0 : nil }
     }
 
     public func habit(_ id: String) -> Habit? {

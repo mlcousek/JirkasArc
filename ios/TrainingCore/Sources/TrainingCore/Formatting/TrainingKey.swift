@@ -590,6 +590,14 @@ public enum TrainingKey: String, CaseIterable, Sendable {
     case habitAllDoneToday = "All of today's habits done"
     /// add-interactive-habits: VoiceOver for a calendar day (the date, its state).
     case habitDayA11y = "%@: %@"
+    /// add-interactive-habits: a habit the vault measures from activities or the plan can't be ticked by hand.
+    case habitLockedMeasured = "Measured from your activities and the plan"
+    /// add-interactive-habits: a day after today can't be ticked (the vault refuses it).
+    case habitLockedFuture = "This day hasn't started yet"
+    /// add-interactive-habits: title of the list of ticks the vault refused.
+    case habitRefusedTitle = "Not accepted by the vault"
+    /// add-interactive-habits: a tick the vault refused without giving a reason.
+    case habitRefusedFallback = "The vault did not accept this entry."
     /// add-interactive-habits: a habit's streak in days. Plural.
     case habitStreakDays = "%lld days in a row"
     /// add-interactive-habits: a habit's streak in weeks. Plural.
@@ -599,7 +607,9 @@ public enum TrainingKey: String, CaseIterable, Sendable {
     /// Keys that live in `.stringsdict` (plural forms).
     public var isPlural: Bool {
         switch self {
-        case .countdownInDays, .countdownInAboutDays, .noticeLastSynced, .habitRecordedDays, .scheduleEveryNWeeks, .weeksCount, .countdownDaysAgo, .countdownAboutDaysAgo, .phaseStartsIn, .phaseDaysLeft, .carbLoadDaysBefore, .carbLoadDaysAfter, .statsSessions, .habitStreakDays, .habitStreakWeeks, .habitEstimateNote: return true
+        case .countdownInDays, .countdownInAboutDays, .noticeLastSynced, .habitRecordedDays, .scheduleEveryNWeeks, .weeksCount, .countdownDaysAgo, .countdownAboutDaysAgo, .phaseStartsIn, .phaseDaysLeft, .carbLoadDaysBefore, .carbLoadDaysAfter, .statsSessions: return true
+        // add-interactive-habits (its own line, so the list above stays as it was).
+        case .habitStreakDays, .habitStreakWeeks, .habitEstimateNote: return true
         default: return false
         }
     }

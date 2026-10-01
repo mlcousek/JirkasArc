@@ -72,6 +72,30 @@
           }
         }
       }
+    },
+    "Tick a habit in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (TickHabitIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odškrtni návyk v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Mark a habit done in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (TickHabitIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Označ návyk jako splněný v ${applicationName}"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

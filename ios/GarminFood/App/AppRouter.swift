@@ -55,6 +55,11 @@ final class AppRouter {
         selectedTab = .plan
     }
 
+    /// add-interactive-habits: a `garminfood://habits` link (the Habits
+    /// screen, or one habit with `?habit=<id>`). PlanTabView pushes it and
+    /// clears it.
+    var pendingHabits: HabitsTarget?
+
     /// The current experience (AppEnvironment.experience), read when a
     /// route arrives.
     @ObservationIgnored private let experience: @MainActor () -> AppExperience
@@ -78,6 +83,7 @@ final class AppRouter {
         if !AppShell.shows(.plan, in: experience) {
             pendingPlanDate = nil
             pendingRaceID = nil
+            pendingHabits = nil
         }
     }
 
@@ -122,8 +128,8 @@ final class AppRouter {
     /// Nothing is applied until the user taps Apply there (design D11).
     var pendingThemeImport: ThemeImportRequest?
 
-    /// A `garminfood://` link: a widget tap, a `plan` link, or a shared
-    /// theme.
+    /// A `garminfood://` link: a widget tap, a `plan` or `habits` link, or
+    /// a shared theme.
     func handle(url: URL) {
         if let code = ThemeShareCode.code(fromLink: url, scheme: GarminFoodDeepLink.scheme) {
             pendingThemeImport = ThemeImportRequest(code: code)
@@ -141,6 +147,17 @@ final class AppRouter {
                 pendingPlanShowsMonth = false
                 pendingPlanDate = AppShell.planLinkDate(
                     GarminFoodDeepLink.queryValue(GarminFoodDeepLink.planDateQueryItem, in: url)
+                )
+            }
+        case .habits:
+            // Plan hosts the Habits screen; food-first has none (Today).
+            let destination = AppShell.destination(for: .plan, experience: experience())
+            selectedTab = destination
+            if destination == .plan {
+                pendingHabits = HabitsTarget(
+                    habitID: GarminFoodDeepLink.habitLinkID(
+                        GarminFoodDeepLink.queryValue(GarminFoodDeepLink.habitQueryItem, in: url)
+                    )
                 )
             }
         }

@@ -70,10 +70,11 @@ struct TodayView: View {
     @State private var isPresentingAddHydration = false
     @State private var hydrationActionError: String?
     @State private var isEditingLayout = false
-    /// add-training-today-and-plan: the session detail, habit ladder and
+    /// add-training-today-and-plan: the session detail, the habits (the
+    /// ladder or one habit, add-interactive-habits) and
     /// weekly note the training cards open.
     @State private var sessionTarget: SessionDetailTarget?
-    @State private var isShowingLadder = false
+    @State private var habitsTarget: HabitsTarget?
     @State private var weeklyNote: WeeklyNoteTeaserModel?
 
     var body: some View {
@@ -139,8 +140,8 @@ struct TodayView: View {
         .navigationDestination(item: $sessionTarget) { target in
             SessionDetailView(target: target)
         }
-        .navigationDestination(isPresented: $isShowingLadder) {
-            HabitLadderView()
+        .navigationDestination(item: $habitsTarget) { target in
+            HabitsDestination(target: target)
         }
         .sheet(item: $weeklyNote) { note in
             WeeklyNoteSheet(model: note)
@@ -323,13 +324,17 @@ struct TodayView: View {
         case .habits:
             let date = trainingDate
             if let habits = environment.training.todayBuilder.habitsCard(on: date) {
+                // add-interactive-habits D8: a one-tap check and a streak
+                // per habit; a row opens its detail, the header the ladder.
                 HabitsTodayCard(
                     model: habits,
-                    onOpenLadder: { isShowingLadder = true },
-                    // add-training-checkins (A42): on/off for the shown day,
-                    // through the one recorder (local, never waits).
-                    onTick: { habitID, done in
-                        Task { await environment.training.setHabit(habitID, done: done, date: date) }
+                    checks: environment.training.habitsBuilder().todayChecks(on: date),
+                    onOpen: { habitsTarget = $0 },
+                    // add-training-checkins (A42): on/off on the wire, through
+                    // the one recorder (local, never waits); a dose below the
+                    // day's count stays on the phone.
+                    onStep: { control, target in
+                        Task { await environment.training.applyHabit(control, to: target) }
                     }
                 )
             }

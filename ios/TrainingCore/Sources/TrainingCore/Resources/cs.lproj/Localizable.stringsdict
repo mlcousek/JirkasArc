@@ -279,5 +279,68 @@
 			<string>%lld tréninků</string>
 		</dict>
 	</dict>
+	<!-- add-interactive-habits: a habit's streak in days. Plural. -->
+	<key>%lld days in a row</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld den v řadě</string>
+			<key>few</key>
+			<string>%lld dny v řadě</string>
+			<key>many</key>
+			<string>%lld dne v řadě</string>
+			<key>other</key>
+			<string>%lld dní v řadě</string>
+		</dict>
+	</dict>
+	<!-- add-interactive-habits: a habit's streak in weeks. Plural. -->
+	<key>%lld weeks in a row</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld týden v řadě</string>
+			<key>few</key>
+			<string>%lld týdny v řadě</string>
+			<key>many</key>
+			<string>%lld týdne v řadě</string>
+			<key>other</key>
+			<string>%lld týdnů v řadě</string>
+		</dict>
+	</dict>
+	<!-- add-interactive-habits: the streak and percents are the phone's own count over the days it knows. Plural. -->
+	<key>Counted on the phone from the last %lld days it knows</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Počítáno v telefonu z posledního %lld dne, který zná</string>
+			<key>few</key>
+			<string>Počítáno v telefonu z posledních %lld dnů, které zná</string>
+			<key>many</key>
+			<string>Počítáno v telefonu z posledního %lld dne, který zná</string>
+			<key>other</key>
+			<string>Počítáno v telefonu z posledních %lld dnů, které zná</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

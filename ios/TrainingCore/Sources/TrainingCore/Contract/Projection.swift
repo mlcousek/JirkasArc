@@ -21,7 +21,9 @@
 // filled it on 2026-09-29 (additive, still v1): it is `OptionWatch`; that
 // change also added `done.source: "activity-name"` and `workout.watchName`.
 // Day `pains` came with the vault's morning pain score on 2026-09-30
-// (add-checkin-pain-score, additive in v1). Vault paths (`folder`, `note`, `ref`) are decoded
+// (add-checkin-pain-score, additive in v1). Habit `streak` / `history` /
+// `adherence` and `habits.backfillDays` (add-interactive-habits, additive
+// in v1, the vault's side still in progress) are in HabitTracking.swift. Vault paths (`folder`, `note`, `ref`) are decoded
 // but never shown: the phone has no vault checkout.
 //
 // Depended on by: ProjectionDecoder, TrainingSnapshot and every builder.
@@ -1157,9 +1159,16 @@ public struct Habit: Equatable, Sendable, Decodable, ProjectionElement {
     public var gateMet: Bool?
     /// Reserved (`null` in v1).
     public var gateBlockedBy: JSONValue?
+    /// add-interactive-habits (HabitTracking.swift): the vault's streak,
+    /// 84-day history and adherence. `nil` when the vault doesn't publish
+    /// them (yet); the phone then falls back to what it knows.
+    public var streak: HabitStreak?
+    public var history: [HabitHistoryDay]?
+    public var adherence: HabitAdherence?
 
     enum CodingKeys: String, CodingKey {
         case id, step, icon, label, dose, why, schedule, source, state, started, earliest, window14, gateMet, gateBlockedBy
+        case streak, history, adherence
     }
 
     public init(from decoder: Decoder) throws {
@@ -1179,6 +1188,9 @@ public struct Habit: Equatable, Sendable, Decodable, ProjectionElement {
         gateMet = c.lenientBool(.gateMet)
         let blocked = c.lenient(JSONValue.self, .gateBlockedBy)
         gateBlockedBy = blocked?.isNull == true ? nil : blocked
+        streak = c.lenient(HabitStreak.self, .streak)
+        history = c.lenient(LossyArray<HabitHistoryDay>.self, .history)?.elements.sorted { $0.date < $1.date }
+        adherence = c.lenient(HabitAdherence.self, .adherence)
     }
 }
 
@@ -1186,13 +1198,18 @@ public struct Habits: Equatable, Sendable, Decodable {
     public var gate: HabitGate
     /// In step order.
     public var ladder: [Habit]
+    /// add-interactive-habits: how many days back a tick may still be
+    /// recorded; `nil` when the vault doesn't say (the phone then uses
+    /// `HabitTimeline.defaultBackfillDays`).
+    public var backfillDays: Int?
 
-    public init(gate: HabitGate = HabitGate(), ladder: [Habit] = []) {
+    public init(gate: HabitGate = HabitGate(), ladder: [Habit] = [], backfillDays: Int? = nil) {
         self.gate = gate
         self.ladder = ladder
+        self.backfillDays = backfillDays
     }
 
-    enum CodingKeys: String, CodingKey { case gate, ladder }
+    enum CodingKeys: String, CodingKey { case gate, ladder, backfillDays }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -1200,6 +1217,7 @@ public struct Habits: Equatable, Sendable, Decodable {
         ladder = c.lossyList(Habit.self, .ladder).enumerated().sorted { lhs, rhs in
             (lhs.element.step ?? Int.max, lhs.offset) < (rhs.element.step ?? Int.max, rhs.offset)
         }.map(\.element)
+        backfillDays = c.lenientInt(.backfillDays).flatMap { $0 >= 0 ? $0 : nil }
     }
 
     public func habit(_ id: String) -> Habit? {

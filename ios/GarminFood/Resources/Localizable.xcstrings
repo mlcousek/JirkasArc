@@ -19326,6 +19326,90 @@
           }
         }
       }
+    },
+    "Opens the habit's history": {
+      "comment": "add-interactive-habits: VoiceOver hint on a habit row (Today's Habits card, the Habits screen).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevře historii návyku"
+          }
+        }
+      }
+    },
+    "Tick Habit": {
+      "comment": "add-interactive-habits: Title of the Tick Habit shortcut (TickHabitIntent) and its short title in Shortcuts.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odškrtnout návyk"
+          }
+        }
+      }
+    },
+    "Marks one of today's habits as done in Jirka's Arc.": {
+      "comment": "add-interactive-habits: Description of the Tick Habit shortcut.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označí jeden z dnešních návyků jako splněný v Jirka's Arc."
+          }
+        }
+      }
+    },
+    "Habit": {
+      "comment": "add-interactive-habits: The Tick Habit shortcut's parameter and the name of its value type.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Návyk"
+          }
+        }
+      }
+    },
+    "Tick ${habit} in Jirka's Arc": {
+      "comment": "add-interactive-habits: Shortcuts parameter summary (TickHabitIntent.parameterSummary). ${habit} is the habit parameter; keep it verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odškrtnout ${habit} v Jirka's Arc"
+          }
+        }
+      }
+    },
+    "Ticked %@.": {
+      "comment": "add-interactive-habits: Siri reply after the Tick Habit shortcut recorded a habit (its name).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odškrtnuto: %@."
+          }
+        }
+      }
+    },
+    "%@ isn't on today's plan. Nothing recorded.": {
+      "comment": "add-interactive-habits: Siri reply when the Tick Habit shortcut's habit is not expected today (its name).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ dnes není v plánu. Nic se nezapsalo."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -520,10 +520,86 @@ public enum TrainingKey: String, CaseIterable, Sendable {
     case painNothingHurts = "Nothing hurts"
     /// VoiceOver value of a pain score control (the score).
     case a11yPainValue = "%@ of 10"
+    /// add-interactive-habits: a habit's streak counted in times the plan expected it.
+    case habitStreakTimes = "%lld× in a row"
+    /// add-interactive-habits: a habit with no current streak.
+    case habitStreakNone = "No streak yet"
+    /// add-interactive-habits: a habit's best streak (a count).
+    case habitStreakBest = "Best: %lld"
+    /// add-interactive-habits: caption under a habit's current streak figure.
+    case habitStreakCurrentCaption = "Current streak"
+    /// add-interactive-habits: caption under a habit's best streak figure.
+    case habitStreakBestCaption = "Best streak"
+    /// add-interactive-habits: when a habit was last done (a date).
+    case habitStreakLastDone = "Last done %@"
+    /// add-interactive-habits: the phone's streak count stopped where its known days end.
+    case habitStreakMayBeLonger = "The streak may be longer: the phone doesn't know the days before."
+    /// add-interactive-habits: title of a habit's adherence over 7, 14, 30 and 84 days.
+    case habitAdherenceTitle = "Adherence"
+    /// add-interactive-habits: an adherence window in days, abbreviated (7 d).
+    case habitWindowDays = "%lld d"
+    /// add-interactive-habits: a percent.
+    case habitPct = "%lld %%"
+    /// add-interactive-habits: why a long adherence window has no percent yet.
+    case habitAdherencePartial = "Longer windows fill in once the vault publishes the habit's history."
+    /// add-interactive-habits: a habit expected today and not done yet.
+    case habitNotDoneYet = "Not done yet"
+    /// add-interactive-habits: doses of a habit done of those expected that day.
+    case habitDoseCount = "%lld of %lld"
+    /// add-interactive-habits: a day the plan doesn't expect the habit.
+    case habitNotPlanned = "Not planned"
+    /// add-interactive-habits: a day with nothing known about the habit.
+    case habitNoRecord = "No record"
+    /// add-interactive-habits: calendar legend: some doses of the day done.
+    case habitPartly = "Partly"
+    /// add-interactive-habits: button: the habit was done that day.
+    case habitMarkDone = "Mark done"
+    /// add-interactive-habits: button: the habit was not done that day.
+    case habitMarkNotDone = "Mark not done"
+    /// add-interactive-habits: VoiceOver for the button adding a dose of a multi-dose habit.
+    case habitDoseAdd = "One more"
+    /// add-interactive-habits: VoiceOver for the button removing a dose of a multi-dose habit.
+    case habitDoseRemove = "One fewer"
+    /// add-interactive-habits: a past day too old to fill in (the window in days).
+    case habitLockedWindow = "Outside the back-fill window (%lld d)"
+    /// add-interactive-habits: a day the plan doesn't expect the habit can't be ticked.
+    case habitLockedNotPlanned = "Not on the plan that day"
+    /// add-interactive-habits: a day without plan data can't be ticked.
+    case habitLockedUnknown = "The phone doesn't know that day's plan"
+    /// add-interactive-habits: habits can't be ticked without a working vault connection.
+    case habitLockedReadOnly = "Turn on and test the vault connection to log habits"
+    /// add-interactive-habits: hint under a habit's calendar (the back-fill window in days).
+    case habitBackfillHint = "Tap a day to fill it in. Back-fill window: %lld d."
+    /// add-interactive-habits: title of a habit's history calendar.
+    case habitHistoryTitle = "Last 12 weeks"
+    /// add-interactive-habits: title of a habit's recent log entries.
+    case habitLogTitle = "Recent entries"
+    /// add-interactive-habits: a habit with no log entries.
+    case habitLogEmpty = "Nothing logged yet"
+    /// add-interactive-habits: a ladder step that is active and already followed by a later active step.
+    case habitStepEstablished = "Established"
+    /// add-interactive-habits: the highest active ladder step.
+    case habitStepCurrent = "Current step"
+    /// add-interactive-habits: a ladder step that has not started.
+    case habitStepLocked = "Locked"
+    /// add-interactive-habits: a later ladder step unlocks after the step before it (that habit's name).
+    case habitUnlockAfter = "Unlocks after: %@"
+    /// add-interactive-habits: a ladder step's number.
+    case habitStepNumber = "Step %lld"
+    /// add-interactive-habits: every habit expected on the shown day is done.
+    case habitAllDoneToday = "All of today's habits done"
+    /// add-interactive-habits: VoiceOver for a calendar day (the date, its state).
+    case habitDayA11y = "%@: %@"
+    /// add-interactive-habits: a habit's streak in days. Plural.
+    case habitStreakDays = "%lld days in a row"
+    /// add-interactive-habits: a habit's streak in weeks. Plural.
+    case habitStreakWeeks = "%lld weeks in a row"
+    /// add-interactive-habits: the streak and percents are the phone's own count over the days it knows. Plural.
+    case habitEstimateNote = "Counted on the phone from the last %lld days it knows"
     /// Keys that live in `.stringsdict` (plural forms).
     public var isPlural: Bool {
         switch self {
-        case .countdownInDays, .countdownInAboutDays, .noticeLastSynced, .habitRecordedDays, .scheduleEveryNWeeks, .weeksCount, .countdownDaysAgo, .countdownAboutDaysAgo, .phaseStartsIn, .phaseDaysLeft, .carbLoadDaysBefore, .carbLoadDaysAfter, .statsSessions: return true
+        case .countdownInDays, .countdownInAboutDays, .noticeLastSynced, .habitRecordedDays, .scheduleEveryNWeeks, .weeksCount, .countdownDaysAgo, .countdownAboutDaysAgo, .phaseStartsIn, .phaseDaysLeft, .carbLoadDaysBefore, .carbLoadDaysAfter, .statsSessions, .habitStreakDays, .habitStreakWeeks, .habitEstimateNote: return true
         default: return false
         }
     }

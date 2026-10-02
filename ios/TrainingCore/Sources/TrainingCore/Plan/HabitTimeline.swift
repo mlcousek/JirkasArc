@@ -19,7 +19,9 @@
 // wins while it is kept (CheckInOverlay; 21 days; a tick the vault refused
 // is not in it), and its dose count (`HabitDoseLedger`) fills in a
 // multi-dose day that is not complete yet. A habit the vault measures
-// itself (`source` activity or plan) takes no tick.
+// itself (`source` activity or plan) takes no tick -- and the phone knows
+// nothing about its days after the file's: they stay open (never a miss)
+// until the next file, so its numbers are the vault's, untouched.
 //
 // Streak rules (the owner's, 2026-10-01; the same as the vault's):
 //   - expected and done (the full dose)   extends the run
@@ -303,6 +305,10 @@ struct HabitDayResolver {
     let perDay: Int
     /// The vault measures this habit itself: a tick means nothing to it.
     let isMeasured: Bool
+    /// The first day that is not over yet, as the phone sees it: its own
+    /// today -- except for a measured habit, whose days after the file's
+    /// only the vault can judge.
+    let phoneOverBefore: LocalDate
     private let history: [LocalDate: HabitHistoryDay]
     /// From this day to the day before the file's the history is complete:
     /// a day it doesn't list expected nothing. `nil`: no history.
@@ -315,10 +321,13 @@ struct HabitDayResolver {
         self.today = today
         self.doses = doses
         perDay = habit.schedule?.expectedPerDay ?? 1
-        isMeasured = HabitBackfill.isMeasured(habit)
+        let measured = HabitBackfill.isMeasured(habit)
+        isMeasured = measured
         let fileDay = snapshot.asOf ?? today
+        let fileToday = min(fileDay, today)
         asOf = fileDay
-        vaultToday = min(fileDay, today)
+        vaultToday = fileToday
+        phoneOverBefore = measured ? fileToday : today
         var byDate: [LocalDate: HabitHistoryDay] = [:]
         for entry in habit.history ?? [] {
             byDate[entry.date] = entry
@@ -380,7 +389,7 @@ struct HabitDayResolver {
         let partial = takesTicks ? doses.count(on: date, habitID: habit.id) : nil
         return HabitTimeline.resolve(
             date: date,
-            overBefore: includePhone ? today : vaultToday,
+            overBefore: includePhone ? phoneOverBefore : vaultToday,
             perDay: perDay,
             expected: known.expected,
             vaultDone: known.done,
@@ -445,7 +454,7 @@ public struct HabitTimeline: Equatable, Sendable {
         }
         knownDays = knownFrom.map { max($0.days(until: today) + 1, 0) } ?? 0
 
-        streak = HabitTimeline.resolveStreak(habit: habit, records: mine, vaultRecords: base, today: today, vaultToday: resolver.vaultToday)
+        streak = HabitTimeline.resolveStreak(habit: habit, records: mine, vaultRecords: base, overBefore: resolver.phoneOverBefore, vaultToday: resolver.vaultToday)
         let gateWindow = snapshot.habits.gate.windowDays ?? 14
         adherence = HabitAdherence.windows.map { window in
             HabitTimeline.resolveAdherence(habit: habit, window: window, gateWindow: gateWindow, records: mine, vaultRecords: base, today: today)
@@ -564,11 +573,13 @@ public struct HabitTimeline: Equatable, Sendable {
         return best
     }
 
-    static func resolveStreak(habit: Habit, records: [HabitDayRecord], vaultRecords: [HabitDayRecord], today: LocalDate, vaultToday: LocalDate) -> HabitStreakValue {
-        let mine = currentRun(records, overBefore: today, started: habit.started)
+    /// `overBefore`: the first day not over yet in `records` (the phone's
+    /// view); `vaultToday`: the same for `vaultRecords` (the file's).
+    static func resolveStreak(habit: Habit, records: [HabitDayRecord], vaultRecords: [HabitDayRecord], overBefore: LocalDate, vaultToday: LocalDate) -> HabitStreakValue {
+        let mine = currentRun(records, overBefore: overBefore, started: habit.started)
         let fallbackUnit: HabitStreakUnit = habit.schedule?.kind.known == .daily ? .day : .occurrence
         guard let published = habit.streak, let vaultCurrent = published.current else {
-            let best = max(bestRun(records, overBefore: today), mine.count)
+            let best = max(bestRun(records, overBefore: overBefore), mine.count)
             return HabitStreakValue(
                 current: mine.count,
                 best: best,

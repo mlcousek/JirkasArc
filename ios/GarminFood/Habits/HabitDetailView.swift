@@ -17,6 +17,8 @@
 //              panel under the calendar marks it done or not done
 //   entries    the recent days with their state and, for the phone's own
 //              ticks, "Saved on phone" / "Sent" / "Received by the vault"
+//   refused    the phone's ticks the vault did not accept, with its reason
+//              (shown under that day's control too); hidden when none
 //
 // Everything shown is TrainingCore's `HabitDetailModel`; the selected
 // day's panel is its `dayControl`. A step calls `TrainingModel.applyHabit`
@@ -61,6 +63,9 @@ struct HabitDetailView: View {
                         onStep: step
                     )
                     HabitLogCard(detail: detail)
+                    if !detail.refusals.isEmpty {
+                        HabitRefusalsCard(detail: detail)
+                    }
                 } else {
                     TrainingEmptyStateView(state: builder.format.emptyState(.noActivePlan))
                         .card()
@@ -182,6 +187,9 @@ private struct HabitTodayControlCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+            }
+            if let refused = control.refusedText {
+                HabitRefusedNote(text: refused)
             }
         }
         .frame(maxWidth: .infinity)
@@ -430,6 +438,9 @@ private struct HabitDayPanel: View {
                 }
                 .font(.subheadline.weight(.semibold))
             }
+            if let refused = control.refusedText {
+                HabitRefusedNote(text: refused)
+            }
             if let delivery = control.deliveryText {
                 Text(verbatim: delivery)
                     .font(.caption2)
@@ -477,6 +488,31 @@ private struct HabitLogCard: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+}
+
+// MARK: - Refused ticks
+
+/// The phone's ticks the vault did not accept (a day that hadn't come, or
+/// one older than its 14 days), each with the vault's reason. They changed
+/// nothing in the vault, so the calendar above doesn't show them as done.
+private struct HabitRefusalsCard: View {
+    let detail: HabitDetailModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+            SectionHeader(title: detail.refusalsTitle)
+            ForEach(detail.refusals) { refusal in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: refusal.dateText)
+                        .font(.subheadline.weight(.semibold))
+                    HabitRefusedNote(text: refusal.reasonText)
                 }
                 .accessibilityElement(children: .combine)
             }

@@ -13,7 +13,8 @@
 //     habit, the next dose for a multi-dose one (a ring with "1/2"); a tap
 //     on a complete day takes one dose back, so a mis-tap never wipes it;
 //   - the flame carries the streak, lit while it runs;
-//   - the rest of the row opens that habit's detail (history, back-fill);
+//   - the rest of the row opens that habit's detail (history, back-fill),
+//     and so does a long press on the row ("History");
 //   - the header and the next step open the whole ladder;
 //   - when the last expected habit is ticked the progress line turns into
 //     "All of today's habits done" with a success haptic and one bounce
@@ -150,6 +151,13 @@ private struct HabitTodayRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Opens the habit's history")
+        }
+        // A long press anywhere on the row (the check included) offers the
+        // habit's history too.
+        .contextMenu {
+            Button(action: onOpen) {
+                Label("History", systemImage: "calendar")
+            }
         }
     }
 

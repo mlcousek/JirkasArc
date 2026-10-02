@@ -3,9 +3,9 @@
 // The small views every habit surface shares (add-interactive-habits design
 // D7): the navigation value that opens the Habits screen or one habit, the
 // streak flame, the one-tap check (a tick for a single-dose habit, a ring
-// with "1/2" for a multi-dose one), the dose stepper, and a calendar day's
-// look. One place, so Today's card, the ladder and the detail draw a state
-// the same way.
+// with "1/2" for a multi-dose one), the dose stepper, the note under a
+// tick the vault refused, and a calendar day's look. One place, so Today's
+// card, the ladder and the detail draw a state the same way.
 //
 // A state is never colour alone (the app's D9 rule): done is a filled
 // check, missed a cross, partly a half mark, unknown a dashed outline, and
@@ -103,7 +103,7 @@ struct HabitCheckGlyph: View {
                     tint: Theme.success
                 ) {
                     Text(verbatim: "\(control.done)/\(control.expected)")
-                        .font(size > 44 ? .headline.monospacedDigit() : .caption2.weight(.bold).monospacedDigit())
+                        .font(size > 44 ? Font.headline.monospacedDigit() : Font.caption2.weight(.bold).monospacedDigit())
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
                         .contentTransition(.numericText())
@@ -193,6 +193,24 @@ struct HabitDoseStepper: View {
         .disabled(!enabled || !control.canRecord)
         .opacity(enabled && control.canRecord ? 1 : 0.35)
         .accessibilityLabel(Text(verbatim: label))
+    }
+}
+
+/// Why the vault did not accept the phone's tick of a day (its own words,
+/// in the app's language): a future day, or one older than its window.
+struct HabitRefusedNote: View {
+    let text: String
+
+    var body: some View {
+        Label {
+            Text(verbatim: text)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+        }
+        .font(.caption)
+        .foregroundStyle(Theme.warning)
     }
 }
 

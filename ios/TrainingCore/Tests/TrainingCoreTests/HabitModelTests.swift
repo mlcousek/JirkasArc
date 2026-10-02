@@ -99,9 +99,11 @@ final class HabitModelTests: XCTestCase {
 
         XCTAssertEqual(detail.adherenceTitle, "Adherence")
         XCTAssertEqual(detail.adherence.map(\.title), ["7 d", "14 d", "30 d", "84 d"])
-        XCTAssertEqual(detail.adherence.map(\.valueText), ["100 %", "92 %", "–", "–"])
+        // Complete days ending yesterday: 6 of 7, 13 of 14.
+        XCTAssertEqual(detail.adherence.map(\.valueText), ["85 %", "92 %", "–", "–"])
         XCTAssertEqual(detail.adherence.map(\.meetsGate), [true, true, nil, nil])
-        XCTAssertEqual(detail.adherence[0].accessibilityLabel, "7 d: 100 %")
+        XCTAssertEqual(detail.adherence.map(\.fraction), [0.85, 0.92, nil, nil])
+        XCTAssertEqual(detail.adherence[0].accessibilityLabel, "7 d: 85 %")
         XCTAssertEqual(detail.adherence[2].accessibilityLabel, "30 d: No record")
         XCTAssertEqual(detail.adherenceNote, "Longer windows fill in once the vault publishes the habit's history.")
 
@@ -192,11 +194,10 @@ final class HabitModelTests: XCTestCase {
     }
 
     func testTheVaultsNumbersAreShownWithoutAnEstimateNote() throws {
-        let data = try HabitFixtures.data(ladder: HabitFixtures.ladder(walkExtra: [
-            "streak": ["current": 120, "best": 130, "unit": "day", "lastDone": "2030-10-22"],
-            "history": HabitFixtures.history(),
-            "adherence": ["d7": 100, "d14": 93, "d30": 90, "d84": 88]
-        ]))
+        var extra = HabitFixtures.published()
+        let adherence: [String: Int] = ["d7": 100, "d14": 93, "d30": 90, "d84": 88]
+        extra["adherence"] = adherence
+        let data = try HabitFixtures.data(ladder: HabitFixtures.ladder(walkExtra: extra))
         let detail = try XCTUnwrap(builder(try HabitFixtures.snapshot(data)).detail(habitID: "walk"))
         XCTAssertEqual(detail.streak.currentText, "120 days in a row")
         XCTAssertEqual(detail.streak.bestText, "Best: 130")
@@ -241,15 +242,23 @@ final class HabitModelTests: XCTestCase {
         XCTAssertEqual(notPlanned.stateText, "Not planned")
         XCTAssertEqual(notPlanned.lockedText, "Not on the plan that day")
 
+        // A day the plan has nothing for: older than the window here ...
         let unknown = try XCTUnwrap(habits.dayControl(habitID: "walk", date: D.date("2030-09-30")))
         XCTAssertEqual(unknown.stateText, "No record")
-        XCTAssertEqual(unknown.lockedText, "The phone doesn't know that day's plan")
+        XCTAssertEqual(unknown.lockedText, "Outside the back-fill window (14 d)")
+        // ... and, seen from the 10th, inside it but still unknown.
+        let early = HabitsBuilder(source: .loaded(snapshot), language: .english, today: D.date("2030-10-10"))
+        let unplanned = try XCTUnwrap(early.dayControl(habitID: "walk", date: D.date("2030-10-06")))
+        XCTAssertEqual(unplanned.state, .unknown)
+        XCTAssertFalse(unplanned.canRecord)
+        XCTAssertEqual(unplanned.lockedText, "The phone doesn't know that day's plan")
 
-        // A later day can be ticked ahead (decision A40).
+        // A day that hasn't come can't be ticked: the vault refuses it.
         let tomorrow = try XCTUnwrap(habits.dayControl(habitID: "walk", date: D.date("2030-10-24")))
-        XCTAssertTrue(tomorrow.canRecord)
+        XCTAssertFalse(tomorrow.canRecord)
         XCTAssertFalse(tomorrow.isPast)
         XCTAssertEqual(tomorrow.state, .open)
+        XCTAssertEqual(tomorrow.lockedText, "This day hasn't started yet")
 
         // Filling in a missed day: done, and "not done" on a day that is over.
         let missed = try XCTUnwrap(habits.dayControl(habitID: "walk", date: D.date("2030-10-16")))
@@ -271,13 +280,52 @@ final class HabitModelTests: XCTestCase {
         XCTAssertNil(readOnly.detail(habitID: "walk")?.calendar.hint)
     }
 
-    func testTheBackFillWindowIsTheProjections() throws {
-        let habits = builder(try HabitFixtures.snapshot(try HabitFixtures.data(backfillDays: 7)))
-        XCTAssertEqual(habits.dayControl(habitID: "walk", date: D.date("2030-10-16"))?.canRecord, true)
-        XCTAssertEqual(habits.dayControl(habitID: "walk", date: D.date("2030-10-15"))?.lockedText, "Outside the back-fill window (7 d)")
+    func testAHabitTheVaultMeasuresHasNoControlToTap() throws {
+        let data = try HabitFixtures.data(ladder: HabitFixtures.ladder(walkExtra: HabitFixtures.published(source: "activity")))
+        let habits = builder(try HabitFixtures.snapshot(data))
+        let control = try XCTUnwrap(habits.dayControl(habitID: "walk", date: today))
+        XCTAssertFalse(control.canRecord)
+        XCTAssertEqual(control.lockedText, "Measured from your activities and the plan")
+        XCTAssertFalse(control.canMarkDone)
         let detail = try XCTUnwrap(habits.detail(habitID: "walk"))
-        XCTAssertEqual(detail.backfillDays, 7)
-        XCTAssertEqual(detail.calendar.hint, "Tap a day to fill it in. Back-fill window: 7 d.")
+        XCTAssertNil(detail.calendar.hint)
+        XCTAssertEqual(detail.streak.currentText, "120 days in a row")
+        // The shortcut doesn't offer it either.
+        let projection = try HabitFixtures.projection(data)
+        XCTAssertEqual(HabitQuickTick.choices(projection: projection, language: .english).map(\.id), ["holds", "gym"])
+    }
+
+    func testATickTheVaultRefusedShowsItsReason() throws {
+        // The phone ticked the 1st (22 days back) and the 16th; the vault
+        // refused the first.
+        let data = try HabitFixtures.data(outcomes: [HabitFixtures.refusal(seq: 1)])
+        let ticks = [
+            HabitFixtures.tick("walk", "2030-10-01", done: true, seq: 1),
+            HabitFixtures.tick("walk", "2030-10-16", done: true, seq: 2)
+        ]
+        let snapshot = try HabitFixtures.snapshot(data, ticks: ticks)
+
+        let detail = try XCTUnwrap(builder(snapshot).detail(habitID: "walk"))
+        XCTAssertEqual(detail.refusalsTitle, "Not accepted by the vault")
+        XCTAssertEqual(detail.refusals.map(\.dateText), ["Tue 1 Oct"])
+        XCTAssertEqual(detail.refusals.first?.reasonText, "That day is more than 14 days back.")
+        // The refused day is not shown as done; the accepted one is.
+        XCTAssertEqual(detail.streak.current, 14)
+        let refused = try XCTUnwrap(builder(snapshot).dayControl(habitID: "walk", date: D.date("2030-10-01")))
+        XCTAssertEqual(refused.state, .unknown)
+        XCTAssertEqual(refused.refusedText, "That day is more than 14 days back.")
+        XCTAssertFalse(refused.canRecord)
+        let accepted = try XCTUnwrap(builder(snapshot).dayControl(habitID: "walk", date: D.date("2030-10-16")))
+        XCTAssertNil(accepted.refusedText)
+        XCTAssertTrue(accepted.isDone)
+        // Another habit has none.
+        XCTAssertTrue(try XCTUnwrap(builder(snapshot).detail(habitID: "holds")).refusals.isEmpty)
+
+        // In Czech, and a plain sentence when the vault gave no reason.
+        XCTAssertEqual(builder(snapshot, .czech).detail(habitID: "walk")?.refusals.first?.reasonText, "Ten den je víc než 14 dní zpátky.")
+        let silent = try HabitFixtures.snapshot(try HabitFixtures.data(outcomes: [HabitFixtures.refusal(seq: 1, reason: nil)]), ticks: ticks)
+        XCTAssertEqual(builder(silent).detail(habitID: "walk")?.refusals.first?.reasonText, "The vault did not accept this entry.")
+        XCTAssertEqual(builder(silent, .czech).detail(habitID: "walk")?.refusals.first?.reasonText, "Vault tento záznam nepřijal.")
     }
 
     func testAMultiDoseDayCountsUpAndBack() throws {

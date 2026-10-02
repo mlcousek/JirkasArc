@@ -823,3 +823,15 @@
 
 /* add-interactive-habits: VoiceOver for a calendar day (the date, its state). */
 "%@: %@" = "%@: %@";
+
+/* add-interactive-habits: a habit the vault measures from activities or the plan can't be ticked by hand. */
+"Measured from your activities and the plan" = "Měří se z tvých aktivit a z plánu";
+
+/* add-interactive-habits: a day after today can't be ticked (the vault refuses it). */
+"This day hasn't started yet" = "Tento den ještě nezačal";
+
+/* add-interactive-habits: title of the list of ticks the vault refused. */
+"Not accepted by the vault" = "Vault nepřijal";
+
+/* add-interactive-habits: a tick the vault refused without giving a reason. */
+"The vault did not accept this entry." = "Vault tento záznam nepřijal.";

@@ -85,7 +85,19 @@ ios/
                     tools/build-czech-food-index + food-index.yml).
   Gamification/     SPM package (depends on FoodLogCore) — streaks, XP/levels,
                     daily/rotating challenges, achievements. App-only, not
-                    linked into the widget extension.
+                    linked into the widget extension. 150 levels
+                    (add-training-gamification-and-150-levels): the curve's
+                    factor is SOLVED from the XP budget (XPBudget + Features/
+                    Training/TrainingXPBudget) and pinned by XPBudgetTests;
+                    tools/level-curve-model.mjs mirrors both tables and
+                    prints the numbers -- change a reward in both places.
+                    Training XP (Features/Training/): the app copies
+                    TrainingCore's TrainingPlanFacts into TrainingPlanSignals,
+                    TrainingXPRules judges them. One rule above all: reward
+                    following the plan and honest self-monitoring, never
+                    doing more (no XP per km, per extra session, for hard
+                    days in a row or for training through a red morning;
+                    rest days and wise stops pay like training days).
   VaultKit/         SPM package (depends on GarminKit) — the GitHub wire layer
                     to the owner's Obsidian vault (add-vault-connection):
                     fine-grained token in the Keychain, VaultPathPolicy
@@ -128,7 +140,21 @@ ios/
                     check-in and on each projection day (Contract/
                     Pain.swift), kept or replaced like the vault does
                     (CheckInOverlay), the pain step and tags
-                    (ViewModels/PainModels.swift).
+                    (ViewModels/PainModels.swift). Every day
+                    (add-daily-checkin-and-pain-mode): the projection's
+                    top-level `days` are day skeletons for the dates no
+                    written week holds (also with `plan: null`);
+                    `TrainingSnapshot.day(_:)` is THE lookup of a date (a
+                    week's day, else its skeleton) -- never
+                    `plan?.day(date)` in a consumer. `day.fuel` is on every
+                    day: a carb-load day is `DayFuel.isCarbLoad`, never
+                    "fuel is not nil". Pain features show only in pain mode
+                    (Plan/PainModeState.swift: the vault's
+                    `athlete.painMode`, or this phone's unread pain answer
+                    above 0); outside it the check-in is the light plus a
+                    "Something hurts?" link. The check-in reminder is
+                    planned every day, at the owner's times
+                    (`TrainingReminderTimes`).
   GarminFood/       The app target (SwiftUI views), organized by screen:
                     Today/, Plan/, Training/, Catalog/, CustomFood/,
                     LogEntry/, Profile/, Progress/, App/ (composition root:

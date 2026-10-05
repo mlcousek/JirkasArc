@@ -76,11 +76,40 @@
   the phone's ack is `seq` 31; `outcomes` has 12 entries (two refused
   `habit.tick`, with `week` and `sessionId` `null`).
   Checked once more for anything non-synthetic (season 2030/31 only).
+  Re-mirrored 2026-10-05 from the vault's main branch after its race
+  results, fuel log and recovery window (2026-10-05, with the same day's
+  amendment; all additive, `schemaVersion` still 1), for this app's
+  `add-training-gates-and-load`. All four files were compared byte for
+  byte with the vault's; the example projection, the minimal projection
+  and the event example changed, the minimal event file did not:
+  - `season.races` has FOUR entries: `harvest-marathon-2030` (13 Oct
+    2030, 42.2 km, priority B, goal "Sub-3:30", no prep, no report) sits
+    at index 1 -- **a race is looked up by `id`, never by position**.
+    `lakeside-10k-2030` gained the goal "Sub-45";
+  - `result` on every race: Lakeside from its report (`finished`,
+    `time` "0:46:03" with `officialTime` "0:45:41", 10 km,
+    `goalReached: false`, `pr: true`, `source: "report"`), the marathon
+    from the app's event (`finished`, "3:24:10", `officialTime: null`,
+    42.2 km, `goalReached: true`, `pr: null`, `source: "event"`, a
+    note), `null` on the two races ahead;
+  - `fuel` on every `feedback`: one log on the long run
+    `2030-w42-sat-am` (90 g, 750 ml, 118 min, 46 g/h against 60 planned,
+    `vsPlan: "below"`), `null` elsewhere;
+  - `athlete.recovery` `{ raceId: "harvest-marathon-2030", day: 10, of:
+    14, rule: "PM-SEQ-1", until: "2030-10-27" }` (`null` in the minimal
+    file). `of` may also be 7; no fixture shows that;
+  - the phone's ack is `seq` 33, and one `rejected` reason now reads
+    "the 15 v1 types".
+  What moved in the values the goldens read: the season timeline has four
+  race markers on three lanes, the closed prelude's recap lists two races,
+  and "the next race from 11 Oct" is the marathon. Checked once more for
+  anything non-synthetic (season 2030/31 only; no names, repositories,
+  tokens or addresses).
 
 | File | What it is |
 |---|---|
-| `projection.v1.example.json` | Every field of v1: a season, four written weeks, 14 day skeletons, pain mode on, a `fuel` on every day, the gate test, a session done by hand. |
-| `projection.v1.minimal.json` | No season and no plan (`season: null`, `plan: null`); 42 day skeletons, pain mode off, no gate test, one data-gap notice. |
+| `projection.v1.example.json` | Every field of v1: a season with four races (two with a result), four written weeks, 14 day skeletons, pain mode on, a `fuel` on every day, the gate test, a session done by hand, a fuel log, a recovery window. |
+| `projection.v1.minimal.json` | No season and no plan (`season: null`, `plan: null`); 42 day skeletons, pain mode off, no gate test, no recovery window, one data-gap notice. |
 
 Do not edit these files. When the vault changes its fixtures (additive
 changes only within v1), copy them again verbatim, update the date above and
@@ -108,10 +137,17 @@ in the tests (`Fixtures.mutatedExample`), never hand-copied vault data.
   `session.done`, 28 a `session.rpe` with `pains` (during / after), 29 a
   back-filled `habit.tick`, 30 and 31 two `habit.tick` the vault refuses
   (22 days back, a future day). The minimal file is unchanged.
+  Re-mirrored 2026-10-05 for the vault's race results and fuel log
+  (add-training-gates-and-load): the example grew from 31 to 33 lines, no
+  existing line changed -- seq 32 `race.result` (the marathon, finished,
+  "3:24:10", 42.2 km, a note; `reason` and `laps` `null`, no
+  `officialTime` key, and no `date`: a result names its race), seq 33
+  `session.fuel` (90 g, 750 ml, `durationMin: null`, a note). The
+  minimal file is unchanged.
 
 | File | What it is |
 |---|---|
-| `events.v1.example.jsonl` | 31 events of every v1 type, including the plan commands (seq 16 a refused race move, seq 23 a superseded move) and `event.retracted`, which this app writes since add-plan-editing, `device.hello`, which it doesn't write yet, (seq 24, 2026-09-30) a second check-in of 2030-10-23 with `pains`, and (seq 25-31, 2026-10-01) `test.gate` and `session.done`, which this app doesn't write yet, an RPE with `pains` and three more habit ticks. |
+| `events.v1.example.jsonl` | 33 events of every v1 type (seq 32 a `race.result`, seq 33 a `session.fuel`, 2026-10-05), including the plan commands (seq 16 a refused race move, seq 23 a superseded move) and `event.retracted`, which this app writes since add-plan-editing, `device.hello`, which it doesn't write yet, (seq 24, 2026-09-30) a second check-in of 2030-10-23 with `pains`, and (seq 25-31, 2026-10-01) `test.gate` and `session.done`, which this app doesn't write yet, an RPE with `pains` and three more habit ticks. |
 | `events.v1.minimal.jsonl` | 3 events with every optional key omitted. |
 
 `HubEventTests` decodes both: every type this app writes decodes to its

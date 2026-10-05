@@ -61,7 +61,7 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertEqual(zones.zones.map(\.number), [1, 2, 3, 4, 5])
         XCTAssertEqual(zones.zone(number: 2), HRZone(number: 2, low: 129, high: 145))
         // Filled from the event log since the vault's add-hub-ingest.
-        XCTAssertEqual(CheckInOverlay.ackedSeqs(from: projection.acks), ["ios-0a1b2c3d": 31, "ios-5e6f7a8b": 3])
+        XCTAssertEqual(CheckInOverlay.ackedSeqs(from: projection.acks), ["ios-0a1b2c3d": 33, "ios-5e6f7a8b": 3])
         // Ten plan-command outcomes and two refused habit ticks (the
         // vault's 2026-10-01 contract: a tick too far back, one in the future).
         XCTAssertEqual(projection.outcomes.count, 12)
@@ -87,14 +87,16 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertNil(base.outline[4].runKmTarget)
         XCTAssertEqual(base.outline[0].note?.resolved(.czech), "Start plánu")
 
-        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "valley-30k-2030", "ridge-ultra-2031"])
-        let ultra = season.races[2]
+        // Date order. The vault's 2026-10-05 fixture added the marathon at
+        // index 1: races are looked up by id, never by position.
+        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "harvest-marathon-2030", "valley-30k-2030", "ridge-ultra-2031"])
+        let ultra = try XCTUnwrap(season.races.first { $0.id == "ridge-ultra-2031" })
         XCTAssertEqual(ultra.priority, .known(.a))
         XCTAssertTrue(ultra.hero)
         XCTAssertTrue(ultra.dateApprox)
         XCTAssertEqual(ultra.date, D.date("2031-06-21"))
         XCTAssertEqual(ultra.name?.resolved(.czech), "Ridge Ultra")
-        let valley = season.races[1]
+        let valley = try XCTUnwrap(season.races.first { $0.id == "valley-30k-2030" })
         XCTAssertEqual(valley.priority, .known(.b))
         let prep = try XCTUnwrap(valley.prep)
         XCTAssertEqual(prep.startTime?.description, "09:00")

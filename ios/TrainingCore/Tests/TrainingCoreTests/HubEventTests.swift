@@ -147,8 +147,8 @@ final class HubEventTests: XCTestCase {
     func testTheVaultsExampleDecodes() throws {
         let decoded = HubEventCodec.decode(try EventFixtures.vault("events.v1.example.jsonl"))
         XCTAssertEqual(decoded.invalidLines, [])
-        XCTAssertEqual(decoded.events.count, 31)
-        XCTAssertEqual(decoded.events.map(\.seq), Array(1...31))
+        XCTAssertEqual(decoded.events.count, 33)
+        XCTAssertEqual(decoded.events.map(\.seq), Array(1...33))
         XCTAssertTrue(decoded.events.allSatisfy { $0.deviceId == "ios-0a1b2c3d" && $0.v == 1 })
 
         let byType = Dictionary(grouping: decoded.events, by: { $0.type.rawValue }).mapValues(\.count)
@@ -166,8 +166,12 @@ final class HubEventTests: XCTestCase {
         // The vault's 2026-10-01 contract added `test.gate` (seq 25) and
         // `session.done` (seq 26, 27): this build doesn't write them, so
         // they read as `.other` -- never an invalid line.
-        XCTAssertEqual(Set(others.map(\.type.rawValue)), ["device.hello", "test.gate", "session.done"])
-        XCTAssertEqual(others.map(\.seq), [1, 25, 26, 27])
+        // The 2026-10-05 contract added `race.result` (seq 32, no `date`)
+        // and `session.fuel` (seq 33): unknown types too, until written.
+        XCTAssertEqual(Set(others.map(\.type.rawValue)), ["device.hello", "test.gate", "session.done", "race.result", "session.fuel"])
+        XCTAssertEqual(others.map(\.seq), [1, 25, 26, 27, 32, 33])
+        XCTAssertEqual(decoded.events[31].payload, .other(type: "race.result", date: nil))
+        XCTAssertEqual(decoded.events[32].payload, .other(type: "session.fuel", date: D.date("2030-10-19")))
         XCTAssertEqual(decoded.events[24].payload, .other(type: "test.gate", date: D.date("2030-10-23")))
         XCTAssertEqual(decoded.events[25].payload, .other(type: "session.done", date: D.date("2030-10-21")))
 

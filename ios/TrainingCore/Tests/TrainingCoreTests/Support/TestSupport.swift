@@ -89,6 +89,13 @@ enum Fixtures {
         throw ProjectionRejection.invalid(reason: "test")
     }
 
+    /// Where race `id` sits in a raw `season.races` list. The vault's
+    /// fixture grows (a marathon arrived at index 1 on 2026-10-05), so a
+    /// mutation names its race by id, never by position.
+    static func raceIndex(_ races: [[String: Any]], id: String) throws -> Int {
+        try XCTUnwrap(races.firstIndex { ($0["id"] as? String) == id }, "no race (id) in the example")
+    }
+
     static func mutateSession(_ object: inout [String: Any], week: Int, day: Int, session: Int, _ change: @escaping (inout [String: Any]) -> Void) throws {
         try mutateDay(&object, week: week, day: day) { dayObject in
             guard var sessions = dayObject["sessions"] as? [[String: Any]] else { return }

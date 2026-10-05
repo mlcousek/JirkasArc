@@ -24,6 +24,9 @@
 // (add-checkin-pain-score, additive in v1). Vault paths (`folder`, `note`, `ref`) are decoded
 // but never shown: the phone has no vault checkout.
 //
+// Habit `streak` / `history` / `adherence` came on 2026-10-01
+// (add-interactive-habits, additive in v1); their types and the vault's
+// promises about them are in HabitTracking.swift.
 // add-daily-checkin-and-pain-mode (the vault's daily check-in context,
 // 2026-09-30, still v1): top-level `days` -- day skeletons for every date
 // of the window no written week holds, the same `Day` shape with
@@ -1215,9 +1218,18 @@ public struct Habit: Equatable, Sendable, Decodable, ProjectionElement {
     public var gateMet: Bool?
     /// Reserved (`null` in v1).
     public var gateBlockedBy: JSONValue?
+    /// add-interactive-habits (HabitTracking.swift): the vault's streak,
+    /// 84-day history (oldest first) and adherence. `streak` and
+    /// `adherence` are `nil` unless the habit is active; `history` is `nil`
+    /// only when the file has no such key (an older cached file) -- the
+    /// phone then falls back to the days it knows.
+    public var streak: HabitStreak?
+    public var history: [HabitHistoryDay]?
+    public var adherence: HabitAdherence?
 
     enum CodingKeys: String, CodingKey {
         case id, step, icon, label, dose, why, schedule, source, state, started, earliest, window14, gateMet, gateBlockedBy
+        case streak, history, adherence
     }
 
     public init(from decoder: Decoder) throws {
@@ -1237,6 +1249,9 @@ public struct Habit: Equatable, Sendable, Decodable, ProjectionElement {
         gateMet = c.lenientBool(.gateMet)
         let blocked = c.lenient(JSONValue.self, .gateBlockedBy)
         gateBlockedBy = blocked?.isNull == true ? nil : blocked
+        streak = c.lenient(HabitStreak.self, .streak)
+        history = c.lenient(LossyArray<HabitHistoryDay>.self, .history)?.elements.sorted { $0.date < $1.date }
+        adherence = c.lenient(HabitAdherence.self, .adherence)
     }
 }
 

@@ -121,11 +121,18 @@ public actor TrainingRecorder {
     }
 
     /// The phone's events as the screens show them; `acks` is the cached
-    /// projection's `acks` (empty until the vault has read any).
-    public func overlay(acks: [String: JSONValue] = [:]) async -> CheckInOverlay {
+    /// projection's `acks` (empty until the vault has read any) and
+    /// `outcomes` its `outcomes`, where the vault says which habit ticks it
+    /// refused (add-interactive-habits).
+    public func overlay(acks: [String: JSONValue] = [:], outcomes: [JSONValue] = []) async -> CheckInOverlay {
         let events = await log.all()
         let unsent = Set(await queue.all().filter { $0.state != .sent }.map { $0.record.id })
-        return CheckInOverlay.fold(events, unsentSegments: unsent, ackedSeqs: CheckInOverlay.ackedSeqs(from: acks))
+        return CheckInOverlay.fold(
+            events,
+            unsentSegments: unsent,
+            ackedSeqs: CheckInOverlay.ackedSeqs(from: acks),
+            outcomes: PlanOutcome.parse(outcomes)
+        )
     }
 
     /// The phone's plan commands and what became of them (add-plan-editing

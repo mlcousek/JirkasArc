@@ -9,11 +9,8 @@
 //                      options); carb-load and session fuel lines; every
 //                      non-happy state; a `compact` variant (one line per
 //                      session).
-//   HabitsTodayCard    polish-training-today D2: the Habits card -- the
-//                      ladder step, the active habits with today's ticks,
-//                      the day's progress bar, the next step and what
-//                      unlocks it; the header and the next step open the
-//                      full ladder.
+//   (HabitsTodayCard   the Habits card lives in Habits/HabitsTodayCard.swift
+//                      since add-interactive-habits.)
 //   RaceCountdownChip  the next race of any priority with its priority
 //                      letter, and the season's main race as a second line
 //                      when that is a later one (polish-training-today D3).
@@ -23,7 +20,7 @@
 // nothing (design D8). add-training-checkins (its D6) adds, when the
 // builders allow it: the morning check-in row (G/A/R buttons, letter and
 // shape as well as colour, one VoiceOver element each, "Saved on phone" /
-// "Sent") at the top of the training card, and an on/off toggle per habit.
+// "Sent") at the top of the training card.
 // add-plan-editing: a session with a plan change of this phone still
 // waiting for the vault (or not applied) shows it under its header.
 // add-checkin-pain-score (its D5): once a light is chosen, the check-in row
@@ -578,199 +575,6 @@ private struct CheckInButton: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(button.accessibilityLabel)
         .accessibilityAddTraits(button.isSelected ? [.isButton, .isSelected] : .isButton)
-    }
-}
-
-// MARK: - Habits
-
-struct HabitsTodayCard: View {
-    let model: HabitsCardModel
-    let onOpenLadder: () -> Void
-    /// add-training-checkins: a habit toggle changed (id, done).
-    var onTick: (String, Bool) -> Void = { _, _ in }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-            Button(action: onOpenLadder) {
-                HStack {
-                    SectionHeader(
-                        title: String(localized: "Habits", comment: "polish-training-today: Layout editor row and title of the Habits card on Today (the habit ladder)."),
-                        trailing: model.stepText
-                    )
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens the habit ladder")
-            if let progress = model.progressText {
-                HStack(spacing: Theme.Spacing.sm) {
-                    ProgressView(value: Double(model.doneCount), total: Double(max(model.expectedCount, 1)))
-                        .tint(model.doneCount >= model.expectedCount ? Theme.success : Theme.accent)
-                        .accessibilityHidden(true)
-                    Text(verbatim: progress)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .fixedSize()
-                }
-                .accessibilityElement(children: .combine)
-            }
-            ForEach(model.rows) { row in
-                HabitRow(row: row) { done in onTick(row.id, done) }
-            }
-            if let next = model.next {
-                Button(action: onOpenLadder) {
-                    HabitNextStepRow(next: next)
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the habit ladder")
-            }
-        }
-        .card()
-    }
-}
-
-/// The ladder's next step and what unlocks it (polish-training-today D2).
-private struct HabitNextStepRow: View {
-    let next: HabitNextStepModel
-
-    var body: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.sm) {
-            if let icon = next.icon {
-                Text(verbatim: icon)
-                    .font(.title3)
-                    .accessibilityHidden(true)
-            } else {
-                Image(systemName: "lock")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: next.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                if let unlock = next.unlockText {
-                    Text(verbatim: unlock)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let earliest = next.earliestText {
-                    Text(verbatim: earliest)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: Theme.Spacing.xs)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
-        }
-        .padding(Theme.Spacing.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
-                .fill(Theme.groupedBackground)
-        )
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: next.accessibilityLabel))
-    }
-}
-
-private struct HabitRow: View {
-    let row: HabitRowModel
-    var onTick: (Bool) -> Void = { _ in }
-
-    @ScaledMetric(relativeTo: .body) private var ringSize: CGFloat = 30
-
-    var body: some View {
-        HStack(alignment: .center, spacing: Theme.Spacing.sm) {
-            info
-            if case .tickable(let done, let pending) = row.tick {
-                HabitTickButton(label: row.label, done: done, pending: pending) {
-                    Haptics.selection()
-                    onTick(!done)
-                }
-            }
-        }
-    }
-
-    private var info: some View {
-        HStack(alignment: .center, spacing: Theme.Spacing.sm) {
-            if let icon = row.icon {
-                Text(verbatim: icon)
-                    .font(.title3)
-                    .accessibilityHidden(true)
-            }
-            VStack(alignment: .leading, spacing: 1) {
-                Text(verbatim: row.label)
-                    .font(.subheadline.weight(.semibold))
-                let detail = [row.dose, row.schedule].compactMap { $0 }.joined(separator: " · ")
-                if !detail.isEmpty {
-                    Text(verbatim: detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Text(verbatim: row.adherence)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let notToday = row.notTodayText {
-                    Text(verbatim: notToday)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            Spacer(minLength: Theme.Spacing.xs)
-            if let doneToday = row.doneToday {
-                Text(verbatim: doneToday)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-            }
-            ProgressRing(
-                fraction: row.fraction ?? 0,
-                lineWidth: 4,
-                tint: (row.fraction ?? 0) >= (row.gateFraction ?? 1) ? Theme.success : Theme.accent
-            ) {
-                EmptyView()
-            }
-            .frame(width: ringSize, height: ringSize)
-            .opacity(row.fraction == nil ? 0.35 : 1)
-            .accessibilityHidden(true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// add-training-checkins (decision A42): a habit is on or off for the day.
-/// A check shape as well as colour; a small clock while the phone's tick
-/// isn't uploaded yet.
-private struct HabitTickButton: View {
-    let label: String
-    let done: Bool
-    let pending: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                .font(.title2)
-                .foregroundStyle(done ? Theme.success : Color.secondary)
-                .overlay(alignment: .bottomTrailing) {
-                    if pending {
-                        Image(systemName: "clock.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .offset(x: 4, y: 4)
-                    }
-                }
-                .frame(minWidth: 44, minHeight: 44)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: label))
-        .accessibilityValue(done ? Text("Done") : Text("Not done"))
-        .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
     }
 }
 

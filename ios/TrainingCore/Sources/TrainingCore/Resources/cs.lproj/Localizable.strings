@@ -724,3 +724,120 @@
 
 /* VoiceOver value of a pain score control (the score). */
 "%@ of 10" = "%@ z 10";
+
+/* add-interactive-habits: a habit's streak counted in times the plan expected it. */
+"%lld× in a row" = "%lld× v řadě";
+
+/* add-interactive-habits: a habit with no current streak. */
+"No streak yet" = "Zatím žádná série";
+
+/* add-interactive-habits: a habit's best streak (a count). */
+"Best: %lld" = "Nejlepší: %lld";
+
+/* add-interactive-habits: caption under a habit's current streak figure. */
+"Current streak" = "Aktuální série";
+
+/* add-interactive-habits: caption under a habit's best streak figure. */
+"Best streak" = "Nejlepší série";
+
+/* add-interactive-habits: when a habit was last done (a date). */
+"Last done %@" = "Naposledy splněno %@";
+
+/* add-interactive-habits: the phone's streak count stopped where its known days end. */
+"The streak may be longer: the phone doesn't know the days before." = "Série může být delší: dřívější dny telefon nezná.";
+
+/* add-interactive-habits: title of a habit's adherence over 7, 14, 30 and 84 days. */
+"Adherence" = "Plnění";
+
+/* add-interactive-habits: an adherence window in days, abbreviated (7 d). */
+"%lld d" = "%lld d";
+
+/* add-interactive-habits: a percent. */
+"%lld %%" = "%lld %%";
+
+/* add-interactive-habits: why a long adherence window has no percent yet. */
+"Longer windows fill in once the vault publishes the habit's history." = "Delší období se doplní, až vault zveřejní historii návyku.";
+
+/* add-interactive-habits: a habit expected today and not done yet. */
+"Not done yet" = "Zatím nesplněno";
+
+/* add-interactive-habits: doses of a habit done of those expected that day. */
+"%lld of %lld" = "%lld z %lld";
+
+/* add-interactive-habits: a day the plan doesn't expect the habit. */
+"Not planned" = "Neplánováno";
+
+/* add-interactive-habits: a day with nothing known about the habit. */
+"No record" = "Bez záznamu";
+
+/* add-interactive-habits: calendar legend: some doses of the day done. */
+"Partly" = "Částečně";
+
+/* add-interactive-habits: button: the habit was done that day. */
+"Mark done" = "Označit jako splněné";
+
+/* add-interactive-habits: button: the habit was not done that day. */
+"Mark not done" = "Označit jako nesplněné";
+
+/* add-interactive-habits: VoiceOver for the button adding a dose of a multi-dose habit. */
+"One more" = "O jedno víc";
+
+/* add-interactive-habits: VoiceOver for the button removing a dose of a multi-dose habit. */
+"One fewer" = "O jedno méně";
+
+/* add-interactive-habits: a past day too old to fill in (the window in days). */
+"Outside the back-fill window (%lld d)" = "Mimo okno pro doplnění (%lld d)";
+
+/* add-interactive-habits: a day the plan doesn't expect the habit can't be ticked. */
+"Not on the plan that day" = "Ten den není v plánu";
+
+/* add-interactive-habits: a day without plan data can't be ticked. */
+"The phone doesn't know that day's plan" = "Plán toho dne telefon nezná";
+
+/* add-interactive-habits: habits can't be ticked without a working vault connection. */
+"Turn on and test the vault connection to log habits" = "Pro zápis návyků zapni a otestuj připojení k vaultu";
+
+/* add-interactive-habits: hint under a habit's calendar (the back-fill window in days). */
+"Tap a day to fill it in. Back-fill window: %lld d." = "Klepnutím na den ho doplníš. Okno pro doplnění: %lld d.";
+
+/* add-interactive-habits: title of a habit's history calendar. */
+"Last 12 weeks" = "Posledních 12 týdnů";
+
+/* add-interactive-habits: title of a habit's recent log entries. */
+"Recent entries" = "Poslední záznamy";
+
+/* add-interactive-habits: a habit with no log entries. */
+"Nothing logged yet" = "Zatím nic zapsáno";
+
+/* add-interactive-habits: a ladder step that is active and already followed by a later active step. */
+"Established" = "Zavedeno";
+
+/* add-interactive-habits: the highest active ladder step. */
+"Current step" = "Aktuální krok";
+
+/* add-interactive-habits: a ladder step that has not started. */
+"Locked" = "Zamčeno";
+
+/* add-interactive-habits: a later ladder step unlocks after the step before it (that habit's name). */
+"Unlocks after: %@" = "Odemkne se po kroku: %@";
+
+/* add-interactive-habits: a ladder step's number. */
+"Step %lld" = "Krok %lld";
+
+/* add-interactive-habits: every habit expected on the shown day is done. */
+"All of today's habits done" = "Všechny dnešní návyky splněny";
+
+/* add-interactive-habits: VoiceOver for a calendar day (the date, its state). */
+"%@: %@" = "%@: %@";
+
+/* add-interactive-habits: a habit the vault measures from activities or the plan can't be ticked by hand. */
+"Measured from your activities and the plan" = "Měří se z tvých aktivit a z plánu";
+
+/* add-interactive-habits: a day after today can't be ticked (the vault refuses it). */
+"This day hasn't started yet" = "Tento den ještě nezačal";
+
+/* add-interactive-habits: title of the list of ticks the vault refused. */
+"Not accepted by the vault" = "Vault nepřijal";
+
+/* add-interactive-habits: a tick the vault refused without giving a reason. */
+"The vault did not accept this entry." = "Vault tento záznam nepřijal.";

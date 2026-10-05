@@ -1,8 +1,9 @@
 // GarminFoodShortcuts.swift
 //
-// Siri/Spotlight entry points (design.md D5, tasks.md 20.1): three
-// shortcuts, comfortably under Apple's 10-shortcut compile-time cap and
-// within its 2-5 recommendation (siri-and-shortcuts spec's "no more than 5"
+// Siri/Spotlight entry points (design.md D5, tasks.md 20.1): four
+// shortcuts (the fourth, "Tick Habit", came with add-interactive-habits),
+// comfortably under Apple's 10-shortcut compile-time cap and within its
+// 2-5 recommendation (siri-and-shortcuts spec's "no more than 5"
 // requirement). Every phrase includes `\(.applicationName)` per Apple's own
 // requirement -- omitting it is a compile-time diagnostic on
 // `AppShortcutsProvider`, not just a style guideline.
@@ -47,6 +48,18 @@ struct GarminFoodShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Scan Barcode",
             systemImageName: "barcode.viewfinder"
+        )
+        // add-interactive-habits D10: Siri asks which habit (the ladder's
+        // active ones, from the cached plan). Records nothing without a
+        // working vault connection.
+        AppShortcut(
+            intent: TickHabitIntent(),
+            phrases: [
+                "Tick a habit in \(.applicationName)",
+                "Mark a habit done in \(.applicationName)"
+            ],
+            shortTitle: "Tick Habit",
+            systemImageName: "checkmark.circle"
         )
     }
 }

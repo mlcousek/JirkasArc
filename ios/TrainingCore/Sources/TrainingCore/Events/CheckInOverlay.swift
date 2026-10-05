@@ -34,6 +34,12 @@
 // with `pains`, `[]` included, replaces it. `applyingLights` also sets the
 // day's `pains` from it.
 //
+// add-interactive-habits: the vault refuses a `habit.tick` for a future day
+// or one more than 14 days back and says so in the projection's `outcomes`
+// (`type: "habit.tick"`, `status: "refused"`, a bilingual reason). Such a
+// tick changed nothing in the vault, so it is NOT laid over the plan: it is
+// kept in `refusedHabitTicks` with its reason for the habit's screen, and
+// an earlier accepted tick of the same day stays what the day shows.
 // add-daily-checkin-and-pain-mode: the same replacement runs over the day
 // skeletons (`applying(to:)` on a list of days), so a check-in on a day
 // outside every written week -- or with no plan at all -- shows too.
@@ -74,6 +80,16 @@ public struct HabitDayKey: Hashable, Sendable {
     }
 }
 
+/// add-interactive-habits: a tick of this phone the vault refused.
+public struct HabitTickRefusal: Equatable, Sendable {
+    /// The vault's reason (`{ en, cz }`); `nil` when it gave none.
+    public let reason: LocalizedText?
+
+    public init(reason: LocalizedText?) {
+        self.reason = reason
+    }
+}
+
 public struct CheckInOverlay: Equatable, Sendable {
     public static let empty = CheckInOverlay()
 
@@ -86,6 +102,9 @@ public struct CheckInOverlay: Equatable, Sendable {
     /// add-checkin-pain-score: the day's answer, from the latest check-in
     /// of that date that carried `pains` (see this file's header).
     public private(set) var painAnswers: [LocalDate: OverlayValue<[PainEntry]>] = [:]
+    /// add-interactive-habits: the phone's ticks the vault refused (see
+    /// this file's header). Never in `habitTicks`.
+    public private(set) var refusedHabitTicks: [HabitDayKey: HabitTickRefusal] = [:]
 
     public init() {}
 
@@ -105,6 +124,12 @@ public struct CheckInOverlay: Equatable, Sendable {
 
     public func habitTick(on date: LocalDate, habitId: String) -> OverlayValue<Bool>? {
         habitTicks[HabitDayKey(date: date, habitId: habitId)]
+    }
+
+    /// add-interactive-habits: the vault's refusal of the phone's latest
+    /// tick for that day; `nil` when it was not refused.
+    public func refusedHabitTick(on date: LocalDate, habitId: String) -> HabitTickRefusal? {
+        refusedHabitTicks[HabitDayKey(date: date, habitId: habitId)]
     }
 
     public func rpe(session id: String) -> OverlayValue<Int>? {
@@ -127,9 +152,14 @@ public struct CheckInOverlay: Equatable, Sendable {
     }
 
     /// Folds `events`; `unsentSegments` are the segment ids still pending
-    /// (or failed) in the write queue; `ackedSeqs` from `ackedSeqs(from:)`.
-    public static func fold(_ events: [LoggedEvent], unsentSegments: Set<UUID>, ackedSeqs: [String: Int] = [:]) -> CheckInOverlay {
+    /// (or failed) in the write queue; `ackedSeqs` from `ackedSeqs(from:)`;
+    /// `outcomes` from `PlanOutcome.parse` -- only the refused habit ticks
+    /// are read here (add-interactive-habits).
+    public static func fold(_ events: [LoggedEvent], unsentSegments: Set<UUID>, ackedSeqs: [String: Int] = [:], outcomes: [PlanOutcome] = []) -> CheckInOverlay {
         var overlay = CheckInOverlay()
+        let refusals = outcomes.filter { outcome in
+            outcome.status.known == .refused && (outcome.type == nil || outcome.type == HubEventType.habitTick.rawValue)
+        }
         let ordered = events.sorted { lhs, rhs in
             if lhs.recordedAt != rhs.recordedAt { return lhs.recordedAt < rhs.recordedAt }
             return lhs.event.seq < rhs.event.seq
@@ -152,7 +182,20 @@ public struct CheckInOverlay: Equatable, Sendable {
                     overlay.painAnswers[payload.date] = OverlayValue(value: pains, delivery: delivery)
                 }
             case .habitTick(let payload):
-                overlay.habitTicks[HabitDayKey(date: payload.date, habitId: payload.habitId)] = OverlayValue(value: payload.done, delivery: delivery)
+                let key = HabitDayKey(date: payload.date, habitId: payload.habitId)
+                // add-interactive-habits: a refused tick changed nothing in
+                // the vault; an accepted one after it clears the refusal.
+                let event = logged.event
+                let refusal = refusals.first { outcome in
+                    if let id = outcome.event { return id.lowercased() == event.id.lowercased() }
+                    return outcome.deviceId == event.deviceId && outcome.seq == event.seq
+                }
+                if let refusal {
+                    overlay.refusedHabitTicks[key] = HabitTickRefusal(reason: refusal.reason)
+                } else {
+                    overlay.habitTicks[key] = OverlayValue(value: payload.done, delivery: delivery)
+                    overlay.refusedHabitTicks[key] = nil
+                }
             case .sessionRPE(let payload):
                 overlay.rpes[payload.sessionId] = OverlayValue(value: payload.rpe, delivery: delivery)
             case .sessionNote(let payload):

@@ -4,7 +4,8 @@
 // D6; add-training-today-and-plan task 5.1, design D10, D11): a Week ·
 // Month segmented control (remembered per install; opens on Week, owner
 // decision 0.2 defaulted), the week agenda or the month calendar, the
-// session detail pushed from either, the habit ladder from the toolbar,
+// session detail pushed from either, the Habits screen from the toolbar
+// (and from a `garminfood://habits` link, add-interactive-habits),
 // and every non-happy state (fetching, not published, no active plan,
 // unreadable, update the app) through TrainingCore's builders.
 //
@@ -59,7 +60,8 @@ struct PlanTabView: View {
     @State private var month: PlanMonth?
     @State private var sessionTarget: SessionDetailTarget?
     @State private var daySheet: PlanDaySheet?
-    @State private var isShowingLadder = false
+    /// add-interactive-habits: the Habits screen, or one habit (a link).
+    @State private var habitsTarget: HabitsTarget?
     @State private var raceTarget: PlanRaceTarget?
     @State private var isShowingStats = false
 
@@ -117,17 +119,17 @@ struct PlanTabView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    isShowingLadder = true
+                    habitsTarget = .ladder
                 } label: {
-                    Label("Habit ladder", systemImage: "stairs")
+                    Label("Habits", systemImage: "stairs")
                 }
             }
         }
         .navigationDestination(item: $sessionTarget) { target in
             SessionDetailView(target: target)
         }
-        .navigationDestination(isPresented: $isShowingLadder) {
-            HabitLadderView()
+        .navigationDestination(item: $habitsTarget) { target in
+            HabitsDestination(target: target)
         }
         .navigationDestination(isPresented: $isShowingStats) {
             TrainingStatsView(phaseID: nil)
@@ -152,6 +154,12 @@ struct PlanTabView: View {
             consume(pending, showsMonth: environment.router.pendingPlanShowsMonth)
             environment.router.pendingPlanDate = nil
             environment.router.pendingPlanShowsMonth = false
+        }
+        // add-interactive-habits: a `garminfood://habits` link.
+        .onChange(of: environment.router.pendingHabits, initial: true) { _, pending in
+            guard let pending else { return }
+            habitsTarget = pending
+            environment.router.pendingHabits = nil
         }
         .onChange(of: environment.router.pendingRaceID, initial: true) { _, pending in
             guard let pending else { return }

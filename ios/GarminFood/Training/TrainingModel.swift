@@ -40,6 +40,11 @@
 // again with `pains` (`recordPain`), which replaces the day's answer; a
 // light alone keeps it (TrainingCore's CheckInOverlay).
 //
+// add-interactive-habits: it hands out `HabitsBuilder` (streaks, history,
+// the day controls) and turns a control's step into what TrainingCore's
+// `HabitDosePolicy` says: the on/off tick through the same recorder, and
+// -- for a multi-dose day that isn't complete -- a count kept on the phone
+// (`habitDoses`, one preference value; the wire only carries on/off, A42).
 // add-daily-checkin-and-pain-mode: the two reminder times are the owner's
 // (UserDefaults, like the food reminders' times; 04:05 and 20:10 until
 // changed), and `isPainMode` tells the app whether the pain features show
@@ -47,7 +52,7 @@
 // unread pain answer).
 //
 // Owned by AppEnvironment (`environment.training`); read by the Today
-// training cards and the Plan tab.
+// training cards, the Plan tab and the Habits screens.
 
 import Foundation
 import Observation
@@ -66,6 +71,9 @@ final class TrainingModel {
     var actionError: String?
     /// The app's language (Settings -> Language), fixed for the process.
     let language: TrainingLanguage
+    /// add-interactive-habits: doses done so far on multi-dose days that
+    /// are not complete yet (the phone's own note; see the header).
+    private(set) var habitDoses: HabitDoseLedger = .empty
 
     @ObservationIgnored private let store: ProjectionStore
     @ObservationIgnored private let vault: VaultController
@@ -78,6 +86,8 @@ final class TrainingModel {
     /// add-training-checkins D8: the training reminders switch (default on,
     /// tasks 0.2).
     static let remindersKey = "training.reminders.enabled.v1"
+    /// add-interactive-habits: `habitDoses`, as JSON.
+    static let habitDosesKey = "training.habitDoses.v1"
     /// add-daily-checkin-and-pain-mode: when the two reminders fire.
     static let checkInHourKey = "training.reminders.checkin.hour.v1"
     static let checkInMinuteKey = "training.reminders.checkin.minute.v1"
@@ -90,6 +100,7 @@ final class TrainingModel {
         self.events = events
         self.defaults = defaults
         self.language = TrainingLanguage.from(preferredLocalizations: Bundle.main.preferredLocalizations)
+        self.habitDoses = HabitDoseLedger(encoded: defaults.data(forKey: Self.habitDosesKey))
         events.onChange = { [weak self] in
             await self?.reload()
         }
@@ -112,6 +123,31 @@ final class TrainingModel {
     /// Habit on/off for `date` (decision A42).
     func setHabit(_ habitID: String, done: Bool, date: LocalDate) async {
         await perform(.habitTick(HabitTickPayload(date: date, habitId: habitID, done: done)))
+    }
+
+    /// add-interactive-habits: one step of a day's control (Today's card,
+    /// the Habits screens, a back-filled day) to `target` doses. Below the
+    /// day's doses only the phone's count changes; completing the day, or
+    /// taking it back, records the tick. Local, never waits.
+    func applyHabit(_ control: HabitDayControlModel, to target: Int) async {
+        guard control.canRecord else { return }
+        let change = control.change(to: target)
+        var doses = habitDoses
+        doses.set(change.partial, on: control.date, habitID: control.habitID)
+        storeHabitDoses(doses)
+        if let done = change.tick {
+            await setHabit(control.habitID, done: done, date: control.date)
+        }
+    }
+
+    private func storeHabitDoses(_ doses: HabitDoseLedger) {
+        guard doses != habitDoses else { return }
+        habitDoses = doses
+        if doses.isEmpty {
+            defaults.removeObject(forKey: Self.habitDosesKey)
+        } else {
+            defaults.set(doses.encoded, forKey: Self.habitDosesKey)
+        }
     }
 
     func rate(sessionID: String, date: LocalDate, rpe: Int) async {
@@ -289,6 +325,11 @@ final class TrainingModel {
         PlanBuilder(source: source, language: language, today: today(now: now))
     }
 
+    /// add-interactive-habits: the Habits screens and Today's checks.
+    func habitsBuilder(now: Date = Date()) -> HabitsBuilder {
+        HabitsBuilder(source: source, language: language, today: today(now: now), doses: habitDoses)
+    }
+
     // MARK: Loading
 
     func reload(now: Date = Date()) async {
@@ -330,13 +371,20 @@ final class TrainingModel {
         )
         // add-training-checkins: the phone's events over the plan, and
         // whether it may record at all.
-        let checkIns = await events.recorder.overlay(acks: cached?.projection.acks ?? [:])
+        // (add-interactive-habits: `outcomes` name the habit ticks the vault
+        // refused, so they are not shown as done.)
+        let checkIns = await events.recorder.overlay(acks: cached?.projection.acks ?? [:], outcomes: cached?.projection.outcomes ?? [])
         // add-plan-editing: the phone's plan commands and the vault's
         // answers; plan edits under the same guard as the check-ins.
         let planEdits = await events.recorder.planEdits(acks: cached?.projection.acks ?? [:], outcomes: cached?.projection.outcomes ?? [])
         let canRecord = await events.canRecord()
         source = TrainingSource.from(availability, freshness: freshness, checkIns: checkIns, planEdits: planEdits, capabilities: .recording(enabled: canRecord))
         hasLoaded = true
+        // add-interactive-habits: dose counts older than the event log
+        // keeps its ticks are of no use to anything.
+        var doses = habitDoses
+        doses.prune(before: trainingToday.adding(days: -Int(TrainingEventLog.sealedRetention / 86_400)))
+        storeHabitDoses(doses)
         await syncReminders(now: now)
     }
 }

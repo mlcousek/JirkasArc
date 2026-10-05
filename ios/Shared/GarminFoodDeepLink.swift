@@ -36,6 +36,12 @@
 // Nothing sends it yet; it exists so later notifications and the race
 // countdown have a target. The date is validated by the pure
 // `AppShell.planLinkDate` and kept on AppRouter for the Plan tab.
+//
+// add-interactive-habits: `habits` (`garminfood://habits`, optional
+// `?habit=<id>`) opens the Habits screen, or that habit's detail, on the
+// Plan tab in the training experience, and Today in the food-first one.
+// Nothing sends it yet either; it is the target for later notifications
+// and widgets.
 
 import Foundation
 
@@ -48,10 +54,25 @@ enum GarminFoodDeepLink {
         case logFood
         /// The training plan, optionally at a day (`date` query item).
         case plan
+        /// The Habits screen, optionally one habit (`habit` query item).
+        case habits
     }
 
     /// The query item carrying a `plan` link's day.
     static let planDateQueryItem = "date"
+
+    /// The query item carrying a `habits` link's habit id.
+    static let habitQueryItem = "habit"
+
+    /// A `habits` link's habit id as the app will look it up: a short slug
+    /// (letters, digits, `-`, `_`), else `nil` -- the link then opens the
+    /// Habits screen. An id the plan doesn't have shows an empty detail.
+    static func habitLinkID(_ value: String?) -> String? {
+        guard let value, !value.isEmpty, value.count <= 64 else { return nil }
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+        guard value.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return nil }
+        return value
+    }
 
     static let logFoodURL = url(for: .logFood)
 

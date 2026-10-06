@@ -115,6 +115,9 @@ public struct TrainingPlanSignals: Sendable, Equatable {
         /// An activity no planned session matched, and it was a run.
         public let hasUnplannedRun: Bool
         public let isCarbLoad: Bool
+        /// improve-food-day-flow (C3): the race a carb-load day loads for
+        /// (the plan's `fuel.raceId`); `nil` on any other day.
+        public let carbLoadRaceId: String?
 
         public init(
             day: String,
@@ -125,7 +128,8 @@ public struct TrainingPlanSignals: Sendable, Equatable {
             habitsDone: [String] = [],
             sessions: [Session] = [],
             hasUnplannedRun: Bool = false,
-            isCarbLoad: Bool = false
+            isCarbLoad: Bool = false,
+            carbLoadRaceId: String? = nil
         ) {
             self.day = day
             self.isInPlan = isInPlan
@@ -136,6 +140,7 @@ public struct TrainingPlanSignals: Sendable, Equatable {
             self.sessions = sessions
             self.hasUnplannedRun = hasUnplannedRun
             self.isCarbLoad = isCarbLoad
+            self.carbLoadRaceId = isCarbLoad ? carbLoadRaceId : nil
         }
 
         public var isCheckedIn: Bool { light != nil }

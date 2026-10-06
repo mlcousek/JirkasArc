@@ -48,6 +48,56 @@ final class WinterArcNutritionTests: XCTestCase {
         XCTAssertEqual(above.carbFraction, 1)
     }
 
+    // improve-food-day-flow (C3, spec carb-load-fuel "The fuel card names
+    // the race and judges a single target"). "Example 50K" is invented.
+
+    func testASingleTargetIsBelowOrReachedAndNeverTooMuch() throws {
+        let carbLoad = FuelDayTarget(carbsMinG: 560, carbsMaxG: 560, proteinG: 112, isCarbLoad: true, hasTrainingSessions: false, raceName: "Example 50K")
+
+        let below = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 400, proteinG: 0, target: carbLoad, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertEqual(below.targetStatus, .below)
+        XCTAssertTrue(below.hasSingleTarget)
+        XCTAssertEqual(below.raceName, "Example 50K")
+        XCTAssertTrue(below.isCarbLoad)
+
+        let exactly = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 560, proteinG: 0, target: carbLoad, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertEqual(exactly.targetStatus, .reached, "the target itself is reached")
+
+        let more = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 640, proteinG: 0, target: carbLoad, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertEqual(more.targetStatus, .reached, "more than the target is not too much")
+        XCTAssertEqual(more.carbFraction, 1)
+    }
+
+    func testABandKeepsItsThreeWordsAndHasNoTargetStatus() throws {
+        let inside = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 600, proteinG: 0, target: band, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertNil(inside.targetStatus)
+        XCTAssertFalse(inside.hasSingleTarget)
+        XCTAssertEqual(inside.carbStatus, .inBand)
+
+        // A carb load given as a band is still a range.
+        let loadBand = FuelDayTarget(carbsMinG: 560, carbsMaxG: 700, proteinG: nil, isCarbLoad: true, hasTrainingSessions: false, raceName: "Example 50K")
+        let summary = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 600, proteinG: 0, target: loadBand, isToday: false, now: local(22, 12), calendar: prague))
+        XCTAssertNil(summary.targetStatus)
+        XCTAssertEqual(summary.carbStatus, .inBand)
+        XCTAssertEqual(summary.raceName, "Example 50K")
+    }
+
+    func testTheRaceNameIsOnlyOnACarbLoadDayAndNeverBlank() throws {
+        // A band day that somehow carries a name does not show it.
+        let named = FuelDayTarget(carbsMinG: 480, carbsMaxG: 640, proteinG: 128, hasTrainingSessions: true, raceName: "Example 50K")
+        let summary = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 500, proteinG: 0, target: named, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertNil(summary.raceName)
+
+        let blank = FuelDayTarget(carbsMinG: 560, carbsMaxG: 560, proteinG: nil, isCarbLoad: true, hasTrainingSessions: false, raceName: "   ")
+        XCTAssertNil(blank.raceName, "a blank name is no name")
+        let trimmed = FuelDayTarget(carbsMinG: 560, carbsMaxG: 560, proteinG: nil, isCarbLoad: true, hasTrainingSessions: false, raceName: " Example 50K ")
+        XCTAssertEqual(trimmed.raceName, "Example 50K")
+        let unnamed = FuelDayTarget(carbsMinG: 560, carbsMaxG: 560, proteinG: nil, isCarbLoad: true, hasTrainingSessions: false)
+        let plain = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 100, proteinG: 0, target: unnamed, isToday: true, now: local(22, 12), calendar: prague))
+        XCTAssertNil(plain.raceName, "the plan names no race: the card keeps its plain title")
+        XCTAssertEqual(plain.targetStatus, .below)
+    }
+
     func testTheUnderFuellingNoteIsLateTodayAndClearlyBelow() throws {
         // 75 % of 480 = 360.
         let late = try XCTUnwrap(FuelDayEvaluator.summary(carbsG: 359, proteinG: 0, target: band, isToday: true, now: local(22, 18), calendar: prague))

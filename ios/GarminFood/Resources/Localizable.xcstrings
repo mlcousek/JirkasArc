@@ -19345,6 +19345,54 @@
         }
       }
     },
+    "Carb-load day for %@": {
+      "comment": "improve-food-day-flow: Today summary title on a carb-load day of the training plan; %@ is the race's name.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sacharidová superkompenzace před závodem %@"
+          }
+        }
+      }
+    },
+    "Below target": {
+      "comment": "improve-food-day-flow: carbs are under the day's single carbohydrate target (never shown as a warning).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod cílem"
+          }
+        }
+      }
+    },
+    "Target reached": {
+      "comment": "improve-food-day-flow: carbs are at or above the day's single carbohydrate target.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cíl splněn"
+          }
+        }
+      }
+    },
+    "Carbs: %@ grams, target %@ grams": {
+      "comment": "improve-food-day-flow: VoiceOver for a day with one carbohydrate target: eaten, then the target.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sacharidy: %@ gramů, cíl %@ gramů"
+          }
+        }
+      }
+    },
     "Carb-load day": {
       "comment": "add-winter-arc-nutrition-and-rewards: Today summary title on a carb-load day of the training plan.",
       "extractionState": "manual",

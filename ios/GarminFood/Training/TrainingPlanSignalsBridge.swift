@@ -65,7 +65,9 @@ extension TrainingPlanSignals.Day {
             habitsDone: fact.habitsDone,
             sessions: fact.sessions.map { TrainingPlanSignals.Session($0) },
             hasUnplannedRun: fact.hasUnplannedRun,
-            isCarbLoad: fact.isCarbLoad
+            isCarbLoad: fact.isCarbLoad,
+            // improve-food-day-flow (C3): the race rules read it.
+            carbLoadRaceId: fact.carbLoadRaceId
         )
     }
 }

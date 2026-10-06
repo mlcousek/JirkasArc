@@ -12,7 +12,10 @@
 //     weigh-in), else no gram targets at all (a band is g/kg; without a
 //     weight the day falls back to today's calorie view);
 //   - carb-load day: `carbsG` when given, else its single g/kg x weight,
-//     as a one-point band (min == max);
+//     as a one-point band (min == max); else -- improve-food-day-flow (C3)
+//     -- the `{ min, max }` g/kg band x weight when the plan gives one on
+//     such a day. `carbLoadRaceId` is the race the day loads for
+//     (`fuel.raceId`), so the food screen can name it;
 //   - band day: `carbsBand.min/max` x weight; protein `proteinGPerKg` x
 //     weight when the vault gives it, else `defaultProteinGPerKg` (1.6,
 //     PM-FUEL-1) -- but only when there is a carb band at all, so a day
@@ -42,6 +45,10 @@ public struct DayFuelTargets: Equatable, Sendable {
     public let isCarbLoad: Bool
     public let hasTrainingSessions: Bool
     public let isFastingPaused: Bool
+    /// improve-food-day-flow (C3): the id of the race a carb-load day loads
+    /// for (`fuel.raceId`); `nil` on every other day, and when the plan
+    /// names none. Look the race up with `TrainingSnapshot.race(id:)`.
+    public let carbLoadRaceId: String?
 
     public init(
         date: LocalDate,
@@ -51,7 +58,8 @@ public struct DayFuelTargets: Equatable, Sendable {
         proteinG: Double?,
         isCarbLoad: Bool,
         hasTrainingSessions: Bool,
-        isFastingPaused: Bool
+        isFastingPaused: Bool,
+        carbLoadRaceId: String? = nil
     ) {
         self.date = date
         self.weightKg = weightKg
@@ -61,6 +69,7 @@ public struct DayFuelTargets: Equatable, Sendable {
         self.isCarbLoad = isCarbLoad
         self.hasTrainingSessions = hasTrainingSessions
         self.isFastingPaused = isFastingPaused
+        self.carbLoadRaceId = carbLoadRaceId
     }
 
     /// Whether there is a carbohydrate band in grams to judge by.
@@ -88,6 +97,11 @@ public struct DayFuelTargets: Equatable, Sendable {
                 if let grams, grams > 0 {
                     carbsMin = grams
                     carbsMax = grams
+                } else if let band = fuel.carbsBand, let weight {
+                    // improve-food-day-flow (C3): a carb load given as a
+                    // `{ min, max }` band -- the plan's numbers, times weight.
+                    carbsMin = band.min * weight
+                    carbsMax = band.max * weight
                 }
             } else if let band = fuel.carbsBand, let weight {
                 carbsMin = band.min * weight
@@ -100,6 +114,11 @@ public struct DayFuelTargets: Equatable, Sendable {
 
         let fastingPaused = fuel?.isFastingOff ?? false
         guard carbsMin != nil || hasSessions || fastingPaused else { return nil }
+        // improve-food-day-flow (C3): the race this carb-load day is for.
+        var raceID: String?
+        if isCarbLoad, let id = fuel?.raceId, !id.isEmpty {
+            raceID = id
+        }
         return DayFuelTargets(
             date: day.date,
             weightKg: weight,
@@ -108,7 +127,8 @@ public struct DayFuelTargets: Equatable, Sendable {
             proteinG: protein,
             isCarbLoad: isCarbLoad && carbsMin != nil,
             hasTrainingSessions: hasSessions,
-            isFastingPaused: fastingPaused
+            isFastingPaused: fastingPaused,
+            carbLoadRaceId: raceID
         )
     }
 }

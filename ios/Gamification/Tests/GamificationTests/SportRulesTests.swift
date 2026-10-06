@@ -287,6 +287,118 @@ final class SportRulesTests: XCTestCase {
         XCTAssertTrue(SportRules.carbLoadedRaceDays(in: snapshot(met1, noStatus2), calendar: F.calendar).isEmpty)
     }
 
+    // improve-food-day-flow (C3, spec carb-load-fuel): the plan's race days
+    // and carb-load days. The race id is invented.
+
+    private typealias Plan = TrainingPlanSignals
+
+    /// A plan with one race on 2026-09-20 and the given carb-load days.
+    private func plan(raceDay: String, loadDays: [String], today: String, raceId: String = "example-50k") -> Plan {
+        Plan(
+            today: today,
+            days: loadDays.map { Plan.Day(day: $0, isCarbLoad: true, carbLoadRaceId: raceId) },
+            races: [Plan.Race(id: raceId, day: raceDay)]
+        )
+    }
+
+    func testARaceOfThePlanIsARaceDayWithoutTheTag() {
+        let today = F.key(2026, 9, 24)
+        let key = F.key(2026, 9, 20)
+        let entry = F.entry("Gel", at: F.at(2026, 9, 20, 9))
+        let planned = plan(raceDay: key, loadDays: [], today: today)
+
+        XCTAssertTrue(SportRules.isRaceDay(F.day(key, entries: [entry]), today: today, plan: planned), "the plan's race, no tag")
+        XCTAssertFalse(SportRules.isRaceDay(F.day(key), today: today, plan: planned), "still needs an entry")
+        XCTAssertFalse(SportRules.isRaceDay(F.day(key, entries: [entry]), today: today, plan: nil), "food-first: only the tag counts")
+        XCTAssertFalse(SportRules.isRaceDay(F.day(F.key(2026, 9, 19), entries: [entry]), today: today, plan: planned), "another day of the plan")
+        XCTAssertTrue(SportRules.isRaceDay(F.day(key, entries: [entry], noteTags: [.race]), today: today, plan: planned), "tagged and in the plan: one race day")
+        XCTAssertEqual(SportRules.planRaceDays(planned, today: today), [key])
+    }
+
+    func testARaceOfThePlanAfterTodayEarnsNothingYet() {
+        let today = F.key(2026, 9, 18)
+        let key = F.key(2026, 9, 20)
+        let planned = plan(raceDay: key, loadDays: [F.key(2026, 9, 17), F.key(2026, 9, 18)], today: today)
+
+        XCTAssertTrue(SportRules.planRaceDays(planned, today: today).isEmpty)
+        XCTAssertTrue(SportRules.planCarbLoadDays(planned, today: today).isEmpty)
+        let met1 = F.day(F.key(2026, 9, 17), goalStatus: F.goalsMet(carbs: true))
+        let met2 = F.day(F.key(2026, 9, 18), goalStatus: F.goalsMet(carbs: true))
+        XCTAssertTrue(SportRules.carbLoadedRaceDays(in: F.snapshot([met1, met2], today: today), calendar: F.calendar, plan: planned).isEmpty)
+    }
+
+    func testCarbLoaderIsJudgedOnThePlansCarbLoadDays() {
+        let raceKey = F.key(2026, 9, 20)
+        let today = F.key(2026, 9, 21)
+        // Three carb-load days in the plan -- not the two days before.
+        let loadDays = [F.key(2026, 9, 17), F.key(2026, 9, 18), F.key(2026, 9, 19)]
+        let planned = plan(raceDay: raceKey, loadDays: loadDays, today: today)
+        let race = F.day(raceKey, entries: [F.entry("Gel", at: F.at(2026, 9, 20, 9))])
+        // No Garmin carb goal on these days: the plan's grams were the target.
+        func snapshot(_ third: SignalGoalStatus?) -> SignalsSnapshot {
+            F.snapshot([
+                F.day(loadDays[0], goalStatus: F.goalsMet(carbs: true)),
+                F.day(loadDays[1], goalStatus: F.goalsMet(carbs: true)),
+                F.day(loadDays[2], goalStatus: third),
+                race
+            ], today: today)
+        }
+
+        XCTAssertEqual(SportRules.planCarbLoadDays(planned, today: today), [raceKey: loadDays])
+        XCTAssertEqual(SportRules.carbLoadedRaceDays(in: snapshot(F.goalsMet(carbs: true)), calendar: F.calendar, plan: planned), [raceKey])
+        XCTAssertTrue(SportRules.carbLoadedRaceDays(in: snapshot(F.goalsMet(carbs: false)), calendar: F.calendar, plan: planned).isEmpty, "one day missed")
+        XCTAssertTrue(SportRules.carbLoadedRaceDays(in: snapshot(nil), calendar: F.calendar, plan: planned).isEmpty, "a day that was never judged is not met")
+    }
+
+    func testAMissedPlanCarbLoadIsNotRescuedByTheTagRule() {
+        let raceKey = F.key(2026, 9, 20)
+        let today = F.key(2026, 9, 21)
+        // The plan's one carb-load day (the 17th) was missed; the two days
+        // before the race met a Garmin carb goal, and the race day is tagged.
+        let planned = plan(raceDay: raceKey, loadDays: [F.key(2026, 9, 17)], today: today)
+        let snapshot = F.snapshot([
+            F.day(F.key(2026, 9, 17), goalStatus: F.goalsMet(carbs: false)),
+            F.day(F.key(2026, 9, 18), goals: MacroGoals(carbs: 300), goalStatus: F.goalsMet(carbs: true)),
+            F.day(F.key(2026, 9, 19), goals: MacroGoals(carbs: 300), goalStatus: F.goalsMet(carbs: true)),
+            F.day(raceKey, entries: [F.entry("Gel", at: F.at(2026, 9, 20, 9))], noteTags: [.race])
+        ], today: today)
+
+        XCTAssertTrue(SportRules.carbLoadedRaceDays(in: snapshot, calendar: F.calendar, plan: planned).isEmpty, "judged by the plan only")
+        XCTAssertEqual(SportRules.carbLoadedRaceDays(in: snapshot, calendar: F.calendar), [raceKey], "without a plan the tag rule is as it was")
+    }
+
+    func testAPlanRaceWithoutCarbLoadDaysFallsBackToTheTag() {
+        let raceKey = F.key(2026, 9, 20)
+        let today = F.key(2026, 9, 21)
+        let planned = plan(raceDay: raceKey, loadDays: [], today: today)
+        let met1 = F.day(F.key(2026, 9, 18), goals: MacroGoals(carbs: 300), goalStatus: F.goalsMet(carbs: true))
+        let met2 = F.day(F.key(2026, 9, 19), goals: MacroGoals(carbs: 300), goalStatus: F.goalsMet(carbs: true))
+        let tagged = F.day(raceKey, entries: [F.entry("Gel", at: F.at(2026, 9, 20, 9))], noteTags: [.race])
+        let untagged = F.day(raceKey, entries: [F.entry("Gel", at: F.at(2026, 9, 20, 9))])
+
+        XCTAssertEqual(SportRules.carbLoadedRaceDays(in: F.snapshot([met1, met2, tagged], today: today), calendar: F.calendar, plan: planned), [raceKey])
+        XCTAssertTrue(SportRules.carbLoadedRaceDays(in: F.snapshot([met1, met2, untagged], today: today), calendar: F.calendar, plan: planned).isEmpty,
+                      "the tag rule needs the tag")
+    }
+
+    func testCarbLoadDaysOfAnotherRaceAreNotCounted() {
+        let raceKey = F.key(2026, 9, 20)
+        let today = F.key(2026, 9, 21)
+        let planned = Plan(
+            today: today,
+            days: [
+                Plan.Day(day: F.key(2026, 9, 18), isCarbLoad: true, carbLoadRaceId: "another-race"),
+                Plan.Day(day: F.key(2026, 9, 19), isCarbLoad: true, carbLoadRaceId: "example-50k"),
+                // Not a carb-load day: its race id is dropped.
+                Plan.Day(day: F.key(2026, 9, 17), isCarbLoad: false, carbLoadRaceId: "example-50k")
+            ],
+            races: [Plan.Race(id: "example-50k", day: raceKey)]
+        )
+
+        XCTAssertEqual(SportRules.planCarbLoadDays(planned, today: today), [raceKey: [F.key(2026, 9, 19)]])
+        XCTAssertNil(planned.days[2].carbLoadRaceId)
+    }
+
     func testDayKeyArithmetic() {
         XCTAssertEqual(SportRules.dayKey("2026-03-01", offsetBy: -1, calendar: F.calendar), "2026-02-28")
         XCTAssertEqual(SportRules.dayKey("2026-12-31", offsetBy: 1, calendar: F.calendar), "2027-01-01")

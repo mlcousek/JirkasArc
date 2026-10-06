@@ -18,6 +18,13 @@
 // Entries carry the time they were LOGGED, not eaten (the app has no "ate
 // at" field) -- the windows are generous for that reason (design Risks).
 //
+// improve-food-day-flow (C3): the two race rules also read the training
+// plan when there is one (`TrainingPlanSignals`, `nil` outside the training
+// experience). A race of the plan is a race day without the tag, and "Carb
+// Loader" is judged on the plan's own carb-load days for that race. Without
+// a plan -- and for a race the plan gives no carb-load days -- the day-note
+// `race` tag works exactly as it did.
+//
 // Depends on: FoodLogCore (SignalsSnapshot, DaySignals, SignalEntry,
 // ActivitySummary, FoodTag+Sport, NutritionDate), SportActivityClass.
 // Depended on by: SportAndBodyFeature.
@@ -181,10 +188,22 @@ public enum SportRules {
         return counted.count >= 2 && day.goalStatus?.metProteinGoal == true
     }
 
-    /// Race Day Fuel: a day (up to today) tagged `race` in the day note --
-    /// the ONLY source of race days -- with at least one entry.
-    public static func isRaceDay(_ day: DaySignals, today: String) -> Bool {
-        day.day <= today && day.noteTags.contains(.race) && !day.entries.isEmpty
+    /// The dates of the plan's races up to `today` (empty without a plan).
+    public static func planRaceDays(_ plan: TrainingPlanSignals?, today: String) -> Set<String> {
+        var days = Set<String>()
+        for race in plan?.races ?? [] where !race.day.isEmpty && race.day <= today {
+            days.insert(race.day)
+        }
+        return days
+    }
+
+    /// Race Day Fuel: a day (up to today) with at least one entry that is
+    /// tagged `race` in the day note or -- improve-food-day-flow (C3), in
+    /// the training experience -- is the date of a race in the plan.
+    /// Without a plan the tag is the only source of race days, as before.
+    public static func isRaceDay(_ day: DaySignals, today: String, plan: TrainingPlanSignals? = nil) -> Bool {
+        guard day.day <= today, !day.entries.isEmpty else { return false }
+        return day.noteTags.contains(.race) || planRaceDays(plan, today: today).contains(day.day)
     }
 
     /// The carb goal is known and met. A day whose cached goals lack a carb
@@ -194,18 +213,49 @@ public enum SportRules {
         return day.goalStatus?.metCarbGoal == true
     }
 
-    /// Race days (up to today) whose two preceding days both met the carb
-    /// goal -- Carb Loader.
-    public static func carbLoadedRaceDays(in snapshot: SignalsSnapshot, calendar: Calendar) -> [String] {
-        snapshot.orderedDays.compactMap { day -> String? in
+    /// The plan's carb-load days per race day, for races up to `today`
+    /// that have any (improve-food-day-flow C3). A race without carb-load
+    /// days in the plan is not in the result: the tag rule judges it.
+    public static func planCarbLoadDays(_ plan: TrainingPlanSignals?, today: String) -> [String: [String]] {
+        guard let plan else { return [:] }
+        var result: [String: [String]] = [:]
+        for race in plan.races where !race.day.isEmpty && race.day <= today {
+            let loadDays = plan.days
+                .filter { $0.isCarbLoad && $0.carbLoadRaceId == race.id }
+                .map(\.day)
+            if !loadDays.isEmpty {
+                result[race.day, default: []].append(contentsOf: loadDays)
+            }
+        }
+        return result
+    }
+
+    /// Carb Loader: the race days (up to today) that earned it, oldest
+    /// first.
+    ///   - A race of the plan with carb-load days in the plan
+    ///     (improve-food-day-flow C3): every one of those days met its carb
+    ///     target (`goalStatus.metCarbGoal`, which the training experience
+    ///     judges against the plan's grams). Judged by the plan ONLY: a
+    ///     missed carb-load day is not rescued by the tag rule.
+    ///   - Any other day tagged `race`: its two preceding days both met the
+    ///     carb goal, as before.
+    public static func carbLoadedRaceDays(in snapshot: SignalsSnapshot, calendar: Calendar, plan: TrainingPlanSignals? = nil) -> [String] {
+        let planned = planCarbLoadDays(plan, today: snapshot.today)
+        var earned = Set<String>()
+        for (raceDay, loadDays) in planned {
+            let allMet = loadDays.allSatisfy { snapshot.days[$0]?.goalStatus?.metCarbGoal == true }
+            if allMet { earned.insert(raceDay) }
+        }
+        for day in snapshot.orderedDays where planned[day.day] == nil {
             guard day.day <= snapshot.today, day.noteTags.contains(.race),
                   let dayBefore = dayKey(day.day, offsetBy: -1, calendar: calendar),
                   let twoBefore = dayKey(day.day, offsetBy: -2, calendar: calendar),
                   let first = snapshot.days[twoBefore], let second = snapshot.days[dayBefore],
                   metCarbGoal(first), metCarbGoal(second)
-            else { return nil }
-            return day.day
+            else { continue }
+            earned.insert(day.day)
         }
+        return earned.sorted()
     }
 
     /// `key` moved by `days` calendar days (`nil` for a malformed key).

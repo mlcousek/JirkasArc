@@ -33,6 +33,12 @@
 // change. "Edit layout…" in the toolbar menu opens `LayoutEditorSheet` at
 // half height over this screen, which updates live underneath it.
 //
+// improve-food-day-flow (A3): "Log again" and "Log a meal" follow the day
+// being shown instead of today's date only -- a past day too, and a future
+// day where the day switcher reaches one (the training experience). The
+// rule is FoodLogCore's `QuickLogShelfPolicy`; a pick is logged into the
+// day on screen (`presetDate`), as it already was.
+//
 // add-training-today-and-plan (design D7): in the training experience four
 // training cards lead the screen -- the next race, the day's training with
 // its G/A/R options, the habits (polish-training-today D2: the Habits card,
@@ -230,21 +236,21 @@ struct TodayView: View {
         }
     }
 
-    /// The show-when rules the fixed stack had, unchanged: Log again and
-    /// Log a meal only on today's date with something in them, fasting only
-    /// while enabled. Everything else always shows (the banner slots and
-    /// Weight & Water decide their own content, as before).
+    /// The show-when rules the fixed stack had: Log again and Log a meal
+    /// with something in them on the day being shown (improve-food-day-flow
+    /// A3 -- they used to show on today's date only), fasting only while
+    /// enabled. Everything else always shows (the banner slots and Weight &
+    /// Water decide their own content, as before).
     private func availability(_ card: TodayCardID) -> CardAvailability {
-        let dayLog = environment.dayLog
         switch card {
         case .logAgain:
-            return dayLog.isToday && !quickPickItems.isEmpty
+            return showsQuickLogShelf(hasItems: !quickPickItems.isEmpty)
                 ? .available
-                : .empty(String(localized: "Shows on today's date when there are foods to log again", comment: "Layout editor: when the Log again shelf appears on Today."))
+                : .empty(String(localized: "Shows when there are foods to log again", comment: "improve-food-day-flow: Layout editor: when the Log again shelf appears on Today."))
         case .logMeal:
-            return dayLog.isToday && !mealPresets.isEmpty
+            return showsQuickLogShelf(hasItems: !mealPresets.isEmpty)
                 ? .available
-                : .empty(String(localized: "Shows on today's date when you have saved meals", comment: "Layout editor: when the Log a meal shelf appears on Today."))
+                : .empty(String(localized: "Shows when you have saved meals", comment: "improve-food-day-flow: Layout editor: when the Log a meal shelf appears on Today."))
         case .supplements:
             // add-supplements D4: on, with at least one product.
             let base = TodayCardID.baseAvailability(card, preferences: environment.preferences)
@@ -272,6 +278,17 @@ struct TodayView: View {
         default:
             return TodayCardID.baseAvailability(card, preferences: environment.preferences)
         }
+    }
+
+    /// improve-food-day-flow (A3): a quick-log shelf shows on the day on
+    /// screen -- past, today, or a future day in the training experience,
+    /// the only one whose day switcher goes past today.
+    private func showsQuickLogShelf(hasItems: Bool) -> Bool {
+        QuickLogShelfPolicy.showsShelf(
+            on: QuickLogShelfPolicy.shownDay(selected: environment.dayLog.selectedDate),
+            hasItems: hasItems,
+            allowsFutureDays: environment.experience == .training
+        )
     }
 
     /// The plan day the training cards show: the day switcher's day, or

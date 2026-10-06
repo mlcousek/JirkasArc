@@ -12043,6 +12043,30 @@
         }
       }
     },
+    "Shows when there are foods to log again": {
+      "comment": "improve-food-day-flow: Layout editor: when the Log again shelf appears on Today.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazí se, když je co zapsat znovu"
+          }
+        }
+      }
+    },
+    "Shows when you have saved meals": {
+      "comment": "improve-food-day-flow: Layout editor: when the Log a meal shelf appears on Today.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazí se, když máš uložená jídla"
+          }
+        }
+      }
+    },
     "Shows on today's date when there are foods to log again": {
       "comment": "Layout editor: when the Log again shelf appears on Today.",
       "extractionState": "manual",

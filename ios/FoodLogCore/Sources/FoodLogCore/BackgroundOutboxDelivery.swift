@@ -26,6 +26,13 @@
 // water `.sent` entries are kept as history by design and are not
 // reconciled this way, so they never count.
 //
+// improve-food-day-flow (E2): queued DELETES of synced food entries are a
+// fourth kind of work. A waiting one keeps a refresh scheduled; one that
+// gave up waits for the user and one Garmin confirmed is done. The pass
+// sends them after the creates were sent and re-read (design D2): a delete
+// sent before an accepted create was confirmed could make that create look
+// missing, and a missing create is sent again.
+//
 // Depended on by: GarminFood/App/BackgroundRefresh.swift,
 // GarminFood/App/AppEnvironment.swift (didEnterBackground).
 // Tests: BackgroundOutboxDeliveryTests.
@@ -40,22 +47,28 @@ public enum OutboxBacklog {
     /// accepted that is not reconciled yet (`.sent`; finding 8). `.failed`
     /// and parked entries wait for the user in the sync queue, so they
     /// don't keep a refresh scheduled.
+    /// improve-food-day-flow: `foodDeletions` -- a queued delete that is
+    /// still waiting counts; one that gave up or was confirmed doesn't.
     public static func needsDelivery(
         food: [OutboxEntry],
         weight: [WeightOutboxEntry],
-        hydration: [HydrationOutboxEntry]
+        hydration: [HydrationOutboxEntry],
+        foodDeletions: [FoodLogDeletion] = []
     ) -> Bool {
         food.contains { $0.state == .pending || $0.state == .sent || ($0.state == .createdAwaitingDelete && !$0.isParkedReplace) }
             || weight.contains { $0.state == .pending }
             || hydration.contains { $0.state == .pending }
+            || foodDeletions.contains { $0.isWaiting }
     }
 
-    /// Reads the three outboxes now (never a cached count).
+    /// Reads the three outboxes now (never a cached count); the food
+    /// outbox's queued deletes with them.
     public static func needsDelivery(outbox: Outbox, weightOutbox: WeightOutbox, hydrationOutbox: HydrationOutbox) async -> Bool {
         needsDelivery(
             food: await outbox.allEntries(),
             weight: await weightOutbox.allEntries(),
-            hydration: await hydrationOutbox.allEntries()
+            hydration: await hydrationOutbox.allEntries(),
+            foodDeletions: await outbox.allDeletions()
         )
     }
 }
@@ -85,10 +98,12 @@ public enum BackgroundOutboxDelivery {
         if !sent.isEmpty {
             _ = await reconciliation.reconcile(delivered: sent, using: client)
         }
+        // improve-food-day-flow (E2): after the creates and their re-read.
+        let deletions = await outbox.drainDeletions(using: client)
         let weight = await weightOutbox.drain(using: client)
         let hydration = await hydrationOutbox.drain(using: client)
 
-        let authOutcome = [food.authOutcome, weight.authOutcome, hydration.authOutcome]
+        let authOutcome = [food.authOutcome, deletions.authOutcome, weight.authOutcome, hydration.authOutcome]
             .first { $0 != DrainAuthOutcome.none } ?? DrainAuthOutcome.none
         let waiting = await OutboxBacklog.needsDelivery(outbox: outbox, weightOutbox: weightOutbox, hydrationOutbox: hydrationOutbox)
         return Outcome(authOutcome: authOutcome, needsAnotherRefresh: waiting)

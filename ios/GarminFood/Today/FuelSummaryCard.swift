@@ -9,6 +9,11 @@
 // under the band late in the evening gets one gentle, secondary note
 // (FuelDayEvaluator's rule).
 //
+// improve-food-day-flow (C3): a carb-load day's title names its race
+// ("Carb-load day for <race>") when the plan does, and a day with a single
+// carbohydrate target says "Below target" or "Target reached" instead of
+// the range words.
+//
 // Every number and judgement comes from FoodLogCore's `FuelDaySummary`;
 // this view only lays it out. Without a band (a rest day, no weight known,
 // food-first) TodayView keeps `DaySummaryCard`, whose ring then only
@@ -29,7 +34,7 @@ struct FuelSummaryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            Text(summary.isCarbLoad ? String(localized: "Carb-load day", comment: "Today summary title on a carb-load day of the training plan.") : String(localized: "Fuel for today's training", comment: "Today summary title in the training experience: carbs and protein for the plan day."))
+            Text(titleText)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
@@ -57,6 +62,18 @@ struct FuelSummaryCard: View {
         .card()
     }
 
+    // MARK: Title
+
+    private var titleText: String {
+        guard summary.isCarbLoad else {
+            return String(localized: "Fuel for today's training", comment: "Today summary title in the training experience: carbs and protein for the plan day.")
+        }
+        if let raceName = summary.raceName {
+            return String(localized: "Carb-load day for \(raceName)", comment: "improve-food-day-flow: Today summary title on a carb-load day of the training plan; %@ is the race's name.")
+        }
+        return String(localized: "Carb-load day", comment: "Today summary title on a carb-load day of the training plan.")
+    }
+
     // MARK: Carbs
 
     private var carbs: some View {
@@ -72,7 +89,7 @@ struct FuelSummaryCard: View {
                 Spacer(minLength: Theme.Spacing.xs)
                 Text(statusText)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(summary.carbStatus == .inBand ? Theme.success : Color.secondary)
+                    .foregroundStyle(isOnTarget ? Theme.success : Color.secondary)
             }
             ProgressView(value: summary.carbFraction)
                 .tint(Theme.carbs)
@@ -81,20 +98,43 @@ struct FuelSummaryCard: View {
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(String(localized: "Carbs: \(summary.carbsG.wholeNumberText) grams, range \(summary.carbBand.lowerBound.wholeNumberText) to \(summary.carbBand.upperBound.wholeNumberText) grams", comment: "VoiceOver for the training day's carbs: eaten, then the plan's range."))
+        .accessibilityLabel(carbsAccessibilityLabel)
         .accessibilityValue(statusText)
+    }
+
+    private var carbsAccessibilityLabel: String {
+        if summary.hasSingleTarget {
+            return String(localized: "Carbs: \(summary.carbsG.wholeNumberText) grams, target \(summary.carbBand.lowerBound.wholeNumberText) grams", comment: "improve-food-day-flow: VoiceOver for a day with one carbohydrate target: eaten, then the target.")
+        }
+        return String(localized: "Carbs: \(summary.carbsG.wholeNumberText) grams, range \(summary.carbBand.lowerBound.wholeNumberText) to \(summary.carbBand.upperBound.wholeNumberText) grams", comment: "VoiceOver for the training day's carbs: eaten, then the plan's range.")
     }
 
     private var rangeText: String {
         let low = summary.carbBand.lowerBound.wholeNumberText
         let high = summary.carbBand.upperBound.wholeNumberText
-        if low == high {
+        if summary.hasSingleTarget || low == high {
             return String(localized: "Target \(low) g", comment: "Carb-load day: the single carbohydrate target in grams.")
         }
         return String(localized: "Range \(low)–\(high) g", comment: "The training day's carbohydrate range in grams (from the plan's g/kg band).")
     }
 
+    /// Inside the range, or at (or above) a single target.
+    private var isOnTarget: Bool {
+        if let targetStatus = summary.targetStatus {
+            return targetStatus == .reached
+        }
+        return summary.carbStatus == .inBand
+    }
+
     private var statusText: String {
+        // improve-food-day-flow (C3): one target is reached or not; more
+        // than it is never "above".
+        if let targetStatus = summary.targetStatus {
+            switch targetStatus {
+            case .below: return String(localized: "Below target", comment: "improve-food-day-flow: carbs are under the day's single carbohydrate target (never shown as a warning).")
+            case .reached: return String(localized: "Target reached", comment: "improve-food-day-flow: carbs are at or above the day's single carbohydrate target.")
+            }
+        }
         switch summary.carbStatus {
         case .below: return String(localized: "Below range", comment: "Carbs are under the training day's range (never shown as a warning).")
         case .inBand: return String(localized: "In range", comment: "Carbs are inside the training day's range.")

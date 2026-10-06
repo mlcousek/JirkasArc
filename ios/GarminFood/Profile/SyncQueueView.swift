@@ -20,9 +20,15 @@
 // but whose old entry isn't removed yet (`.createdAwaitingDelete`) is listed
 // here too, so the temporary duplicate is never silent -- and, once parked
 // (the delete gave up), offered a retry that only re-attempts the delete.
+//
+// improve-food-day-flow (E2): a queued delete of a synced food entry is
+// listed too, in its own section -- waiting, or "Couldn't delete" with the
+// last error once it gave up -- with "Retry" (given up only) and "Keep
+// entry" (the delete is dropped and the entry stays in Garmin).
 
 import SwiftUI
 import GarminKit
+import FoodLogCore
 
 @MainActor
 struct SyncQueueView: View {
@@ -35,9 +41,37 @@ struct SyncQueueView: View {
         let entries = environment.undeliveredEntries.sorted { $0.createdAt > $1.createdAt }
         let weightEntries = environment.undeliveredWeightEntries
         let hydrationEntries = environment.undeliveredHydrationEntries
-        let isEmpty = entries.isEmpty && weightEntries.isEmpty && hydrationEntries.isEmpty
+        let foodDeletions = environment.undeliveredFoodDeletions.sorted { $0.createdAt > $1.createdAt }
+        let isEmpty = entries.isEmpty && weightEntries.isEmpty && hydrationEntries.isEmpty && foodDeletions.isEmpty
 
         List {
+            if !foodDeletions.isEmpty {
+                Section("Food to delete") {
+                    ForEach(foodDeletions) { deletion in
+                        FoodDeletionQueueRow(
+                            deletion: deletion,
+                            foodName: MealDashboard.foodName(logId: deletion.logId, in: environment.dayLog.cachedFoodLogs[deletion.date])
+                        ) {
+                            Task {
+                                do {
+                                    try await environment.retryFoodDeletion(id: deletion.id)
+                                } catch {
+                                    actionError = String(localized: "Couldn't retry this entry: \(error.localizedDescription)")
+                                }
+                            }
+                        } onKeep: {
+                            Task {
+                                do {
+                                    try await environment.keepEntry(deletionId: deletion.id)
+                                } catch {
+                                    actionError = error.localizedDescription
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if !weightEntries.isEmpty || !hydrationEntries.isEmpty {
                 Section("Weight & water") {
                     ForEach(weightEntries) { entry in
@@ -239,6 +273,67 @@ private struct QueueEntryRow: View {
         }
         .font(.caption)
         .foregroundStyle(entry.needsManualRetry ? Theme.warning : .secondary)
+    }
+}
+
+/// improve-food-day-flow (E2): one queued delete of a synced food entry.
+/// "Keep entry" drops it (the entry stays in Garmin); "Retry" once it gave
+/// up.
+private struct FoodDeletionQueueRow: View {
+    let deletion: FoodLogDeletion
+    /// The entry's name when its day is loaded, else a generic title.
+    let foodName: String?
+    let onRetry: () -> Void
+    let onKeep: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            HStack {
+                Label(foodName ?? String(localized: "Food entry", comment: "Sync queue: a queued delete whose food name isn't loaded."), systemImage: "trash")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(deletion.date)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: Theme.Spacing.xs) {
+                if deletion.needsManualRetry {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text("Couldn't delete")
+                } else {
+                    Image(systemName: "clock")
+                    Text("Deleting…")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(deletion.needsManualRetry ? Theme.warning : .secondary)
+            if let error = deletion.lastError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .lineLimit(3)
+            }
+        }
+        .padding(.vertical, Theme.Spacing.xs)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(action: onKeep) {
+                Label("Keep entry", systemImage: "arrow.uturn.backward")
+            }
+            if deletion.needsManualRetry {
+                Button(action: onRetry) {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+                .tint(Theme.accent)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityActions {
+            if deletion.needsManualRetry {
+                Button("Retry", action: onRetry)
+            }
+            Button("Keep entry", action: onKeep)
+        }
     }
 }
 

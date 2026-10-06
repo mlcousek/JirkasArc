@@ -33,6 +33,12 @@
 // change. "Edit layout…" in the toolbar menu opens `LayoutEditorSheet` at
 // half height over this screen, which updates live underneath it.
 //
+// improve-food-day-flow (A3): "Log again" and "Log a meal" follow the day
+// being shown instead of today's date only -- a past day too, and a future
+// day where the day switcher reaches one (the training experience). The
+// rule is FoodLogCore's `QuickLogShelfPolicy`; a pick is logged into the
+// day on screen (`presetDate`), as it already was.
+//
 // add-training-today-and-plan (design D7): in the training experience four
 // training cards lead the screen -- the next race, the day's training with
 // its G/A/R options, the habits (polish-training-today D2: the Habits card,
@@ -230,21 +236,21 @@ struct TodayView: View {
         }
     }
 
-    /// The show-when rules the fixed stack had, unchanged: Log again and
-    /// Log a meal only on today's date with something in them, fasting only
-    /// while enabled. Everything else always shows (the banner slots and
-    /// Weight & Water decide their own content, as before).
+    /// The show-when rules the fixed stack had: Log again and Log a meal
+    /// with something in them on the day being shown (improve-food-day-flow
+    /// A3 -- they used to show on today's date only), fasting only while
+    /// enabled. Everything else always shows (the banner slots and Weight &
+    /// Water decide their own content, as before).
     private func availability(_ card: TodayCardID) -> CardAvailability {
-        let dayLog = environment.dayLog
         switch card {
         case .logAgain:
-            return dayLog.isToday && !quickPickItems.isEmpty
+            return showsQuickLogShelf(hasItems: !quickPickItems.isEmpty)
                 ? .available
-                : .empty(String(localized: "Shows on today's date when there are foods to log again", comment: "Layout editor: when the Log again shelf appears on Today."))
+                : .empty(String(localized: "Shows when there are foods to log again", comment: "improve-food-day-flow: Layout editor: when the Log again shelf appears on Today."))
         case .logMeal:
-            return dayLog.isToday && !mealPresets.isEmpty
+            return showsQuickLogShelf(hasItems: !mealPresets.isEmpty)
                 ? .available
-                : .empty(String(localized: "Shows on today's date when you have saved meals", comment: "Layout editor: when the Log a meal shelf appears on Today."))
+                : .empty(String(localized: "Shows when you have saved meals", comment: "improve-food-day-flow: Layout editor: when the Log a meal shelf appears on Today."))
         case .supplements:
             // add-supplements D4: on, with at least one product.
             let base = TodayCardID.baseAvailability(card, preferences: environment.preferences)
@@ -272,6 +278,17 @@ struct TodayView: View {
         default:
             return TodayCardID.baseAvailability(card, preferences: environment.preferences)
         }
+    }
+
+    /// improve-food-day-flow (A3): a quick-log shelf shows on the day on
+    /// screen -- past, today, or a future day in the training experience,
+    /// the only one whose day switcher goes past today.
+    private func showsQuickLogShelf(hasItems: Bool) -> Bool {
+        QuickLogShelfPolicy.showsShelf(
+            on: QuickLogShelfPolicy.shownDay(selected: environment.dayLog.selectedDate),
+            hasItems: hasItems,
+            allowsFutureDays: environment.experience == .training
+        )
     }
 
     /// The plan day the training cards show: the day switcher's day, or
@@ -377,6 +394,16 @@ struct TodayView: View {
                         isCollapsed: variant == MealsVariant.collapsed.rawValue
                     )
                 }
+                // improve-food-day-flow (A2): "That's everything today",
+                // under the last meal card; draws nothing on a day that
+                // can't be closed.
+                FoodDayCloseCard(
+                    state: environment.foodDayClose.state(day: dayLog.dateString, entryCount: environment.foodDayEntryCount),
+                    isToday: dayLog.isToday,
+                    streak: environment.foodDayClose.streak(),
+                    onClose: { Task { await closeFoodDay() } },
+                    onUndo: { Task { await reopenFoodDay() } }
+                )
             }
 
         case .supplements:
@@ -530,6 +557,24 @@ struct TodayView: View {
 
     private func loadMealPresets() async {
         mealPresets = await environment.mealPresetStore.all()
+    }
+
+    /// improve-food-day-flow (A2): "That's everything today". A close that
+    /// couldn't be saved is said with the screen's one generic alert (the
+    /// one the water card uses), rather than with a third alert on `body`.
+    private func closeFoodDay() async {
+        let saved = await environment.closeFoodDay()
+        if !saved {
+            hydrationActionError = String(localized: "Couldn't save that on the phone. Try again.")
+        }
+    }
+
+    /// improve-food-day-flow (A2): Undo of the close.
+    private func reopenFoodDay() async {
+        let saved = await environment.reopenFoodDay()
+        if !saved {
+            hydrationActionError = String(localized: "Couldn't save that on the phone. Try again.")
+        }
     }
 
     /// Mirrors `HydrationView.quickAdd(_:)` exactly (same coordinator call,
@@ -1021,6 +1066,8 @@ struct MealEntryRow: View {
             statusIcon
             if let calories = entry.calories {
                 MacroBadge.calories(calories)
+                    // Not counted while its delete is waiting.
+                    .opacity(entry.isBeingDeleted ? 0.45 : 1)
             }
         }
         .accessibilityElement(children: .combine)
@@ -1034,19 +1081,35 @@ struct MealEntryRow: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        switch entry.status {
-        case .synced:
-            EmptyView()
-        case .syncing:
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("Syncing")
-        case .failed:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(Theme.warning)
-                .accessibilityLabel("Not delivered")
+        if let deletion = entry.deletion {
+            // improve-food-day-flow (E2): a queued delete of this entry. In
+            // words, not only an icon: the row is still listed, and the
+            // owner should see why its calories no longer count (or do).
+            switch deletion {
+            case .deleting:
+                Label("Deleting…", systemImage: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .failed:
+                Label("Couldn't delete", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+            }
+        } else {
+            switch entry.status {
+            case .synced:
+                EmptyView()
+            case .syncing:
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Syncing")
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+                    .accessibilityLabel("Not delivered")
+            }
         }
     }
 }

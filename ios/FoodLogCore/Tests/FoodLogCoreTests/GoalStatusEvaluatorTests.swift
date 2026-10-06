@@ -57,6 +57,71 @@ final class GoalStatusEvaluatorTests: XCTestCase {
         #"{ }"#,
     ]
 
+    // MARK: - Entries being deleted (improve-food-day-flow, review 2026-10-06)
+
+    /// A day at 2000 of 2000 kcal with 130 g protein of 120 -- on the
+    /// strength of a 400 kcal / 30 g protein entry ("log-b").
+    private func dayWithTwoEntries() throws -> DailyFoodLog {
+        try log("""
+        { "dailyNutritionGoals": { "calories": 2000, "protein": 120, "carbs": 200, "fat": 60 },
+          "dailyNutritionContent": { "calories": 2000, "protein": 130, "carbs": 210, "fat": 62 },
+          "mealDetails": [ { "meal": { "mealName": "LUNCH" }, "loggedFoods": [
+            { "logId": "log-a", "servingQty": 1,
+              "foodMetaData": { "foodId": "f1", "foodName": "Rice" },
+              "nutritionContent": { "servingId": "s1", "calories": 1600, "protein": 100, "carbs": 170, "fat": 50 } },
+            { "logId": "log-b", "servingQty": 2,
+              "foodMetaData": { "foodId": "f2", "foodName": "Bread" },
+              "nutritionContent": { "servingId": "s2", "calories": 200, "protein": 15, "carbs": 20, "fat": 6 } }
+          ] } ] }
+        """)
+    }
+
+    func testAnEntryBeingDeletedDoesNotMakeTheDayMet() throws {
+        let day = try dayWithTwoEntries()
+
+        let raw = try XCTUnwrap(GoalStatusEvaluator.evaluate(day, fuel: nil))
+        XCTAssertTrue(raw.metCalorieGoal, "Garmin's own totals still contain the entry")
+        XCTAssertTrue(raw.metProteinGoal)
+
+        // 2 x (200 kcal, 15 g protein, 20 g carbs, 6 g fat) come off.
+        let judged = try XCTUnwrap(GoalStatusEvaluator.evaluate(day, fuel: nil, excludingLogIds: ["log-b"]))
+        XCTAssertFalse(judged.metCalorieGoal, "1600 of 2000 kcal is not on target")
+        XCTAssertFalse(judged.metProteinGoal, "100 g of 120 g")
+        XCTAssertFalse(judged.metCarbGoal, "170 g of 200 g")
+        XCTAssertFalse(judged.metFatGoal, "50 g of 60 g")
+    }
+
+    func testNothingToLeaveOutIsTheOrdinaryJudgement() throws {
+        let day = try dayWithTwoEntries()
+        let ordinary = GoalStatusEvaluator.evaluate(day, fuel: nil)
+
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, fuel: nil, excludingLogIds: []), ordinary)
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, fuel: nil, excludingLogIds: ["not-in-this-day"]), ordinary,
+                       "a confirmed delete this read already reflects changes nothing")
+        // No goals, no content: still no judgement.
+        XCTAssertNil(GoalStatusEvaluator.evaluate(try log("{ }"), fuel: nil, excludingLogIds: ["log-b"]))
+    }
+
+    func testTheCarbBandIsJudgedWithoutTheEntryBeingDeletedToo() throws {
+        let day = try dayWithTwoEntries()
+        // The plan asks for 190-260 g of carbs: 210 g with the entry, 170 g without.
+        let band = FuelDayTarget(carbsMinG: 190, carbsMaxG: 260, proteinG: 100, hasTrainingSessions: true)
+
+        let raw = try XCTUnwrap(GoalStatusEvaluator.evaluate(day, fuel: band))
+        XCTAssertTrue(raw.metCarbGoal)
+
+        let judged = try XCTUnwrap(GoalStatusEvaluator.evaluate(day, fuel: band, excludingLogIds: ["log-b"]))
+        XCTAssertFalse(judged.metCarbGoal, "170 g is under the band")
+        XCTAssertFalse(judged.metCalorieGoal, "with a band, calories follow the carbs")
+        XCTAssertTrue(judged.metProteinGoal, "100 g is about the plan's 100 g")
+    }
+
+    func testATotalNeverGoesBelowZero() {
+        XCTAssertEqual(GoalStatusEvaluator.remaining(100, minus: 250), 0)
+        XCTAssertEqual(GoalStatusEvaluator.remaining(100, minus: 40), 60)
+        XCTAssertNil(GoalStatusEvaluator.remaining(nil, minus: 40), "an unknown total stays unknown")
+    }
+
     func testEveryGarminFixtureIsJudgedExactlyAsBefore() throws {
         for json in garminFixtures {
             let decoded = try log(json)

@@ -329,6 +329,146 @@ final class MealDashboardTests: XCTestCase {
         XCTAssertTrue(dashboard.sections.allSatisfy { $0.entries.isEmpty })
     }
 
+    // MARK: Queued deletes (improve-food-day-flow E2, spec food-log-delete-sync)
+
+    /// Lunch with a 300 kcal and a 200 kcal entry; Garmin's own totals say 500.
+    private func twoEntryDay() throws -> DailyFoodLog {
+        let logged = [
+            foodJSON(logId: "log-keep", foodId: "f1", servingId: "s1", name: "Rice", qty: 1, calories: 300),
+            foodJSON(logId: "log-gone", foodId: "f2", servingId: "s2", name: "Bread", qty: 1, calories: 200),
+        ].joined(separator: ", ")
+        let totals = "{ \"calories\": 500, \"carbs\": 20, \"protein\": 4, \"fat\": 2 }"
+        let lunch = mealJSON("LUNCH", content: totals, foods: logged)
+        return try dayLog(meals: [lunch], extra: "\"dailyNutritionContent\": " + totals)
+    }
+
+    private func deletion(_ state: FoodLogDeletionState, date: String? = nil, lastError: String? = nil) -> FoodLogDeletion {
+        FoodLogDeletion(date: date ?? day, logId: "log-gone", state: state, lastError: lastError)
+    }
+
+    func testAnEntryWithAWaitingDeleteStaysListedButIsLeftOutOfTheTotals() throws {
+        let waiting = deletion(.pending)
+
+        let dashboard = MealDashboard.build(date: day, log: try twoEntryDay(), outboxEntries: [], foods: [:], deletions: [waiting])
+        let lunch = try XCTUnwrap(dashboard.section(for: .lunch))
+
+        XCTAssertEqual(lunch.entries.map(\.name), ["Rice", "Bread"], "the row is still there, marked")
+        let bread = lunch.entries[1]
+        XCTAssertEqual(bread.deletion, .deleting(deletionId: waiting.id))
+        XCTAssertTrue(bread.isBeingDeleted)
+        XCTAssertEqual(bread.deletionId, waiting.id)
+        XCTAssertEqual(bread.status, .synced(logId: "log-gone"), "still in Garmin until the delete is confirmed")
+        XCTAssertFalse(bread.canRelog, "no edit, move or duplicate while its delete is queued")
+        XCTAssertNil(lunch.entries[0].deletion)
+        XCTAssertTrue(lunch.entries[0].canRelog)
+
+        XCTAssertEqual(lunch.totals.calories.consumed, 300)
+        XCTAssertEqual(lunch.totals.carbs.consumed, 10)
+        XCTAssertEqual(dashboard.totals.calories.consumed, 300)
+        XCTAssertEqual(dashboard.totals.protein.consumed, 2)
+        XCTAssertTrue(lunch.hasPendingEntries, "the meal still says it is syncing")
+    }
+
+    func testAConfirmedDeleteHidesTheEntryBeforeTheDayIsReadAgain() throws {
+        // The copy of the day is from before Garmin's answer: it still lists the entry.
+        let dashboard = MealDashboard.build(date: day, log: try twoEntryDay(), outboxEntries: [], foods: [:], deletions: [deletion(.sent)])
+        let lunch = try XCTUnwrap(dashboard.section(for: .lunch))
+
+        XCTAssertEqual(lunch.entries.map(\.name), ["Rice"])
+        XCTAssertEqual(lunch.totals.calories.consumed, 300)
+        XCTAssertEqual(dashboard.totals.calories.consumed, 300)
+        XCTAssertFalse(lunch.hasPendingEntries)
+    }
+
+    func testADeleteThatGaveUpMarksTheEntryAndCountsItAgain() throws {
+        let gaveUp = deletion(.failed, lastError: "HTTP 500")
+
+        let dashboard = MealDashboard.build(date: day, log: try twoEntryDay(), outboxEntries: [], foods: [:], deletions: [gaveUp])
+        let lunch = try XCTUnwrap(dashboard.section(for: .lunch))
+        let bread = try XCTUnwrap(lunch.entries.last)
+
+        XCTAssertEqual(bread.deletion, .failed(deletionId: gaveUp.id, reason: "HTTP 500"))
+        XCTAssertFalse(bread.isBeingDeleted)
+        XCTAssertEqual(bread.deletionId, gaveUp.id)
+        XCTAssertFalse(bread.canRelog, "Retry or Keep entry first")
+        XCTAssertEqual(lunch.totals.calories.consumed, 500, "the entry really is still in Garmin")
+        XCTAssertEqual(dashboard.totals.calories.consumed, 500)
+        XCTAssertFalse(lunch.hasPendingEntries)
+    }
+
+    func testADeleteOfAnotherDayOrWithoutAMatchingEntryChangesNothing() throws {
+        let otherDay = deletion(.pending, date: "2026-09-15")
+        let unknown = FoodLogDeletion(date: day, logId: "log-not-in-this-day")
+
+        let dashboard = MealDashboard.build(date: day, log: try twoEntryDay(), outboxEntries: [], foods: [:], deletions: [otherDay, unknown])
+        let lunch = try XCTUnwrap(dashboard.section(for: .lunch))
+
+        XCTAssertEqual(lunch.entries.count, 2)
+        XCTAssertTrue(lunch.entries.allSatisfy { $0.deletion == nil })
+        XCTAssertEqual(dashboard.totals.calories.consumed, 500)
+    }
+
+    /// Review finding (2026-10-06): through the real queue. Garmin answers
+    /// the delete as done, but the day keeps listing the entry -- a few
+    /// minutes later the row is back and counted again, not hidden.
+    func testADeleteGarminAnsweredButDidNotApplyComesBackAndCountsAgain() async throws {
+        let outbox = Outbox(processName: "dashboard-delete-\(UUID().uuidString)")
+        let answeredAt = Date(timeIntervalSince1970: 1_790_000_000)
+        let log = try twoEntryDay()
+        try await outbox.queueDeletion(logId: "log-gone", date: day, now: answeredAt)
+        _ = await outbox.drainDeletions(using: AcceptingGarmin(), now: answeredAt)
+
+        // A read half a minute after Garmin's answer may simply be stale.
+        await outbox.pruneConfirmedDeletions(date: day, remainingLogIds: MealDashboard.logIds(in: log), now: answeredAt.addingTimeInterval(30))
+        let hidden = await outbox.allDeletions()
+        let soon = MealDashboard.build(date: day, log: log, outboxEntries: [], foods: [:], deletions: hidden)
+        XCTAssertEqual(soon.section(for: .lunch)?.entries.map(\.name), ["Rice"])
+        XCTAssertEqual(soon.totals.calories.consumed, 300)
+
+        // Still listed after the grace: it was never deleted.
+        let late = answeredAt.addingTimeInterval(Outbox.deletionConfirmationGrace + 1)
+        await outbox.pruneConfirmedDeletions(date: day, remainingLogIds: MealDashboard.logIds(in: log), now: late)
+        let back = await outbox.allDeletions()
+        let later = MealDashboard.build(date: day, log: log, outboxEntries: [], foods: [:], deletions: back)
+        let lunch = try XCTUnwrap(later.section(for: .lunch))
+        let bread = try XCTUnwrap(lunch.entries.last)
+
+        XCTAssertEqual(lunch.entries.map(\.name), ["Rice", "Bread"], "the row is back")
+        XCTAssertEqual(later.totals.calories.consumed, 500, "and counted again")
+        XCTAssertEqual(lunch.totals.calories.consumed, 500)
+        guard let deletion = bread.deletion, case .failed(_, let reason) = deletion else {
+            return XCTFail("expected a delete that gave up, got \(String(describing: bread.deletion))")
+        }
+        XCTAssertEqual(reason, "Garmin answered the delete as done, but the day still lists the entry")
+    }
+
+    // Review finding (2026-10-06): what reads Garmin's raw day leaves the
+    // same entries out as the dashboard does.
+
+    func testWaitingAndConfirmedDeletesAreRemovedFromADayButNotOnesThatGaveUp() {
+        let deletions = [
+            FoodLogDeletion(date: day, logId: "waiting"),
+            FoodLogDeletion(date: day, logId: "confirmed", state: .sent),
+            FoodLogDeletion(date: day, logId: "gave-up", state: .failed),
+            FoodLogDeletion(date: "2026-09-15", logId: "another-day")
+        ]
+
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: day), ["waiting", "confirmed"])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: "2026-09-15"), ["another-day"])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: [], date: day), [])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: "2026-09-14"), [])
+    }
+
+    func testTheLogIdsAndNamesOfADayAreFoundForTheDeleteQueue() throws {
+        let log = try twoEntryDay()
+
+        XCTAssertEqual(MealDashboard.logIds(in: log), ["log-keep", "log-gone"])
+        XCTAssertEqual(MealDashboard.logIds(in: nil), [])
+        XCTAssertEqual(MealDashboard.foodName(logId: "log-gone", in: log), "Bread")
+        XCTAssertNil(MealDashboard.foodName(logId: "log-other", in: log))
+        XCTAssertNil(MealDashboard.foodName(logId: "log-gone", in: nil), "a day that isn't loaded has no names")
+    }
+
     // MARK: Windows
 
     func testWindowsComeFromTheLog() throws {
@@ -381,5 +521,17 @@ final class MealDashboardTests: XCTestCase {
             MealTypeDefaulting.defaultMealType(for: morning, calendar: calendar),
             "no windows falls back to the hour table"
         )
+    }
+}
+
+/// Garmin for the delete-queue test above: every request is answered as
+/// done. No network; synthetic.
+private struct AcceptingGarmin: FoodLogDelivering {
+    func createFoodLogEntry(_ entry: CreateFoodLogEntryRequest) async throws -> HTTPURLResponse {
+        HTTPURLResponse(url: URL(string: "https://example.invalid/")!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+    }
+
+    func deleteFoodLogEntries(logIds: [String], date: String) async throws -> HTTPURLResponse {
+        HTTPURLResponse(url: URL(string: "https://example.invalid/")!, statusCode: 204, httpVersion: nil, headerFields: nil)!
     }
 }

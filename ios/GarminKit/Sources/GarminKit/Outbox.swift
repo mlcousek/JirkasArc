@@ -474,9 +474,16 @@ public enum DrainAuthOutcome: Sendable, Equatable {
 /// result).
 public actor Outbox {
     private let store: OutboxStore
+    /// improve-food-day-flow (E2): queued deletes of entries that are in
+    /// Garmin -- their own record and file, driven by the extension in
+    /// FoodLogDeletionQueue.swift (hence not `private`, like the three
+    /// values below it reads).
+    let deletions: FoodLogDeletionStore
+    /// The delete drain's own reentrancy guard (see `isDraining`).
+    var isDrainingDeletions = false
     public let maxAttempts: Int
-    private let backoffBase: TimeInterval
-    private let backoffCap: TimeInterval
+    let backoffBase: TimeInterval
+    let backoffCap: TimeInterval
     /// Reentrancy guard (R1). An actor's own methods can still interleave
     /// across `await` suspension points -- two overlapping `drain()` calls
     /// (e.g. a foreground drain racing a `BGAppRefreshTask` drain) would
@@ -488,7 +495,7 @@ public actor Outbox {
     private var isDraining = false
     /// The signed-in account's key (finding 9, DeliverySafety.swift):
     /// stamped on each new entry and checked before each send.
-    private let accountKey: AccountScope.Provider
+    let accountKey: AccountScope.Provider
 
     /// The initializer every real caller (app, widget extension, Control)
     /// uses. `processName` becomes part of this process's own outbox file
@@ -510,6 +517,7 @@ public actor Outbox {
         accountKey: @escaping AccountScope.Provider = { nil }
     ) {
         self.store = OutboxStore(fileURL: OutboxStore.defaultFileURL(processName: processName))
+        self.deletions = FoodLogDeletionStore(fileURL: FoodLogDeletionStore.defaultFileURL(processName: processName))
         self.maxAttempts = maxAttempts
         self.backoffBase = backoffBase
         self.backoffCap = backoffCap
@@ -523,12 +531,15 @@ public actor Outbox {
     /// API surface; tests reach this initializer via `@testable import`.
     init(
         store: OutboxStore,
+        deletions: FoodLogDeletionStore? = nil,
         maxAttempts: Int = 5,
         backoffBase: TimeInterval = 0.5,
         backoffCap: TimeInterval = 8,
         accountKey: @escaping AccountScope.Provider = { nil }
     ) {
         self.store = store
+        // Without one, a throwaway file of its own (never the app's).
+        self.deletions = deletions ?? FoodLogDeletionStore.temporary()
         self.maxAttempts = maxAttempts
         self.backoffBase = backoffBase
         self.backoffCap = backoffCap
@@ -587,6 +598,9 @@ public actor Outbox {
     /// account to sign in never receives it.
     public func assignUnscopedEntries(to key: String) async throws {
         try await store.assignUnscoped(to: key)
+        // improve-food-day-flow: queued deletes cross over no more than
+        // queued entries do.
+        try await deletions.assignUnscoped(to: key)
     }
 
     /// The entries the current account may receive (finding 9).

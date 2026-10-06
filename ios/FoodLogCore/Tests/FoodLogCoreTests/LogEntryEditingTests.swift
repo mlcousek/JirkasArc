@@ -262,6 +262,27 @@ final class LogEntryEditingTests: XCTestCase {
         XCTAssertEqual(shot.calories, 10)
     }
 
+    // Review finding (2026-10-06): an entry that is being deleted is not
+    // offered for copying.
+    func testAnEntryWhoseDeleteIsQueuedIsNotOfferedForCopying() throws {
+        let log = try sourceDay()
+        let deletions = [
+            FoodLogDeletion(date: "2026-09-15", logId: "b1"),
+            // One that gave up is shown and counted again: still copyable.
+            FoodLogDeletion(date: "2026-09-15", logId: "b2", state: .failed)
+        ]
+        let removed = MealDashboard.removedLogIds(in: deletions, date: "2026-09-15")
+
+        let plan = CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: removed)
+
+        XCTAssertEqual(plan.copyable.map(\.id), ["b2"])
+        XCTAssertEqual(plan.notCopyable.map(\.id), ["b3"], "quick adds are listed as before")
+        let confirmed = MealDashboard.removedLogIds(in: [FoodLogDeletion(date: "2026-09-15", logId: "b2", state: .sent)], date: "2026-09-15")
+        XCTAssertEqual(CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: confirmed).copyable.map(\.id), ["b1"],
+                       "a delete Garmin confirmed, on a copy of the day from before")
+        XCTAssertEqual(CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: []).copyable.map(\.id), ["b1", "b2"])
+    }
+
     func testANilLogIsAnEmptyPlan() {
         XCTAssertTrue(CopyMealPlanner.plan(log: nil, mealType: .dinner).isEmpty)
     }
@@ -427,6 +448,41 @@ final class LogEntryEditingTests: XCTestCase {
                        "Delete must not merely undo the edit and bring the old amount back")
         let remaining = await h.outbox.allEntries()
         XCTAssertTrue(remaining.isEmpty, "the corrected entry will never be created")
+    }
+
+    // Review finding (2026-10-06): the original's delete is queued, not sent
+    // from the screen, so deleting a queued edit works offline.
+
+    func testDeletingAPendingEditQueuesTheOriginalsDeleteInGarminMode() async throws {
+        let h = makeHarness()
+        let edit = try await h.outbox.logFood(
+            date: "2026-09-23", mealType: .lunch, foodId: "1", servingId: "2", numberOfUnits: 2,
+            replaces: ReplacedLog(date: "2026-09-23", logId: "original-log")
+        )
+
+        // What the day loader does, with no Garmin in reach at all.
+        let outcome = try await h.coordinator.deletePending(outboxId: edit.id)
+        let original = try XCTUnwrap(outcome.originalToDelete(in: .garminConnected))
+        try await h.coordinator.deleteCommitted(logId: original.logId, date: original.date)
+
+        XCTAssertEqual(original.logId, "original-log")
+        XCTAssertEqual(original.date, "2026-09-23")
+        let queuedEntries = await h.outbox.allEntries()
+        XCTAssertTrue(queuedEntries.isEmpty, "the edit is cancelled")
+        let queuedDeletes = await h.outbox.allDeletions()
+        XCTAssertEqual(queuedDeletes.map(\.logId), ["original-log"], "and the delete of the original is saved on the phone")
+        XCTAssertEqual(queuedDeletes.map(\.date), ["2026-09-23"])
+        XCTAssertEqual(queuedDeletes.map(\.state), [.pending])
+    }
+
+    func testOnlyACancelledEditInGarminModeHasAnOriginalToDelete() {
+        let edit = LogEntryCoordinator.PendingDeletion.deleteOriginal(date: "2026-09-23", logId: "original-log")
+
+        XCTAssertNil(LogEntryCoordinator.PendingDeletion.removed.originalToDelete(in: .garminConnected), "it never reached Garmin")
+        XCTAssertNil(LogEntryCoordinator.PendingDeletion.removed.originalToDelete(in: .standalone))
+        XCTAssertNil(edit.originalToDelete(in: .standalone), "standalone sends nothing to Garmin and queues nothing for it")
+        XCTAssertEqual(edit.originalToDelete(in: .garminConnected)?.logId, "original-log")
+        XCTAssertEqual(edit.originalToDelete(in: .garminConnected)?.date, "2026-09-23")
     }
 
     func testAnEditGarminHasHalfAppliedIsNotDeletedLocally() async throws {

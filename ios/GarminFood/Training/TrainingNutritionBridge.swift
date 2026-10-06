@@ -7,6 +7,8 @@
 // is tested there:
 //   - `fuelTarget(...)`: TrainingCore's `DayFuelTargets` for a nutrition
 //     day -> FoodLogCore's `FuelDayTarget` (the Today summary, goal status);
+//     improve-food-day-flow (C3): on a carb-load day it also carries the
+//     name of the race the day loads for, looked up by id in the plan;
 //   - `fastingPausedDays(...)` / `isFastingPaused(on:)`: the plan days with
 //     `fuel.fasting == "off"`, as the local start-of-day dates fasting is
 //     judged by (FastingDayEvaluator's `pausedDays`);
@@ -40,15 +42,23 @@ extension TrainingModel {
     /// The plan day's food targets for a nutrition day (`yyyy-MM-dd`).
     func fuelTarget(forNutritionDay day: String, fallbackWeightKg: Double? = nil) -> FuelDayTarget? {
         guard let date = LocalDate(day),
-              let targets = source.snapshot?.fuelTargets(on: date, fallbackWeightKg: fallbackWeightKg)
+              let snapshot = source.snapshot,
+              let targets = snapshot.fuelTargets(on: date, fallbackWeightKg: fallbackWeightKg)
         else { return nil }
+        // A race is looked up by id, never by position; an id the plan
+        // doesn't list has no name.
+        var raceName: String?
+        if let race = snapshot.race(id: targets.carbLoadRaceId) {
+            raceName = race.name.resolvedText(language)
+        }
         return FuelDayTarget(
             carbsMinG: targets.carbsMinG,
             carbsMaxG: targets.carbsMaxG,
             proteinG: targets.proteinG,
             isCarbLoad: targets.isCarbLoad,
             hasTrainingSessions: targets.hasTrainingSessions,
-            isFastingPaused: targets.isFastingPaused
+            isFastingPaused: targets.isFastingPaused,
+            raceName: raceName
         )
     }
 

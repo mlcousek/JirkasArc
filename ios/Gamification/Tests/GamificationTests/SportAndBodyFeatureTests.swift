@@ -132,6 +132,61 @@ final class SportAndBodyFeatureTests: XCTestCase {
         XCTAssertEqual(recent.first?.duringEntries.count, 3)
     }
 
+    // MARK: - The plan's race days (improve-food-day-flow C3)
+
+    /// A context in the training experience, with the plan's facts.
+    private func trainingContext(_ snapshot: SignalsSnapshot, now: Date, plan: TrainingPlanSignals?) -> FeatureContext {
+        FeatureContext(
+            snapshot: snapshot,
+            now: now,
+            calendar: F.calendar,
+            streak: StreakEngine.Status(length: 0, hasLoggedToday: false, isAtRiskToday: false, lastLoggedDay: nil),
+            level: 1,
+            unlockedBadgeIds: [],
+            isConfirmPath: false,
+            isTrainingExperience: true,
+            trainingPlan: plan
+        )
+    }
+
+    func testAPlanRaceDayCountsAndItsCarbLoadDaysEarnCarbLoader() async {
+        let raceKey = F.key(2026, 9, 20)
+        let today = F.key(2026, 9, 21)
+        // An invented race, two carb-load days in the plan, no `race` tag anywhere.
+        let plan = TrainingPlanSignals(
+            today: today,
+            days: [
+                TrainingPlanSignals.Day(day: F.key(2026, 9, 18), isCarbLoad: true, carbLoadRaceId: "example-50k"),
+                TrainingPlanSignals.Day(day: F.key(2026, 9, 19), isCarbLoad: true, carbLoadRaceId: "example-50k")
+            ],
+            races: [TrainingPlanSignals.Race(id: "example-50k", day: raceKey)]
+        )
+        let snapshot = F.snapshot([
+            F.day(F.key(2026, 9, 18), goalStatus: F.goalsMet(carbs: true)),
+            F.day(F.key(2026, 9, 19), goalStatus: F.goalsMet(carbs: true)),
+            F.day(raceKey, entries: [F.entry("Gel", at: F.at(2026, 9, 20, 9))])
+        ], today: today)
+        let now = F.at(2026, 9, 21, 10)
+
+        let feature = SportAndBodyFeature(directory: directory)
+        let update = await feature.update(trainingContext(snapshot, now: now, plan: plan))
+
+        XCTAssertTrue(update.unlockBadgeIds.contains("sport.race-day-1"), "\(update.unlockBadgeIds)")
+        XCTAssertTrue(update.unlockBadgeIds.contains(SportBodyCatalog.carbLoaderId), "\(update.unlockBadgeIds)")
+        let counts = await feature.lifetimeCounts()
+        XCTAssertEqual(counts.raceDays, 1)
+
+        // The same days without a plan (food-first): no tag, so no race day.
+        let other = directory.appendingPathComponent("food-first", isDirectory: true)
+        try? FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+        let foodFirst = SportAndBodyFeature(directory: other)
+        let plain = await foodFirst.update(F.context(snapshot, now: now))
+        XCTAssertFalse(plain.unlockBadgeIds.contains("sport.race-day-1"))
+        XCTAssertFalse(plain.unlockBadgeIds.contains(SportBodyCatalog.carbLoaderId))
+        let plainCounts = await foodFirst.lifetimeCounts()
+        XCTAssertEqual(plainCounts.raceDays, 0)
+    }
+
     // MARK: - Activities unavailable
 
     func testActivitiesUnavailableStillUnlocksWeightAndFasting() async {

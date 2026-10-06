@@ -299,6 +299,8 @@ public enum TrainingKey: String, CaseIterable, Sendable {
     case reminderHabitsTitle = "Evening habits"
     /// Reminder body for the evening habits.
     case reminderHabitsBody = "Tick today's habits before bed."
+    /// improve-food-day-flow: reminder body for the evening habits on a day whose food log is not closed yet.
+    case reminderHabitsBodyFoodLog = "Tick today's habits and close your food log."
 
     /// Season screen: the vault has published no season.
     case seasonNoneTitle = "No season yet"

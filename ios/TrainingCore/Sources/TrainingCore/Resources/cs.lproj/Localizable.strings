@@ -410,6 +410,9 @@
 /* Reminder body for the evening habits. */
 "Tick today's habits before bed." = "Před spaním si odškrtni dnešní návyky.";
 
+/* improve-food-day-flow: reminder body for the evening habits on a day whose food log is not closed yet. */
+"Tick today's habits and close your food log." = "Odškrtni si dnešní návyky a uzavři deník jídla.";
+
 /* The vault has read the event (its projection acknowledged it). */
 "Received by the vault" = "Přijato ve vaultu";
 

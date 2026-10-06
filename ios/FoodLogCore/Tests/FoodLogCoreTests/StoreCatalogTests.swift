@@ -119,6 +119,15 @@ final class StoreCatalogTests: XCTestCase {
         XCTAssertEqual(StoreCatalog.entry(forRelativePath: "Gamification/features/boss/streak-freezes.json")?.id, "gamification.features")
         XCTAssertEqual(StoreCatalog.entry(forRelativePath: "GarminKit/weight-outbox-widget.json")?.id, "garminkit.weight-outbox")
         XCTAssertEqual(StoreCatalog.entry(forRelativePath: "GarminKit/outbox-app.json")?.id, "garminkit.outbox")
+        // improve-food-day-flow: the delete queue is its own entry, not
+        // swallowed by the outbox prefix, and never in a backup.
+        XCTAssertEqual(StoreCatalog.entry(forRelativePath: "GarminKit/food-delete-outbox-app.json")?.id, "garminkit.food-delete-outbox")
+        XCTAssertEqual(StoreCatalog.entry(id: "garminkit.food-delete-outbox")?.inBackup, false)
+        // ...and the closed days are the owner's data: backed up.
+        XCTAssertEqual(StoreCatalog.entry(forRelativePath: "FoodLogCore/food-day-closes.json")?.id, "foodlog.food-day-closes")
+        XCTAssertEqual(StoreCatalog.entry(id: "foodlog.food-day-closes")?.inBackup, true)
+        XCTAssertTrue(BackupExclusions.includesFile(relativePath: "FoodLogCore/food-day-closes.json"))
+        XCTAssertFalse(BackupExclusions.includesFile(relativePath: "GarminKit/food-delete-outbox-app.json"))
         XCTAssertNil(StoreCatalog.entry(forRelativePath: "FoodLogCore/Supplements/x.json"))
         XCTAssertEqual(StoreCatalog.entry(id: "foodlog.custom-foods")?.area, .customFoods)
     }

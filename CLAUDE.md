@@ -70,6 +70,13 @@ ios/
   GarminKit/       SPM package — OAuth1 signing, token bootstrap, GarminClient
                     (the wire layer), Outbox (durable local queue),
                     Reconciliation. No UI, no domain concepts like "meal".
+                    The food Outbox also owns the DELETE queue
+                    (improve-food-day-flow, FoodLogDeletionQueue.swift:
+                    its own record and file, `food-delete-outbox-<process>
+                    .json`): deleting a synced entry is saved on the phone
+                    first and delivered later (a 404 is "already gone"),
+                    retried and account-scoped like every queue. Creates
+                    are sent and re-read BEFORE deletes.
   FoodLogCore/      SPM package (depends on GarminKit) — the domain layer:
                     Food/Serving, CustomFood, MealDashboard (Today screen's
                     data), LogEntryCoordinator (the confirm-and-commit
@@ -83,6 +90,15 @@ ios/
                     (OfflineFoodIndex/OfflineCzechIndexSource/
                     OfflineIndexStore; built weekly by
                     tools/build-czech-food-index + food-index.yml).
+                    improve-food-day-flow: MealDashboard overlays queued
+                    deletes (`MealEntry.deletion`: "Deleting…" off the
+                    totals, "Couldn't delete" counted again);
+                    QuickLogShelfPolicy (the quick-log shelves follow the
+                    day shown); FoodDayClose.swift ("That's everything
+                    today": a per-day LOCAL store, "Edited after closing"
+                    set by the app's own changes, and a complete-days
+                    streak beside the one-entry streak); FuelDay's single
+                    carb target and race name on a carb-load day.
   Gamification/     SPM package (depends on FoodLogCore) — streaks, XP/levels,
                     daily/rotating challenges, achievements. App-only, not
                     linked into the widget extension. 150 levels

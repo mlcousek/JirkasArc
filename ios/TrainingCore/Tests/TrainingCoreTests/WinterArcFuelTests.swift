@@ -164,6 +164,76 @@ final class WinterArcFuelTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(fromKg.carbsMinG), 800, accuracy: 1e-9)
     }
 
+    // improve-food-day-flow (C3, spec carb-load-fuel "A carb-load day has a
+    // carbohydrate target in grams").
+
+    func testACarbLoadDaysTargetIsTheGramsThenTheNumberThenTheBand() throws {
+        // Grams in the plan win over the per-kilogram value.
+        let grams = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "raceId": "example-50k", "carbsGPerKg": 8, "carbsG": 560 } }
+        """)
+        let fromGrams = try XCTUnwrap(DayFuelTargets.resolve(day: grams, athleteWeightKg: 90))
+        XCTAssertEqual(fromGrams.carbsMinG, 560)
+        XCTAssertEqual(fromGrams.carbsMaxG, 560)
+        XCTAssertEqual(fromGrams.carbLoadRaceId, "example-50k")
+        XCTAssertTrue(fromGrams.isCarbLoad)
+
+        // Only grams per kilogram: times the weight.
+        let perKg = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "raceId": "example-50k", "carbsGPerKg": 8 } }
+        """)
+        let fromKg = try XCTUnwrap(DayFuelTargets.resolve(day: perKg, athleteWeightKg: 70))
+        XCTAssertEqual(try XCTUnwrap(fromKg.carbsMinG), 560, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(fromKg.carbsMaxG), 560, accuracy: 1e-9)
+
+        // A `{ min, max }` band on a carb-load day: both ends times the weight.
+        let band = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "raceId": "example-50k", "carbsGPerKg": { "min": 8, "max": 10 } } }
+        """)
+        let fromBand = try XCTUnwrap(DayFuelTargets.resolve(day: band, athleteWeightKg: 70))
+        XCTAssertEqual(try XCTUnwrap(fromBand.carbsMinG), 560, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(fromBand.carbsMaxG), 700, accuracy: 1e-9)
+        XCTAssertTrue(fromBand.isCarbLoad)
+        XCTAssertTrue(fromBand.hasCarbBand)
+        XCTAssertEqual(fromBand.carbLoadRaceId, "example-50k")
+    }
+
+    func testACarbLoadDayWithoutGramsOrWeightHasNoTarget() throws {
+        let perKg = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "raceId": "example-50k", "carbsGPerKg": 8 } }
+        """)
+        XCTAssertNil(DayFuelTargets.resolve(day: perKg, athleteWeightKg: nil), "nothing the food side could use")
+
+        let band = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "carbsGPerKg": { "min": 8, "max": 10 } },
+          "sessions": [ { "id": "s1", "sport": "run" } ] }
+        """)
+        let targets = try XCTUnwrap(DayFuelTargets.resolve(day: band, athleteWeightKg: nil))
+        XCTAssertNil(targets.carbsMinG, "a band is g/kg: without a weight there are no grams")
+        XCTAssertFalse(targets.isCarbLoad, "no target to load toward")
+        XCTAssertTrue(targets.hasTrainingSessions)
+
+        // The latest weigh-in is the fallback, as on any other day.
+        let fallback = try XCTUnwrap(DayFuelTargets.resolve(day: perKg, athleteWeightKg: nil, fallbackWeightKg: 70))
+        XCTAssertEqual(try XCTUnwrap(fallback.carbsMinG), 560, accuracy: 1e-9)
+    }
+
+    func testOnlyACarbLoadDayCarriesARaceId() throws {
+        let daily = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "daily", "raceId": "example-50k", "carbsGPerKg": { "min": 6, "max": 8 } } }
+        """)
+        let targets = try XCTUnwrap(DayFuelTargets.resolve(day: daily, athleteWeightKg: 80))
+        XCTAssertFalse(targets.isCarbLoad)
+        XCTAssertNil(targets.carbLoadRaceId)
+
+        let unnamed = try decodeDay("""
+        { "date": "2030-10-22", "fuel": { "kind": "carb-load", "carbsG": 560 } }
+        """)
+        let noRace = try XCTUnwrap(DayFuelTargets.resolve(day: unnamed, athleteWeightKg: 80))
+        XCTAssertTrue(noRace.isCarbLoad)
+        XCTAssertNil(noRace.carbLoadRaceId, "the plan names no race")
+    }
+
     func testARestDayWithoutFuelSaysNothing() throws {
         let day = try decodeDay("""
         { "date": "2030-10-22" }

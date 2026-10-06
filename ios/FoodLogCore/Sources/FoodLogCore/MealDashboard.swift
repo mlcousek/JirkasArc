@@ -16,6 +16,13 @@
 // - a meal with nothing logged returns an EMPTY `mealNutritionContent`;
 // - `meal.startTime`/`endTime` exist for breakfast, lunch and dinner, and
 //   not for snacks.
+//
+// improve-food-day-flow (E2): the day also takes the queued DELETES of
+// synced entries (GarminKit `FoodLogDeletion`). A delete that is waiting
+// keeps its row, marked `MealEntry.deletion == .deleting`, with its share
+// taken off the meal's and the day's totals; one Garmin confirmed hides the
+// row (until the day is read again without it); one that gave up marks the
+// row `.failed` and counts it again -- the entry really is still in Garmin.
 
 import Foundation
 import GarminKit
@@ -227,6 +234,17 @@ public struct MealEntry: Sendable, Equatable, Identifiable {
         case failed(outboxId: UUID, reason: String?)
     }
 
+    /// improve-food-day-flow (E2): a queued delete of this (synced) entry.
+    /// Beside `status`, not a case of it: the entry is still in Garmin.
+    public enum Deletion: Sendable, Equatable {
+        /// Waiting to be sent: the row says "Deleting…" and its share is
+        /// off the totals.
+        case deleting(deletionId: UUID)
+        /// The delete gave up: the row says "Couldn't delete", counts again
+        /// and offers "Retry" and "Keep entry".
+        case failed(deletionId: UUID, reason: String?)
+    }
+
     public let id: String
     public let foodId: String
     public let name: String
@@ -254,6 +272,9 @@ public struct MealEntry: Sendable, Equatable, Identifiable {
     /// Set while this row is a queued edit of a Garmin entry: the `logId`
     /// the edit replaces (design.md D3's "marked pending").
     public let replacesLogId: String?
+    /// improve-food-day-flow (E2): set while a delete of this entry is
+    /// queued and not confirmed; `nil` otherwise.
+    public let deletion: Deletion?
 
     public init(
         id: String,
@@ -273,7 +294,8 @@ public struct MealEntry: Sendable, Equatable, Identifiable {
         source: GarminFoodSource? = nil,
         regionCode: String? = nil,
         languageCode: String? = nil,
-        replacesLogId: String? = nil
+        replacesLogId: String? = nil,
+        deletion: Deletion? = nil
     ) {
         self.id = id
         self.foodId = foodId
@@ -293,6 +315,22 @@ public struct MealEntry: Sendable, Equatable, Identifiable {
         self.regionCode = regionCode
         self.languageCode = languageCode
         self.replacesLogId = replacesLogId
+        self.deletion = deletion
+    }
+
+    /// A delete of this entry is waiting to be sent ("Deleting…").
+    public var isBeingDeleted: Bool {
+        if case .deleting = deletion { return true }
+        return false
+    }
+
+    /// The queued delete's id, waiting or given up.
+    public var deletionId: UUID? {
+        guard let deletion else { return nil }
+        switch deletion {
+        case .deleting(let id): return id
+        case .failed(let id, _): return id
+        }
     }
 
     public var isSynced: Bool {
@@ -310,6 +348,9 @@ public struct MealEntry: Sendable, Equatable, Identifiable {
     /// a different amount or meal (add-log-entry-editing). Quick-add
     /// entries (no food or serving id) can only be deleted.
     public var canRelog: Bool {
+        // improve-food-day-flow: not while its delete is queued -- an edit
+        // would create the corrected entry and then find the old one gone.
+        guard deletion == nil else { return false }
         guard !foodId.isEmpty, let servingId, !servingId.isEmpty, mealType != nil else { return false }
         if case .synced = status { return syncedLogId != nil }
         return true
@@ -352,7 +393,7 @@ public struct MealSection: Sendable, Equatable, Identifiable {
     public var id: MealType { mealType }
 
     public var hasPendingEntries: Bool {
-        entries.contains { !$0.isSynced }
+        entries.contains { !$0.isSynced || $0.isBeingDeleted }
     }
 }
 
@@ -388,12 +429,15 @@ public enum MealDashboard {
     ///     Garmin hasn't accepted (or that were accepted but aren't in
     ///     `log` yet) are shown.
     ///   - foods: cached foods by id, to name and size queued entries.
+    ///   - deletions: every queued delete (improve-food-day-flow E2); only
+    ///     those for `date` are applied -- see this file's header.
     public static func build(
         date: String,
         log: DailyFoodLog?,
         meals: [Meal] = [],
         outboxEntries: [OutboxEntry],
-        foods: [String: Food]
+        foods: [String: Food],
+        deletions: [FoodLogDeletion] = []
     ) -> DayDashboard {
         let details = log?.mealDetails ?? []
         var detailByType: [MealType: MealDetail] = [:]
@@ -414,10 +458,24 @@ public enum MealDashboard {
         // totals) until the replace lands. Not while the replace is parked:
         // then the old entry really is still in Garmin, and hiding it would
         // make the duplicate silent.
-        let hiddenLogIds = Set(queued.compactMap { entry -> String? in
+        var hiddenLogIds = Set(queued.compactMap { entry -> String? in
             guard let replaced = entry.replaces, replaced.date == date, !entry.isParkedReplace else { return nil }
             return replaced.logId
         })
+        // improve-food-day-flow (E2): a delete Garmin confirmed hides its
+        // entry like a replaced one (the copy of the day may still list
+        // it); a waiting or given-up one marks its row instead.
+        var deletionByLogId: [String: MealEntry.Deletion] = [:]
+        for deletion in deletions where deletion.date == date {
+            switch deletion.state {
+            case .sent:
+                hiddenLogIds.insert(deletion.logId)
+            case .pending:
+                deletionByLogId[deletion.logId] = .deleting(deletionId: deletion.id)
+            case .failed:
+                deletionByLogId[deletion.logId] = .failed(deletionId: deletion.id, reason: deletion.lastError)
+            }
+        }
         var loggedById: [String: LoggedFood] = [:]
         for detail in details {
             for food in detail.loggedFoods ?? [] {
@@ -433,9 +491,12 @@ public enum MealDashboard {
             let meal = detail?.meal ?? mealByType[type]
             let logged = detail?.loggedFoods ?? []
             let visible = logged.filter { !isHidden($0, hiddenLogIds) }
-            let hidden = syncedEntries(logged.filter { isHidden($0, hiddenLogIds) }, mealType: type)
+            let synced = syncedEntries(visible, mealType: type, deletions: deletionByLogId)
+            // Off the totals: what an edit replaces or a confirmed delete
+            // removed (not shown), and what is waiting to be deleted (shown).
+            let notShown = syncedEntries(logged.filter { isHidden($0, hiddenLogIds) }, mealType: type)
+            let hidden = notShown + synced.filter { $0.isBeingDeleted }
             hiddenAll.append(contentsOf: hidden)
-            let synced = syncedEntries(visible, mealType: type)
             let pending = pendingEntries(
                 queued.filter { $0.mealType == type },
                 logged: visible,
@@ -493,8 +554,9 @@ public enum MealDashboard {
         pending: [MealEntry],
         hidden: [MealEntry] = []
     ) -> MealSection {
-        // `hidden`: Garmin entries an edit replaces (D3). Still inside
-        // Garmin's own meal total, so their share comes off it here.
+        // `hidden`: Garmin entries an edit replaces (D3), or that a queued
+        // delete removed or is removing. Still inside Garmin's own meal
+        // total, so their share comes off it here.
         let pendingCalories = sum(pending, \.calories) - sum(hidden, \.calories)
         let pendingCarbs = sum(pending, \.carbs) - sum(hidden, \.carbs)
         let pendingProtein = sum(pending, \.protein) - sum(hidden, \.protein)
@@ -575,7 +637,11 @@ public enum MealDashboard {
         return hiddenLogIds.contains(logId)
     }
 
-    static func syncedEntries(_ logged: [LoggedFood], mealType: MealType? = nil) -> [MealEntry] {
+    static func syncedEntries(
+        _ logged: [LoggedFood],
+        mealType: MealType? = nil,
+        deletions: [String: MealEntry.Deletion] = [:]
+    ) -> [MealEntry] {
         var entries: [MealEntry] = []
         for (index, food) in logged.enumerated() {
             let logId = food.logId ?? ""
@@ -600,7 +666,8 @@ public enum MealDashboard {
                 serving: content.flatMap(Serving.init(loggedContent:)),
                 source: GarminFoodSource(readBackSource: meta?.source),
                 regionCode: meta?.regionCode,
-                languageCode: meta?.languageCode
+                languageCode: meta?.languageCode,
+                deletion: logId.isEmpty ? nil : deletions[logId]
             ))
         }
         return entries
@@ -684,6 +751,69 @@ public enum MealDashboard {
             languageCode: entry.languageCode ?? origin?.foodMetaData?.languageCode,
             replacesLogId: entry.replaces?.logId
         )
+    }
+
+    // MARK: Queued deletes (improve-food-day-flow E2)
+
+    /// Every `logId` a day's log lists -- what a queued delete's confirmed
+    /// record is checked against after the day was read again.
+    public static func logIds(in log: DailyFoodLog?) -> Set<String> {
+        var ids = Set<String>()
+        for detail in log?.mealDetails ?? [] {
+            for food in detail.loggedFoods ?? [] {
+                if let logId = food.logId, !logId.isEmpty {
+                    ids.insert(logId)
+                }
+            }
+        }
+        return ids
+    }
+
+    /// The `logId`s a queued delete has taken out of `date`: one that is
+    /// waiting (`pending`) or that Garmin confirmed (`sent`). One that gave
+    /// up is NOT among them -- its entry is shown and counted again.
+    ///
+    /// For everything that reads Garmin's RAW day instead of a built
+    /// dashboard (review finding, 2026-10-06): the "Copy from…" plan and
+    /// the goal judgement must leave these entries out too, or an entry
+    /// the phone shows as "Deleting…" is still offered for copying and
+    /// still counted toward "goal met".
+    public static func removedLogIds(in deletions: [FoodLogDeletion], date: String) -> Set<String> {
+        var ids = Set<String>()
+        for deletion in deletions where deletion.date == date {
+            switch deletion.state {
+            case .pending, .sent:
+                ids.insert(deletion.logId)
+            case .failed:
+                break
+            }
+        }
+        return ids
+    }
+
+    /// The read-back entries of `log` whose `logId` is in `logIds`.
+    static func loggedFoods(in log: DailyFoodLog?, withLogIds logIds: Set<String>) -> [LoggedFood] {
+        guard !logIds.isEmpty else { return [] }
+        var foods: [LoggedFood] = []
+        for detail in log?.mealDetails ?? [] {
+            for food in detail.loggedFoods ?? [] {
+                if let logId = food.logId, logIds.contains(logId) {
+                    foods.append(food)
+                }
+            }
+        }
+        return foods
+    }
+
+    /// The name of the entry `logId` in a day's log, for the sync queue's
+    /// "delete" rows; `nil` when that day isn't loaded or no longer lists it.
+    public static func foodName(logId: String, in log: DailyFoodLog?) -> String? {
+        for detail in log?.mealDetails ?? [] {
+            for food in detail.loggedFoods ?? [] where food.logId == logId {
+                return food.foodMetaData?.foodName
+            }
+        }
+        return nil
     }
 
     // MARK: Helpers

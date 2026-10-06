@@ -3,7 +3,9 @@
 // add-sport-and-body-achievements: the "sportBody" gamification feature --
 // badges linking food to the owner's Garmin activities (fuel before,
 // protein after, eating to match an active day, fuelling during long
-// efforts), race days (the `race` day-note tag, the ONLY race source),
+// efforts), race days (the `race` day-note tag and -- improve-food-day-flow,
+// in the training experience -- the training plan's race days and carb-load
+// days, `FeatureContext.trainingPlan`),
 // weight-goal milestones and the kept-fast streak. Replaces the empty stub
 // registered by add-gamification-signals (design D7);
 // `GamificationFeatureRegistry` still creates it with `init(directory:)`.
@@ -131,7 +133,9 @@ public actor SportAndBodyFeature: GamificationFeature {
             if SportRules.isEarnedDay(day, today: snapshot.today) {
                 await store.addEarnedDay(day.day)
             }
-            if SportRules.isRaceDay(day, today: snapshot.today) {
+            // improve-food-day-flow (C3): a race of the plan counts without
+            // the tag (`trainingPlan` is nil outside the training experience).
+            if SportRules.isRaceDay(day, today: snapshot.today, plan: context.trainingPlan) {
                 await store.addRaceDay(day.day)
             }
         }
@@ -157,7 +161,7 @@ public actor SportAndBodyFeature: GamificationFeature {
         if evaluations.contains(where: { $0.isLongHaul }) {
             request([SportBodyCatalog.longHaulId])
         }
-        if !SportRules.carbLoadedRaceDays(in: snapshot, calendar: context.calendar).isEmpty {
+        if !SportRules.carbLoadedRaceDays(in: snapshot, calendar: context.calendar, plan: context.trainingPlan).isEmpty {
             request([SportBodyCatalog.carbLoaderId])
         }
         // add-winter-arc-nutrition-and-rewards: weight is an outcome and

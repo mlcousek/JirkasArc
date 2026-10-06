@@ -29,8 +29,16 @@
 //
 // add-daily-checkin-and-pain-mode: the two times are the owner's
 // (`TrainingReminderTimes`, set in the notification settings; 04:05 and
-// 20:10 by default). Depended on by: the app's TrainingModel and
-// NotificationScheduler. Tests: CheckInBuilderTests, DailyCheckInTests.
+// 20:10 by default).
+//
+// improve-food-day-flow (A2): the evening reminder also asks to close the
+// food log on a day whose food log is not closed. The app passes the closed
+// days (`closedFoodDays`, from FoodLogCore's store -- this package never
+// reads it); without them the body is what it always was. The reminder is
+// still planned only for a day with habits left to tick.
+//
+// Depended on by: the app's TrainingModel and NotificationScheduler.
+// Tests: CheckInBuilderTests, DailyCheckInTests, FoodLogHabitTests.
 
 import Foundation
 
@@ -90,7 +98,8 @@ public enum TrainingReminderPlanner {
         timeZone: TimeZone,
         language: TrainingLanguage,
         days: Int = 2,
-        times: TrainingReminderTimes = .standard
+        times: TrainingReminderTimes = .standard,
+        closedFoodDays: Set<LocalDate>? = nil
     ) -> [TrainingReminder] {
         guard let snapshot, days > 0 else { return [] }
         let text = TrainingText(language)
@@ -120,13 +129,16 @@ public enum TrainingReminderPlanner {
             if snapshot.capabilities.canTickHabits, let day, !day.habitsExpected.isEmpty {
                 let open = day.habitsExpected.contains { !snapshot.habitDone($0, on: date).done }
                 if open {
+                    // improve-food-day-flow: a day whose food log is not
+                    // closed is asked for that too (`nil` = not asked at all).
+                    let foodLogOpen = closedFoodDays.map { !$0.contains(date) } ?? false
                     let reminder = TrainingReminder(
                         kind: .eveningHabits,
                         date: date,
                         hour: times.eveningHour,
                         minute: times.eveningMinute,
                         title: text(.reminderHabitsTitle),
-                        body: text(.reminderHabitsBody)
+                        body: foodLogOpen ? text(.reminderHabitsBodyFoodLog) : text(.reminderHabitsBody)
                     )
                     if isAhead(reminder, now: now, timeZone: timeZone) { result.append(reminder) }
                 }

@@ -25,8 +25,16 @@
 //     of the target up with no upper limit; protein is met from 90 % of the
 //     plan's protein target ("about 1.6 g/kg").
 //
+// improve-food-day-flow (C3): a carb-load day names its race
+// (`FuelDayTarget.raceName`, copied to the summary) and, when the day has a
+// SINGLE carbohydrate target (the band's two ends are equal), is judged
+// against it in two words -- `FuelTargetStatus.below` or `.reached` -- and
+// never as "too much": on a carb-load day more is not a miss. A band keeps
+// below / in / above.
+//
 // Pure, no SwiftUI. Depended on by: GoalStatusEvaluator, the app's Today
-// summary (FuelSummaryCard) and GamificationEngine. Tests: FuelDayTests.
+// summary (FuelSummaryCard) and GamificationEngine. Tests:
+// WinterArcNutritionTests.
 
 import Foundation
 
@@ -39,6 +47,9 @@ public struct FuelDayTarget: Sendable, Equatable {
     public let isCarbLoad: Bool
     public let hasTrainingSessions: Bool
     public let isFastingPaused: Bool
+    /// improve-food-day-flow (C3): the race a carb-load day loads for, as
+    /// the plan names it; `nil` when it names none (or on any other day).
+    public let raceName: String?
 
     public init(
         carbsMinG: Double?,
@@ -46,7 +57,8 @@ public struct FuelDayTarget: Sendable, Equatable {
         proteinG: Double?,
         isCarbLoad: Bool = false,
         hasTrainingSessions: Bool,
-        isFastingPaused: Bool = false
+        isFastingPaused: Bool = false,
+        raceName: String? = nil
     ) {
         self.carbsMinG = carbsMinG.flatMap { $0 > 0 ? $0 : nil }
         self.carbsMaxG = carbsMaxG.flatMap { $0 > 0 ? $0 : nil }
@@ -54,6 +66,8 @@ public struct FuelDayTarget: Sendable, Equatable {
         self.isCarbLoad = isCarbLoad
         self.hasTrainingSessions = hasTrainingSessions
         self.isFastingPaused = isFastingPaused
+        let trimmed = raceName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.raceName = (trimmed?.isEmpty ?? true) ? nil : trimmed
     }
 
     /// The band in grams, when both edges are known (min <= max).
@@ -74,10 +88,20 @@ public enum FuelCarbStatus: String, Sendable, Equatable {
     case above
 }
 
+/// improve-food-day-flow (C3): carbs against a SINGLE target.
+public enum FuelTargetStatus: String, Sendable, Equatable {
+    case below
+    /// At the target or above it (above is not "too much").
+    case reached
+}
+
 public struct FuelDaySummary: Sendable, Equatable {
     public let carbsG: Double
     public let carbBand: ClosedRange<Double>
     public let carbStatus: FuelCarbStatus
+    /// improve-food-day-flow (C3): the judgement against a single target;
+    /// `nil` when the day has a band with two different ends.
+    public let targetStatus: FuelTargetStatus?
     /// 0...1 of the band's upper edge, for a bar.
     public let carbFraction: Double
     public let proteinG: Double
@@ -85,7 +109,12 @@ public struct FuelDaySummary: Sendable, Equatable {
     /// 0...1 of the protein target; `nil` without one.
     public let proteinFraction: Double?
     public let isCarbLoad: Bool
+    /// improve-food-day-flow (C3): the race a carb-load day loads for.
+    public let raceName: String?
     public let showsUnderFuellingNote: Bool
+
+    /// The day has one carbohydrate target, not a range.
+    public var hasSingleTarget: Bool { targetStatus != nil }
 }
 
 public enum FuelDayEvaluator {
@@ -115,15 +144,21 @@ public enum FuelDayEvaluator {
         let proteinFraction = target.proteinG.map { min(max(proteinG / $0, 0), 1) }
         let late = calendar.component(.hour, from: now) >= underFuellingHour
         let clearlyBelow = carbs < band.lowerBound * underFuellingFraction
+        // A band whose two ends are the same number is one target.
+        let targetStatus: FuelTargetStatus? = band.lowerBound == band.upperBound
+            ? (carbs < band.lowerBound ? .below : .reached)
+            : nil
         return FuelDaySummary(
             carbsG: carbs,
             carbBand: band,
             carbStatus: status,
+            targetStatus: targetStatus,
             carbFraction: band.upperBound > 0 ? min(max(carbs / band.upperBound, 0), 1) : 0,
             proteinG: max(0, proteinG),
             proteinTargetG: target.proteinG,
             proteinFraction: proteinFraction,
             isCarbLoad: target.isCarbLoad,
+            raceName: target.isCarbLoad ? target.raceName : nil,
             showsUnderFuellingNote: isToday && late && clearlyBelow
         )
     }

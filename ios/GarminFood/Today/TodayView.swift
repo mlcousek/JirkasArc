@@ -187,6 +187,18 @@ struct TodayView: View {
         } message: {
             Text(hydrationActionError ?? "")
         }
+        // improve-food-day-flow: closing a day (or its undo) couldn't be saved.
+        .alert(
+            "Couldn't complete that action",
+            isPresented: Binding(
+                get: { environment.foodDayClose.errorMessage != nil },
+                set: { if !$0 { environment.foodDayClose.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(verbatim: environment.foodDayClose.errorMessage ?? "")
+        }
         .refreshable {
             await environment.refreshOnForeground(userInitiated: true)
             await loadQuickPicks()
@@ -394,6 +406,16 @@ struct TodayView: View {
                         isCollapsed: variant == MealsVariant.collapsed.rawValue
                     )
                 }
+                // improve-food-day-flow (A2): "That's everything today",
+                // under the last meal card; draws nothing on a day that
+                // can't be closed.
+                FoodDayCloseCard(
+                    state: environment.foodDayClose.state(day: dayLog.dateString, entryCount: environment.foodDayEntryCount),
+                    isToday: dayLog.isToday,
+                    streak: environment.foodDayClose.streak(),
+                    onClose: { Task { await environment.closeFoodDay() } },
+                    onUndo: { Task { await environment.reopenFoodDay() } }
+                )
             }
 
         case .supplements:

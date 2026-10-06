@@ -108,6 +108,12 @@ public enum StoreCatalog {
         StoreCatalogEntry(id: "foodlog.favorite-foods", location: .file("FoodLogCore/favorite-foods.json"), schemaVersion: 1, area: .favorites),
         StoreCatalogEntry(id: "foodlog.fasting-sessions", location: .file("FoodLogCore/fasting-sessions.json"), schemaVersion: 1, area: .fasting),
         StoreCatalogEntry(id: "foodlog.day-notes", location: .file("FoodLogCore/day-notes.json"), schemaVersion: 1, area: .dayNotes),
+        // improve-food-day-flow (A2): which days' food logs were closed
+        // ("That's everything today"). The owner's own statement, so it
+        // travels with a backup; `history`, not `foodLog`, because the
+        // import preview counts the items of a `foodLog` file as food
+        // entries.
+        StoreCatalogEntry(id: "foodlog.food-day-closes", location: .file("FoodLogCore/food-day-closes.json"), schemaVersion: 1, area: .history),
         StoreCatalogEntry(id: "foodlog.weight-entries", location: .file("FoodLogCore/weight-entries.json"), schemaVersion: 1, area: .weight),
         StoreCatalogEntry(id: "foodlog.hydration-entries", location: .file("FoodLogCore/hydration-entries.json"), schemaVersion: 1, area: .hydration),
         // add-standalone-mode 4.1 (#90): standalone mode's goal history.

@@ -158,7 +158,8 @@ two different fields), and a day that is not loaded yet has no entries at
 all, so the fingerprint would report edits that never happened. The cost of
 the chosen rule: an entry changed in Garmin Connect is not noticed.
 
-The file is user data: it is in backups (area `foodLog`).
+The file is user data: it is in backups (catalog area `history`, so the
+import preview does not count its records as food entries).
 
 ### D7. The reminder and the habit read the store, never the reverse
 

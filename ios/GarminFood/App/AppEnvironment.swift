@@ -107,6 +107,9 @@ final class AppEnvironment {
     let supplements: SupplementsController
     /// The day shown on the Today tab, meal by meal.
     let dayLog: DayLogLoader
+    /// improve-food-day-flow (A2): the days whose food log was closed
+    /// ("That's everything today") and the complete-days streak.
+    let foodDayClose: FoodDayCloseController
     let preferences: AppPreferences
     /// add-themes-and-layout: the look (theme, style, custom accent) and
     /// the root that pushes it into `ThemeRuntime` (ThemeStore.swift).
@@ -262,6 +265,7 @@ final class AppEnvironment {
             activityCache: services.activityCacheStore,
             dataMode: AppServices.currentDataMode
         )
+        self.foodDayClose = FoodDayCloseController(store: services.foodDayCloseStore)
         self.preferences = preferences
         self.themeStore = ThemeStore()
         let vault = VaultController(services: VaultServices.shared)
@@ -309,6 +313,9 @@ final class AppEnvironment {
         Task { [weak self] in
             await services.logRewards.attach { log in
                 await self?.gamificationEngine.handleLogConfirmed(now: log.loggedAt, calories: log.calories)
+                // improve-food-day-flow: a screenless log into a closed day
+                // marks it "Edited after closing" too.
+                await self?.foodDayChanged(day: NutritionDate.string(from: log.loggedAt))
             }
         }
         Haptics.isEnabled = preferences.hapticsEnabled
@@ -347,6 +354,9 @@ final class AppEnvironment {
         // reward facts and paused fasting days, in the training experience
         // only (AppEnvironment+TrainingNutrition.swift).
         wireTrainingNutrition()
+        // improve-food-day-flow: closed days, the evening reminder's
+        // wording and the `food-log` habit (AppEnvironment+FoodDayFlow.swift).
+        wireFoodDayFlow()
     }
 
     /// Launch and every return to the foreground.
@@ -361,6 +371,9 @@ final class AppEnvironment {
         Task { await offlineIndexLoader.loadAndCheckIfDue() }
         await classifyDataModeIfNeeded()
         await migrateLegacyFastingIfNeeded()
+        // improve-food-day-flow: the closed days (a local file), before the
+        // training reminders are planned from them below.
+        await foodDayClose.reload()
         // add-vault-connection D11: one conditional GET of the vault's
         // projection, unstructured so nothing waits for it; only on a
         // Garmin-connected install (never standalone, never in onboarding)
@@ -575,6 +588,7 @@ final class AppEnvironment {
         }
         await refreshQueueState()
         await dayLog.rebuild()
+        await foodDayChanged(day: date)
         await syncNotifications()
         Task { await self.drainAndReconcile() }
     }
@@ -806,6 +820,7 @@ final class AppEnvironment {
         try await dayLog.delete(entry)
         await donations.entryDeleted(foodId: entry.foodId, date: date)
         await refreshQueueState()
+        await foodDayChanged(day: date)
         if entry.isSynced {
             await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
             Task { await self.drainAndReconcile() }
@@ -879,6 +894,7 @@ final class AppEnvironment {
         await donations.entryDeleted(foodId: entry.foodId, date: entry.date)
         await refreshQueueState()
         await dayLog.rebuild()
+        await foodDayChanged(day: entry.date)
     }
 
     // MARK: - Editing entries (add-log-entry-editing)
@@ -900,6 +916,7 @@ final class AppEnvironment {
         )
         await refreshQueueState()
         await dayLog.rebuild()
+        await foodDayChanged(day: date)
         await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
         Task { await self.drainAndReconcile() }
     }

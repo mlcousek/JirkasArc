@@ -19195,6 +19195,132 @@
         }
       }
     },
+    "That's everything today": {
+      "comment": "improve-food-day-flow: button under the last meal card that closes today's food log.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je dnes všechno"
+          }
+        }
+      }
+    },
+    "That's everything for this day": {
+      "comment": "improve-food-day-flow: button under the last meal card that closes a past day's food log.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je za tento den všechno"
+          }
+        }
+      }
+    },
+    "Marks this day's food log as complete": {
+      "comment": "improve-food-day-flow: VoiceOver hint of the button that closes a day's food log.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označí deník jídla za tento den jako úplný"
+          }
+        }
+      }
+    },
+    "Food log closed": {
+      "comment": "improve-food-day-flow: status of a day whose food log was closed.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deník jídla uzavřen"
+          }
+        }
+      }
+    },
+    "Edited after closing": {
+      "comment": "improve-food-day-flow: a closed day whose entries changed afterwards (it stays closed).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upraveno po uzavření"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "comment": "improve-food-day-flow: re-opens a closed day's food log.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátit zpět"
+          }
+        }
+      }
+    },
+    "%lld complete days in a row": {
+      "comment": "improve-food-day-flow: closed food-log days in a row, under the close button. Plural.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld uzavřené dny v řadě"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld uzavřeného dne v řadě"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld uzavřený den v řadě"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld uzavřených dní v řadě"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld complete day in a row"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld complete days in a row"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "That change isn't possible any more: the plan has changed. Have another look.": {
       "comment": "add-plan-editing: a plan change was refused on the phone because the plan changed under the screen.",
       "extractionState": "manual",

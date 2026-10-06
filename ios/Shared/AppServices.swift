@@ -91,6 +91,10 @@ final class AppServices {
     /// header) -- one shared instance per process, same reason as
     /// `fastingStore` above.
     let dayNoteStore: DayNoteStore
+    /// improve-food-day-flow (A2): which days' food logs were closed
+    /// ("That's everything today"). Purely local, one instance per process
+    /// like `dayNoteStore`.
+    let foodDayCloseStore: FoodDayCloseStore
     /// add-offline-czech-food-index: the downloaded Czech Open Food Facts
     /// index. `offlineIndex` is the in-memory copy that search
     /// (`OfflineCzechIndexSource`) and the barcode fallback read without
@@ -160,6 +164,7 @@ final class AppServices {
         self.favoriteFoodStore = FavoriteFoodStore()
         self.fastingStore = FastingSessionStore()
         self.dayNoteStore = DayNoteStore()
+        self.foodDayCloseStore = FoodDayCloseStore()
         // `foodCache` so an edited/duplicated/copied entry can be named in
         // its meal before Garmin reads it back (add-log-entry-editing).
         let dataMode = Self.currentDataMode

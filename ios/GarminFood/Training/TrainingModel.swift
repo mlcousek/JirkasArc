@@ -58,6 +58,11 @@
 // TrainingCore model (bounds checked there); nothing is recorded unless the
 // vault connection can record, and nothing waits for the network.
 //
+// improve-food-day-flow: the evening habits reminder also mentions a food
+// log that is not closed. The closed days come from the food side through
+// `closedFoodDaysProvider` (set by AppEnvironment+FoodDayFlow); the wording
+// is TrainingCore's (`TrainingReminderPlanner`).
+//
 // Owned by AppEnvironment (`environment.training`); read by the Today
 // training cards, the Plan tab and the Habits screens.
 
@@ -89,6 +94,10 @@ final class TrainingModel {
     @ObservationIgnored private let events: TrainingEventsService
     /// The replan in flight; the next one waits for it (`syncReminders`).
     @ObservationIgnored private var reminderSync: Task<Void, Never>? = nil
+    /// improve-food-day-flow: the days whose food log is closed, for the
+    /// evening reminder's wording. `nil` (not set, or it answers `nil`) =
+    /// the food log is not mentioned at all.
+    @ObservationIgnored var closedFoodDaysProvider: (@MainActor () -> Set<LocalDate>?)? = nil
 
     /// add-training-checkins D8: the training reminders switch (default on,
     /// tasks 0.2).
@@ -334,7 +343,16 @@ final class TrainingModel {
             // cached projection (the same 7 days as the food reminders,
             // NotificationPlanning.windowDays), so reminders outlive a
             // closed app.
-            ? TrainingReminderPlanner.plan(snapshot: source.snapshot, today: today(now: now), now: now, timeZone: .current, language: language, days: 7, times: reminderTimes)
+            ? TrainingReminderPlanner.plan(
+                snapshot: source.snapshot,
+                today: today(now: now),
+                now: now,
+                timeZone: .current,
+                language: language,
+                days: 7,
+                times: reminderTimes,
+                closedFoodDays: closedFoodDaysProvider?()
+            )
             : []
         await NotificationScheduler.shared.syncTrainingReminders(reminders, now: now)
     }

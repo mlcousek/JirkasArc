@@ -80,6 +80,7 @@ final class StoreFixtureTests: XCTestCase {
         "supplement-limits.json",
         "supplement-barcode-cache.json",
         "SupplementIntake-2026-09.json",
+        "food-day-closes.json",
     ]
 
     /// Store files whose names are interpolated, which the literal-name
@@ -472,6 +473,34 @@ final class StoreFixtureTests: XCTestCase {
         XCTAssertEqual(all[2].text, "Grilovačka u Petra\nhodně piva")
         XCTAssertEqual(all[2].tags, [])
         XCTAssertEqual(all[2].updatedAt, iso("2026-09-21T22:40:00Z"))
+    }
+
+    // MARK: - food-day-closes.json (FoodDayCloseStore: [FoodDayClose], .iso8601)
+
+    /// improve-food-day-flow (A2): the closed days.
+    func testFoodDayClosesFixtureDecodesThroughTheRealStore() async throws {
+        let copy = try copyFixture("food-day-closes.json")
+
+        let store = FoodDayCloseStore(fileURL: copy.file)
+        let all = await store.all()
+        let closedDays = await store.closedDays()
+
+        assertNotQuarantined(copy)
+        XCTAssertEqual(all.map(\.day), ["2026-10-03", "2026-10-04"])
+        XCTAssertEqual(closedDays, ["2026-10-03", "2026-10-04"])
+        guard all.count == 2 else { return }
+
+        // Closed and left as it was: no `editedAt` key at all.
+        XCTAssertEqual(all[0].closedAt, iso("2026-10-03T19:45:00Z"))
+        XCTAssertEqual(all[0].entryCount, 6)
+        XCTAssertNil(all[0].editedAt)
+        XCTAssertFalse(all[0].isEditedAfterClosing)
+
+        // Closed, then an entry was changed.
+        XCTAssertEqual(all[1].closedAt, iso("2026-10-04T20:10:00Z"))
+        XCTAssertEqual(all[1].entryCount, 5)
+        XCTAssertEqual(all[1].editedAt, iso("2026-10-04T21:30:00Z"))
+        XCTAssertTrue(all[1].isEditedAfterClosing)
     }
 
     // MARK: - local-goals.json (LocalGoalStore: [LocalNutritionGoals], plain JSONDecoder)

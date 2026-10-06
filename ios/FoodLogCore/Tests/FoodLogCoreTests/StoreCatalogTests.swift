@@ -123,6 +123,10 @@ final class StoreCatalogTests: XCTestCase {
         // swallowed by the outbox prefix, and never in a backup.
         XCTAssertEqual(StoreCatalog.entry(forRelativePath: "GarminKit/food-delete-outbox-app.json")?.id, "garminkit.food-delete-outbox")
         XCTAssertEqual(StoreCatalog.entry(id: "garminkit.food-delete-outbox")?.inBackup, false)
+        // ...and the closed days are the owner's data: backed up.
+        XCTAssertEqual(StoreCatalog.entry(forRelativePath: "FoodLogCore/food-day-closes.json")?.id, "foodlog.food-day-closes")
+        XCTAssertEqual(StoreCatalog.entry(id: "foodlog.food-day-closes")?.inBackup, true)
+        XCTAssertTrue(BackupExclusions.includesFile(relativePath: "FoodLogCore/food-day-closes.json"))
         XCTAssertFalse(BackupExclusions.includesFile(relativePath: "GarminKit/food-delete-outbox-app.json"))
         XCTAssertNil(StoreCatalog.entry(forRelativePath: "FoodLogCore/Supplements/x.json"))
         XCTAssertEqual(StoreCatalog.entry(id: "foodlog.custom-foods")?.area, .customFoods)

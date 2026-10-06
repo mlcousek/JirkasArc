@@ -31,10 +31,12 @@
 // (LogQuantity.swift's header has the crash this prevented).
 //
 // add-standalone-mode D4: conforms to `FoodLogging` (FoodLogging.swift) and
-// gains `deleteCommitted(logId:date:)`, moved here from `DayLogLoader`. It is
-// the one method that calls Garmin directly -- deleting a row that is
-// already in Garmin has no local half -- and it is a delete, never on a
-// confirm path, so zero-network-wait above still holds for every log.
+// gains `deleteCommitted(logId:date:)`, moved here from `DayLogLoader`.
+//
+// improve-food-day-flow (E2): that delete used to be the one method here
+// that called Garmin directly, so it failed offline. It now only queues the
+// delete in the outbox's delete queue (GarminKit FoodLogDeletionQueue.swift)
+// and returns -- every method of this type is a local write again.
 
 import Foundation
 import GarminKit
@@ -44,23 +46,17 @@ public struct LogEntryCoordinator: Sendable {
     private let usageHistory: UsageHistoryStore
     private let servingDefaults: ServingDefaultStore
     private let foodCache: FoodCacheStore?
-    /// add-standalone-mode D4: where `deleteCommitted` deletes a row that is
-    /// already in Garmin (the app's `GarminClient`). `nil` in tests that
-    /// never delete a synced row.
-    private let garminLog: (any FoodLogReconciling)?
 
     public init(
         outbox: Outbox,
         usageHistory: UsageHistoryStore = UsageHistoryStore(),
         servingDefaults: ServingDefaultStore = ServingDefaultStore(),
-        foodCache: FoodCacheStore? = nil,
-        garminLog: (any FoodLogReconciling)? = nil
+        foodCache: FoodCacheStore? = nil
     ) {
         self.outbox = outbox
         self.usageHistory = usageHistory
         self.servingDefaults = servingDefaults
         self.foodCache = foodCache
-        self.garminLog = garminLog
     }
 
     /// Confirms a catalog (Garmin-search-backed) food. Returns as soon as
@@ -405,14 +401,15 @@ public struct LogEntryCoordinator: Sendable {
     }
 
     /// Deletes a row that is already in Garmin (`.synced(logId:)` on the
-    /// dashboard) -- add-standalone-mode D4, a straight move of the call
-    /// `DayLogLoader.delete` used to make itself. Unlike every write above
-    /// this IS a network call, and always was: a synced row has nothing
-    /// local to remove. Errors are Garmin's own (`GarminClientError`),
-    /// unchanged, so the caller's user-facing mapping stays where it was.
+    /// dashboard). improve-food-day-flow (E2): queued, not sent -- durable on
+    /// return and no network call, so it works offline. `Outbox.
+    /// drainDeletions` delivers it later (a 404 is success), the dashboard
+    /// shows the row as "Deleting…" with its share off the totals until
+    /// then, and one that gives up is offered "Retry" / "Keep entry".
+    /// Throws `FoodLogDeletionError.missingIdentifier` for an empty id, or
+    /// the store's own error when the queue file can't be written.
     public func deleteCommitted(logId: String, date: String) async throws {
-        guard let garminLog else { throw CommittedDeleteError.noSystemOfRecord }
-        try await garminLog.deleteFoodLogEntries(logIds: [logId], date: date)
+        try await outbox.queueDeletion(logId: logId, date: date)
     }
 
     static func editError(for error: OutboxEditError) -> LogEntryEditError {

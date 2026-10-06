@@ -1021,6 +1021,8 @@ struct MealEntryRow: View {
             statusIcon
             if let calories = entry.calories {
                 MacroBadge.calories(calories)
+                    // Not counted while its delete is waiting.
+                    .opacity(entry.isBeingDeleted ? 0.45 : 1)
             }
         }
         .accessibilityElement(children: .combine)
@@ -1034,19 +1036,35 @@ struct MealEntryRow: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        switch entry.status {
-        case .synced:
-            EmptyView()
-        case .syncing:
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("Syncing")
-        case .failed:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(Theme.warning)
-                .accessibilityLabel("Not delivered")
+        if let deletion = entry.deletion {
+            // improve-food-day-flow (E2): a queued delete of this entry. In
+            // words, not only an icon: the row is still listed, and the
+            // owner should see why its calories no longer count (or do).
+            switch deletion {
+            case .deleting:
+                Label("Deleting…", systemImage: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .failed:
+                Label("Couldn't delete", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+            }
+        } else {
+            switch entry.status {
+            case .synced:
+                EmptyView()
+            case .syncing:
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Syncing")
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+                    .accessibilityLabel("Not delivered")
+            }
         }
     }
 }

@@ -105,19 +105,13 @@ public protocol FoodLogging: Sendable {
     func deletePending(outboxId: UUID) async throws -> LogEntryCoordinator.PendingDeletion
 
     /// A row already in the system of record (`MealEntry.status ==
-    /// .synced(logId:)`). For Garmin: `DELETE /nutrition-service/food/logs/
-    /// {date}` -- the route `DayLogLoader.delete` has always called.
+    /// .synced(logId:)`). For Garmin: a queued `DELETE /nutrition-service/
+    /// food/logs/{date}` (improve-food-day-flow E2 -- saved on the phone,
+    /// delivered by `Outbox.drainDeletions`); for the local log: removed.
     func deleteCommitted(logId: String, date: String) async throws
 }
 
 extension LogEntryCoordinator: FoodLogging {}
-
-/// Thrown by `LogEntryCoordinator.deleteCommitted` when it was built
-/// without a Garmin log to delete from (tests, previews). The app's
-/// coordinator always has one (`AppServices`).
-public enum CommittedDeleteError: Error, Sendable, Equatable {
-    case noSystemOfRecord
-}
 
 /// Held by `AppServices` as the one `logEntryCoordinator` per process.
 /// Design D4: forwards each call to the implementation for the current

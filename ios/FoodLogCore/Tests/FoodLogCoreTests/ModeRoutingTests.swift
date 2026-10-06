@@ -3,9 +3,12 @@
 // add-standalone-mode 2.5: the routers pick the local implementations while
 // the effective data mode is standalone, re-read the mode on every call,
 // and leave Garmin mode exactly as it was. Real Outbox / local store / usage
-// stores on temp files; the Garmin side of the reads and the Garmin delete
-// are small recording fakes (the real ones are the network), as in
-// FoodLoggingTests.
+// stores on temp files; the Garmin side of the reads is a small recording
+// fake (the real one is the network), as in FoodLoggingTests.
+//
+// improve-food-day-flow (E2): a synced row's delete is queued in the outbox
+// in Garmin mode (no request from the coordinator any more), and standalone
+// mode queues nothing.
 
 import XCTest
 @testable import FoodLogCore
@@ -22,18 +25,6 @@ final class ModeRoutingTests: XCTestCase {
         var mode: DataMode {
             get { lock.lock(); defer { lock.unlock() }; return value }
             set { lock.lock(); value = newValue; lock.unlock() }
-        }
-    }
-
-    fileprivate actor RecordingGarminLog: FoodLogReconciling {
-        private(set) var deletes: [String] = []
-
-        func dailyFoodLog(date: String) async throws -> DailyFoodLog? { nil }
-
-        @discardableResult
-        func deleteFoodLogEntries(logIds: [String], date: String) async throws -> HTTPURLResponse {
-            deletes.append(contentsOf: logIds)
-            return HTTPURLResponse(url: URL(string: "https://example.invalid")!, statusCode: 204, httpVersion: nil, headerFields: nil)!
         }
     }
 
@@ -65,7 +56,6 @@ final class ModeRoutingTests: XCTestCase {
         let reader: ModeRoutingNutritionReader
         let outbox: Outbox
         let localLog: LocalFoodLogStore
-        let garminLog: RecordingGarminLog
         let modeSwitch: ModeSwitch
     }
 
@@ -75,19 +65,17 @@ final class ModeRoutingTests: XCTestCase {
         let servings = ServingDefaultStore(fileURL: tmp.appendingPathComponent("routing-servings-\(UUID().uuidString).json"))
         let outbox = Outbox(processName: "routing-test-\(UUID().uuidString)")
         let localLog = LocalFoodLogStore(directoryURL: tmp.appendingPathComponent("routing-log-\(UUID().uuidString)"))
-        let garminLog = RecordingGarminLog()
         let modeSwitch = ModeSwitch(mode)
         let current: @Sendable () -> DataMode = { modeSwitch.mode }
         return Fixture(
             router: ModeRoutingFoodLogging(
-                garmin: LogEntryCoordinator(outbox: outbox, usageHistory: usage, servingDefaults: servings, garminLog: garminLog),
+                garmin: LogEntryCoordinator(outbox: outbox, usageHistory: usage, servingDefaults: servings),
                 local: LocalLogEntryCoordinator(store: localLog, usageHistory: usage, servingDefaults: servings),
                 mode: current
             ),
             reader: ModeRoutingNutritionReader(garmin: GarminReads(), local: LocalNutritionReader(store: localLog), mode: current),
             outbox: outbox,
             localLog: localLog,
-            garminLog: garminLog,
             modeSwitch: modeSwitch
         )
     }
@@ -162,17 +150,18 @@ final class ModeRoutingTests: XCTestCase {
 
         let local = try await fixture.localLog.entries(forDay: day)
         XCTAssertTrue(local.isEmpty)
-        let garminDeletes = await fixture.garminLog.deletes
-        XCTAssertTrue(garminDeletes.isEmpty)
+        let queuedDeletes = await fixture.outbox.allDeletions()
+        XCTAssertTrue(queuedDeletes.isEmpty, "nothing is queued for Garmin in standalone mode")
     }
 
-    func testGarminModeDeletesASyncedRowInGarminAsBefore() async throws {
+    func testGarminModeQueuesTheDeleteOfASyncedRow() async throws {
         let fixture = makeFixture(mode: .garminConnected)
 
         try await fixture.router.deleteCommitted(logId: "garmin-log-1", date: day)
 
-        let garminDeletes = await fixture.garminLog.deletes
-        XCTAssertEqual(garminDeletes, ["garmin-log-1"])
+        let queuedDeletes = await fixture.outbox.allDeletions()
+        XCTAssertEqual(queuedDeletes.map(\.logId), ["garmin-log-1"])
+        XCTAssertEqual(queuedDeletes.map(\.date), [day])
     }
 
     func testAPendingRowIsCancelledInTheOutboxInEitherMode() async throws {

@@ -9,9 +9,11 @@
 // Delete, and "Copy from…" re-logs a past day's meal -- all through the
 // shared `EntryEditor` (EntryEditing.swift), same as the Today cards.
 //
-// Deleting a synced entry calls DELETE /nutrition-service/food/logs/{date},
-// modelled on garmin_mcp and not yet exercised by this project, so a
-// failure keeps the entry listed and says why (design D5).
+// Deleting a synced entry queues DELETE /nutrition-service/food/logs/{date}
+// (modelled on garmin_mcp and not yet exercised by this project) on the
+// phone and returns at once (improve-food-day-flow E2): the row says
+// "Deleting…" until Garmin confirms, and a delete that gives up keeps the
+// entry listed as "Couldn't delete" with Retry and "Keep entry".
 
 import SwiftUI
 import FoodLogCore

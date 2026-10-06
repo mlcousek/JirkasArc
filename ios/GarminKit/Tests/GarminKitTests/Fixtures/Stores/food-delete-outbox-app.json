@@ -1,0 +1,32 @@
+[
+  {
+    "id": "3C4D5E6F-7A8B-4C9D-8E0F-1A2B3C4D5E01",
+    "date": "2026-10-04",
+    "logId": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "state": "pending",
+    "attemptCount": 0,
+    "createdAt": 812794500.5,
+    "nextAttemptAt": 812794500.5
+  },
+  {
+    "id": "3C4D5E6F-7A8B-4C9D-8E0F-1A2B3C4D5E02",
+    "date": "2026-10-03",
+    "logId": "0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c",
+    "state": "sent",
+    "attemptCount": 1,
+    "createdAt": 812710000.25,
+    "nextAttemptAt": 812710004.75,
+    "deliveredAt": 812710006,
+    "accountKey": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+  },
+  {
+    "id": "3C4D5E6F-7A8B-4C9D-8E0F-1A2B3C4D5E03",
+    "date": "2026-10-02",
+    "logId": "11223344556677889900aabbccddeeff",
+    "state": "failed",
+    "attemptCount": 5,
+    "lastError": "httpError(statusCode: 500, body: nil)",
+    "createdAt": 812620000,
+    "nextAttemptAt": 812620031.5
+  }
+]

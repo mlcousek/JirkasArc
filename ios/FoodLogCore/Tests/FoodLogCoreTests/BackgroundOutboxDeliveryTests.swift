@@ -7,6 +7,10 @@
 // background pass, and keep a refresh scheduled until it is. Runs `BackgroundOutboxDelivery`
 // (the code BackgroundRefresh.run calls) against REAL outboxes on unique
 // temp files and a fake Garmin that never touches the network.
+//
+// improve-food-day-flow (E2): a queue holding only a DELETE of a synced
+// food entry is delivered in the background too, and keeps a refresh
+// scheduled while it waits -- but not once it gave up.
 
 import XCTest
 @testable import FoodLogCore
@@ -93,6 +97,40 @@ final class BackgroundOutboxDeliveryTests: XCTestCase {
         let afterSecond = await q.outbox.allEntries()
         XCTAssertTrue(afterSecond.isEmpty, "confirmed against Garmin's log and done")
         XCTAssertFalse(second.needsAnotherRefresh)
+    }
+
+    func testADeleteOnlyQueueIsDeliveredInTheBackground() async throws {
+        let q = makeQueues()
+        try await q.outbox.queueDeletion(logId: "synthetic-log-1", date: "2026-10-04")
+
+        let outcome = await run(q, FakeGarmin(online: true))
+
+        let deletions = await q.outbox.allDeletions()
+        XCTAssertEqual(deletions.map(\.state), [.sent], "the delete reached Garmin without the app in front")
+        XCTAssertFalse(outcome.needsAnotherRefresh, "a confirmed delete is done")
+    }
+
+    func testAWaitingDeleteKeepsTheRefreshScheduledWhileGarminIsUnreachable() async throws {
+        let q = makeQueues()
+        try await q.outbox.queueDeletion(logId: "synthetic-log-1", date: "2026-10-04")
+
+        let outcome = await run(q, FakeGarmin(online: false))
+
+        let deletions = await q.outbox.allDeletions()
+        XCTAssertEqual(deletions.map(\.state), [.pending])
+        XCTAssertEqual(deletions.first?.attemptCount, 0, "offline is not an attempt")
+        XCTAssertTrue(outcome.needsAnotherRefresh)
+    }
+
+    func testBacklogCountsAWaitingDeleteButNotOneThatGaveUpOrWasConfirmed() {
+        let waiting = FoodLogDeletion(date: "2026-10-04", logId: "synthetic-log-1")
+        let gaveUp = FoodLogDeletion(date: "2026-10-04", logId: "synthetic-log-2", state: .failed, attemptCount: 5)
+        let confirmed = FoodLogDeletion(date: "2026-10-04", logId: "synthetic-log-3", state: .sent)
+
+        XCTAssertTrue(OutboxBacklog.needsDelivery(food: [], weight: [], hydration: [], foodDeletions: [waiting]))
+        XCTAssertFalse(OutboxBacklog.needsDelivery(food: [], weight: [], hydration: [], foodDeletions: [gaveUp, confirmed]),
+                       "one that gave up waits for the user; a confirmed one only waits for the day to be read again")
+        XCTAssertTrue(OutboxBacklog.needsDelivery(food: [], weight: [], hydration: [], foodDeletions: [gaveUp, waiting]))
     }
 
     func testBacklogCountsEveryKindButNotFailedOrSentEntries() {

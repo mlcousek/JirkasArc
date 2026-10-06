@@ -90,6 +90,10 @@ public enum StoreCatalog {
     public static let entries: [StoreCatalogEntry] = [
         // GarminKit -- device delivery state and diagnostics, never backed up.
         StoreCatalogEntry(id: "garminkit.outbox", location: .prefixed(directory: "GarminKit", prefix: "outbox-"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
+        // improve-food-day-flow (E2): queued deletes of synced food entries
+        // (`food-delete-outbox-<process>.json`). Delivery state like the
+        // outboxes; "outbox" in the name keeps it out of backups.
+        StoreCatalogEntry(id: "garminkit.food-delete-outbox", location: .prefixed(directory: "GarminKit", prefix: "food-delete-outbox-"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
         StoreCatalogEntry(id: "garminkit.weight-outbox", location: .prefixed(directory: "GarminKit", prefix: "weight-outbox-"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
         StoreCatalogEntry(id: "garminkit.hydration-outbox", location: .prefixed(directory: "GarminKit", prefix: "hydration-outbox-"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
         StoreCatalogEntry(id: "garminkit.diagnostics-log", location: .file("GarminKit/diagnostics-log.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false),

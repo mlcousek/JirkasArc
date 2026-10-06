@@ -163,6 +163,11 @@ final class AppEnvironment {
     /// food entries (spec: a failed delete "is visible in the sync queue").
     private(set) var undeliveredWeightEntries: [WeightOutboxEntry] = []
     private(set) var undeliveredHydrationEntries: [HydrationOutboxEntry] = []
+    /// improve-food-day-flow (E2): queued deletes of synced food entries
+    /// Garmin has not confirmed -- waiting, or given up ("Couldn't delete").
+    /// Shown in the sync queue; the rows themselves read the day's
+    /// dashboard.
+    private(set) var undeliveredFoodDeletions: [FoodLogDeletion] = []
 
     /// "Today" as of the last foreground or day-change check -- what
     /// `DayLogLoader.rollOverIfNeeded` compares against, so the Today tab
@@ -751,6 +756,17 @@ final class AppEnvironment {
             await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
         }
 
+        // improve-food-day-flow (E2): queued deletes of synced entries,
+        // AFTER the creates were sent and re-read (design D2 -- a delete
+        // sent first could make an accepted create look missing, and a
+        // missing create is sent again). A confirmed delete changes Garmin's
+        // totals, so the day and its goal status are read again.
+        let deletionResult = await outbox.drainDeletions(using: garminClient)
+        if !deletionResult.delivered.isEmpty {
+            await dayLog.refresh()
+            await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
+        }
+
         // The weight/hydration drains above can ALSO hit an auth failure
         // (WeightOutbox/HydrationOutbox.drain detect it exactly like the
         // food outbox does) -- fixed 2026-09-22, a code-review finding: this
@@ -760,7 +776,7 @@ final class AppEnvironment {
         // queued forever with no visible signal, the exact "silent auth
         // failure" this app is built to avoid (CLAUDE.md: "Auth failures
         // are loud"). Checking all three, any non-`.none` wins.
-        let authOutcome = [result.authOutcome, weightResult.authOutcome, hydrationResult.authOutcome]
+        let authOutcome = [result.authOutcome, deletionResult.authOutcome, weightResult.authOutcome, hydrationResult.authOutcome]
             .first { $0 != .none } ?? .none
 
         var authFailed = true
@@ -781,6 +797,10 @@ final class AppEnvironment {
 
     /// Deletes an entry shown on the dashboard (design D5), and removes the
     /// Siri donation made for it.
+    ///
+    /// improve-food-day-flow (E2): a synced entry's delete is queued on the
+    /// phone and this returns at once -- the row says "Deleting…" -- while
+    /// delivery starts in the background, like every other change.
     func delete(_ entry: MealEntry) async throws {
         let date = dayLog.dateString
         try await dayLog.delete(entry)
@@ -788,7 +808,45 @@ final class AppEnvironment {
         await refreshQueueState()
         if entry.isSynced {
             await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
+            Task { await self.drainAndReconcile() }
         }
+    }
+
+    /// "Retry" on a delete that gave up (the row or the sync queue).
+    func retryFoodDeletion(id: UUID) async throws {
+        try await outbox.retryDeletion(id: id)
+        await refreshQueueState()
+        await dayLog.rebuild()
+        await drainAndReconcile()
+    }
+
+    /// Why "Keep entry" was refused, in words.
+    enum FoodDeletionActionError: LocalizedError {
+        /// A drain is sending that very delete right now.
+        case beingSent
+
+        var errorDescription: String? {
+            String(localized: "This delete is being sent to Garmin right now, so it can't be cancelled.")
+        }
+    }
+
+    /// "Keep entry": drops a queued delete, so the entry stays in Garmin
+    /// and counts again. Refused while the delete is being sent; one Garmin
+    /// already confirmed (or that is gone) has nothing left to keep, so the
+    /// day is simply shown as it is now.
+    func keepEntry(deletionId: UUID) async throws {
+        do {
+            try await outbox.cancelDeletion(id: deletionId)
+        } catch OutboxEditError.entryInFlight {
+            throw FoodDeletionActionError.beingSent
+        } catch OutboxEditError.alreadyDelivered {
+            // Deleted in the meantime.
+        } catch OutboxEditError.entryNotFound {
+            // Already confirmed and cleared, or kept before.
+        }
+        await refreshQueueState()
+        await dayLog.rebuild()
+        await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
     }
 
     /// 2026-09-21 bug fix: this used to swallow a write failure with `try?`
@@ -1279,10 +1337,14 @@ final class AppEnvironment {
         let undelivered = await outbox.allEntries().filter { $0.state != .sent }
         let undeliveredWeight = await weightOutbox.allEntries().filter { $0.state != .sent }
         let undeliveredHydration = await hydrationOutbox.allEntries().filter { $0.state != .sent }
+        // improve-food-day-flow (E2): a confirmed delete is done; it only
+        // waits for the day to be read again.
+        let undeliveredDeletions = await outbox.allDeletions().filter { !$0.isConfirmed }
         undeliveredEntries = undelivered
         undeliveredWeightEntries = undeliveredWeight
         undeliveredHydrationEntries = undeliveredHydration
-        undeliveredCount = undelivered.count + undeliveredWeight.count + undeliveredHydration.count
+        undeliveredFoodDeletions = undeliveredDeletions
+        undeliveredCount = undelivered.count + undeliveredWeight.count + undeliveredHydration.count + undeliveredDeletions.count
 
         // Auth failures have their own banner. Newest first, since that's
         // the attempt the user just made. Food first, then weight/water
@@ -1290,9 +1352,12 @@ final class AppEnvironment {
         // failed weigh-in or drink only showed on its own screen's row).
         var failure: String?
         if !authFailed {
-            let errors: [String?] = undelivered.reversed().map(\.lastError)
-                + undeliveredWeight.reversed().map(\.lastError)
-                + undeliveredHydration.reversed().map(\.lastError)
+            // One statement per queue: a single chained sum of four of
+            // these is slow for the type checker.
+            var errors: [String?] = undelivered.reversed().map(\.lastError)
+            errors += undeliveredDeletions.reversed().map(\.lastError)
+            errors += undeliveredWeight.reversed().map(\.lastError)
+            errors += undeliveredHydration.reversed().map(\.lastError)
             for case let error? in errors where !error.hasPrefix("auth:") {
                 failure = error
                 break

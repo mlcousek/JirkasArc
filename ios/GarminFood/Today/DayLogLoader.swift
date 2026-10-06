@@ -20,6 +20,13 @@
 // The per-date caches are dropped whenever the data mode changes (the
 // Diagnostics testing toggle), so one source's rows never show, or get
 // edited/deleted, under the other.
+//
+// improve-food-day-flow (E2): deleting a synced entry no longer waits for
+// Garmin. The coordinator queues the delete; `rebuild()` hands the queued
+// deletes to `MealDashboard.build`, which marks the row "Deleting…" and
+// takes its share off the totals; and every successful read of a day tells
+// the queue which confirmed deletes that read no longer lists
+// (`Outbox.pruneConfirmedDeletions`).
 
 import Foundation
 import Observation
@@ -206,10 +213,16 @@ final class DayLogLoader {
                 logsByDate[date] = log
                 if date == dateString { isStale = false }
                 try? await digestStore?.save(DayLogDigest(log: log, day: date, fetchedAt: Date()))
+                if mode == .garminConnected {
+                    await outbox.pruneConfirmedDeletions(date: date, remainingLogIds: MealDashboard.logIds(in: log))
+                }
             } else {
                 logsByDate.removeValue(forKey: date)
                 await loadMealsIfNeeded(date: date)
                 if date == dateString { isStale = false }
+                if mode == .garminConnected {
+                    await outbox.pruneConfirmedDeletions(date: date, remainingLogIds: [])
+                }
             }
         } catch {
             if date == dateString { isStale = logsByDate[date] != nil }
@@ -229,13 +242,15 @@ final class DayLogLoader {
             logsByDate[date] = local
         }
         let entries = await outbox.allEntries()
+        let deletions = await outbox.allDeletions()
         let foods = await foodCache.all()
         let built = MealDashboard.build(
             date: date,
             log: logsByDate[date],
             meals: mealsByDate[date] ?? [],
             outboxEntries: entries,
-            foods: foods
+            foods: foods,
+            deletions: deletions
         )
         guard date == dateString else { return }
         dashboard = built
@@ -297,22 +312,25 @@ final class DayLogLoader {
         }
     }
 
-    /// A synced entry is deleted in Garmin (design D5), then the day is
-    /// re-read. A queued entry never reached Garmin, so it is only removed
-    /// from the queue.
+    /// A synced entry's delete is queued on the phone (improve-food-day-flow
+    /// E2: no network wait, so it works offline) and the day is rebuilt with
+    /// the row marked "Deleting…"; the caller starts delivery. In standalone
+    /// mode the entry is removed from the local log and the day re-read. A
+    /// queued entry never reached Garmin, so it is only removed from the
+    /// queue.
     func delete(_ entry: MealEntry) async throws {
         switch entry.status {
         case .synced(let logId):
             guard !logId.isEmpty else { throw DeleteError.missingIdentifier }
-            do {
-                try await coordinator.deleteCommitted(logId: logId, date: dateString)
-            } catch {
-                // Standalone: a local delete, no Garmin involved -- its own
-                // error (e.g. "changed in the meantime") says it best.
-                if dataMode() == .standalone { throw error }
-                throw DeleteError.garmin(Self.describe(error))
+            // Any error here is a local one (the local log's "changed in
+            // the meantime", or the queue file couldn't be written) and says
+            // it best itself.
+            try await coordinator.deleteCommitted(logId: logId, date: dateString)
+            if dataMode() == .standalone {
+                await refresh()
+            } else {
+                await rebuild()
             }
-            await refresh()
         case .syncing(let outboxId), .failed(let outboxId, _):
             // Claim-guarded (code-review fix): refuses while a drain is
             // sending it or Garmin already has it, and for an edit also

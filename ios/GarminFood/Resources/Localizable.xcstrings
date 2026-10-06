@@ -6630,7 +6630,7 @@
           }
         }
       }
-    },
+    },
     "Hydration": {
       "comment": "Layout editor row: the hydration card on Progress.",
       "extractionState": "manual",
@@ -8643,6 +8643,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "kcal"
+          }
+        }
+      }
+    },
+    "Keep entry": {
+      "comment": "improve-food-day-flow: action on a food entry whose delete is queued or gave up -- drop the delete, the entry stays.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponechat záznam"
+          }
+        }
+      }
+    },
+    "Deleting…": {
+      "comment": "improve-food-day-flow: status on a food entry whose delete is saved on the phone and not yet confirmed by Garmin.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mazání…"
+          }
+        }
+      }
+    },
+    "Couldn't delete": {
+      "comment": "improve-food-day-flow: status on a food entry whose queued delete gave up; the entry is still in Garmin.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodařilo se smazat"
+          }
+        }
+      }
+    },
+    "Food to delete": {
+      "comment": "improve-food-day-flow: sync queue section listing queued deletes of food entries.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jídlo ke smazání"
+          }
+        }
+      }
+    },
+    "Food entry": {
+      "comment": "Sync queue: a queued delete whose food name isn't loaded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záznam jídla"
           }
         }
       }

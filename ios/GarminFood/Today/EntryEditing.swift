@@ -23,9 +23,14 @@
 // `CopyMealSheet` reading the source day, which is a preview, not a
 // confirm path.
 //
+// improve-food-day-flow (E2): a row whose delete is queued ("Deleting…") or
+// gave up ("Couldn't delete") offers only what makes sense for it -- "Keep
+// entry" (drop the delete), and "Retry" once it gave up -- instead of Edit,
+// Move, Duplicate and Delete.
+//
 // Depends on: AppEnvironment (editEntry/duplicateEntry/delete/
-// copyMealPlan/copyMeal), FoodLogCore (MealEntry, CopyMealPlan,
-// LogEntryEditError), GarminKit's MealType.
+// copyMealPlan/copyMeal, retryFoodDeletion/keepEntry), FoodLogCore
+// (MealEntry, CopyMealPlan, LogEntryEditError), GarminKit's MealType.
 
 import SwiftUI
 import FoodLogCore
@@ -76,18 +81,34 @@ private struct EntryActionsModifier: ViewModifier {
         content
             .opacity(editor.busyEntryId == entry.id ? 0.4 : 1)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
-                    editor.pendingDelete = entry
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                if entry.canRelog {
+                if let deletionId = entry.deletionId {
                     Button {
-                        editor.editTarget = entry
+                        keepEntry(deletionId)
                     } label: {
-                        Label("Edit", systemImage: "slider.horizontal.3")
+                        Label("Keep entry", systemImage: "arrow.uturn.backward")
                     }
-                    .tint(Theme.accent)
+                    if !entry.isBeingDeleted {
+                        Button {
+                            retryDeletion(deletionId)
+                        } label: {
+                            Label("Retry", systemImage: "arrow.clockwise")
+                        }
+                        .tint(Theme.accent)
+                    }
+                } else {
+                    Button(role: .destructive) {
+                        editor.pendingDelete = entry
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    if entry.canRelog {
+                        Button {
+                            editor.editTarget = entry
+                        } label: {
+                            Label("Edit", systemImage: "slider.horizontal.3")
+                        }
+                        .tint(Theme.accent)
+                    }
                 }
             }
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
@@ -101,6 +122,20 @@ private struct EntryActionsModifier: ViewModifier {
                 }
             }
             .contextMenu {
+                if let deletionId = entry.deletionId {
+                    if !entry.isBeingDeleted {
+                        Button {
+                            retryDeletion(deletionId)
+                        } label: {
+                            Label("Retry", systemImage: "arrow.clockwise")
+                        }
+                    }
+                    Button {
+                        keepEntry(deletionId)
+                    } label: {
+                        Label("Keep entry", systemImage: "arrow.uturn.backward")
+                    }
+                }
                 if entry.canRelog {
                     Button {
                         editor.editTarget = entry
@@ -124,13 +159,21 @@ private struct EntryActionsModifier: ViewModifier {
                         Label("Duplicate", systemImage: "plus.square.on.square")
                     }
                 }
-                Button(role: .destructive) {
-                    editor.pendingDelete = entry
-                } label: {
-                    Label("Delete", systemImage: "trash")
+                if entry.deletion == nil {
+                    Button(role: .destructive) {
+                        editor.pendingDelete = entry
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 }
             }
             .accessibilityActions {
+                if let deletionId = entry.deletionId {
+                    if !entry.isBeingDeleted {
+                        Button("Retry") { retryDeletion(deletionId) }
+                    }
+                    Button("Keep entry") { keepEntry(deletionId) }
+                }
                 if entry.canRelog {
                     Button("Edit") { editor.editTarget = entry }
                     ForEach(otherMeals, id: \.self) { meal in
@@ -138,7 +181,9 @@ private struct EntryActionsModifier: ViewModifier {
                     }
                     Button("Duplicate") { duplicate() }
                 }
-                Button("Delete") { editor.pendingDelete = entry }
+                if entry.deletion == nil {
+                    Button("Delete") { editor.pendingDelete = entry }
+                }
             }
     }
 
@@ -152,6 +197,16 @@ private struct EntryActionsModifier: ViewModifier {
 
     private func move(to meal: MealType) {
         run { try await environment.editEntry(entry, newQuantity: entry.servingQty, newMeal: meal) }
+    }
+
+    /// improve-food-day-flow (E2): "Retry" on a delete that gave up.
+    private func retryDeletion(_ id: UUID) {
+        run { try await environment.retryFoodDeletion(id: id) }
+    }
+
+    /// improve-food-day-flow (E2): "Keep entry" -- drop the queued delete.
+    private func keepEntry(_ id: UUID) {
+        run { try await environment.keepEntry(deletionId: id) }
     }
 
     private func run(_ action: @escaping @MainActor () async throws -> Void) {

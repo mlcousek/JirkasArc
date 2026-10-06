@@ -166,7 +166,7 @@ final class AppServices {
         let localFoodLog = LocalFoodLogStore()
         self.localFoodLog = localFoodLog
         self.logEntryCoordinator = ModeRoutingFoodLogging(
-            garmin: LogEntryCoordinator(outbox: outbox, usageHistory: usageHistory, servingDefaults: servingDefaults, foodCache: foodCache, garminLog: client),
+            garmin: LogEntryCoordinator(outbox: outbox, usageHistory: usageHistory, servingDefaults: servingDefaults, foodCache: foodCache),
             local: LocalLogEntryCoordinator(store: localFoodLog, usageHistory: usageHistory, servingDefaults: servingDefaults, foodCache: foodCache),
             mode: dataMode
         )

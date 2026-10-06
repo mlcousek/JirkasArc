@@ -56,6 +56,7 @@ final class StoreFixtureTests: XCTestCase {
         "weight-outbox-app.json",
         "hydration-outbox-app.json",
         "diagnostics-log.json",
+        "food-delete-outbox-app.json",
     ]
 
     /// Per-process store files whose names are interpolated
@@ -65,6 +66,7 @@ final class StoreFixtureTests: XCTestCase {
         "outbox-app.json",
         "weight-outbox-app.json",
         "hydration-outbox-app.json",
+        "food-delete-outbox-app.json",
     ]
 
     /// Literal `"<name>.json"` strings in Sources/GarminKit that are NOT a
@@ -281,6 +283,53 @@ final class StoreFixtureTests: XCTestCase {
         XCTAssertEqual(due, 1)
     }
 
+    // MARK: - food-delete-outbox-app.json (FoodLogDeletionStore: [FoodLogDeletion], default JSONEncoder)
+
+    /// improve-food-day-flow (E2): the delete queue's own file, read through
+    /// the `Outbox` that owns it.
+    func testFoodDeleteOutboxFixtureDecodesThroughTheRealStore() async throws {
+        let url = try copyFixture("food-delete-outbox-app.json")
+        // The food outbox's own file is not part of this fixture: it points
+        // at a name in the same temp directory that is never written.
+        let entriesURL = url.deletingLastPathComponent().appendingPathComponent("entries-not-used.json")
+
+        let outbox = Outbox(store: OutboxStore(fileURL: entriesURL), deletions: FoodLogDeletionStore(fileURL: url))
+        let deletions = await outbox.allDeletions()
+
+        try assertNotQuarantined(url)
+        XCTAssertEqual(deletions.count, 3)
+        guard deletions.count == 3 else { return }
+
+        // Waiting, with no optional field at all.
+        let waiting = deletions[0]
+        XCTAssertEqual(waiting.id, UUID(uuidString: "3C4D5E6F-7A8B-4C9D-8E0F-1A2B3C4D5E01"))
+        XCTAssertEqual(waiting.date, "2026-10-04")
+        XCTAssertEqual(waiting.logId, "a1b2c3d4e5f60718293a4b5c6d7e8f90")
+        XCTAssertEqual(waiting.state, .pending)
+        XCTAssertEqual(waiting.attemptCount, 0)
+        XCTAssertNil(waiting.lastError)
+        XCTAssertNil(waiting.deliveredAt)
+        XCTAssertNil(waiting.accountKey)
+        XCTAssertEqual(waiting.createdAt, Date(timeIntervalSinceReferenceDate: 812794500.5))
+        XCTAssertEqual(waiting.nextAttemptAt, Date(timeIntervalSinceReferenceDate: 812794500.5))
+        XCTAssertTrue(waiting.isWaiting)
+
+        // Confirmed by Garmin, tied to an account, kept until the day is re-read.
+        let confirmed = deletions[1]
+        XCTAssertEqual(confirmed.state, .sent)
+        XCTAssertEqual(confirmed.attemptCount, 1)
+        XCTAssertEqual(confirmed.deliveredAt, Date(timeIntervalSinceReferenceDate: 812710006))
+        XCTAssertEqual(confirmed.accountKey, "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff")
+        XCTAssertTrue(confirmed.isConfirmed)
+
+        // Gave up after five attempts.
+        let gaveUp = deletions[2]
+        XCTAssertEqual(gaveUp.state, .failed)
+        XCTAssertEqual(gaveUp.attemptCount, 5)
+        XCTAssertEqual(gaveUp.lastError, "httpError(statusCode: 500, body: nil)")
+        XCTAssertTrue(gaveUp.needsManualRetry)
+    }
+
     // MARK: - diagnostics-log.json (DiagnosticsLog: [DiagnosticsEntry], .iso8601)
 
     /// `DiagnosticsLog` deliberately doesn't use `PersistedJSON` (see that
@@ -358,7 +407,7 @@ final class StoreFixtureTests: XCTestCase {
         // Sanity: the scan actually sees the stores we know about, so a
         // broken path or regex can't make this test pass vacuously.
         XCTAssertTrue(literalFileNames.contains("diagnostics-log.json"), "scan found: \(literalFileNames)")
-        XCTAssertEqual(interpolatedPrefixes, ["outbox-", "weight-outbox-", "hydration-outbox-"])
+        XCTAssertEqual(interpolatedPrefixes, ["outbox-", "weight-outbox-", "hydration-outbox-", "food-delete-outbox-"])
 
         // 3. Every literal store file name has a fixture (or a stated reason not to).
         let fixtures = Set(Self.allFixtures)

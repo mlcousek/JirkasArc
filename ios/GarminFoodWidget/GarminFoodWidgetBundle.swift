@@ -23,6 +23,13 @@
 // entries are not, so they're listed unconditionally and the Controls are
 // gated behind `if #available` rather than bumping this target's whole
 // deployment target off of 17.0.
+//
+// add-training-shortcuts-and-widgets: two more widgets (the check-in
+// buttons, iOS 17's interactive widgets; the countdown) and two more
+// Controls (water, weight). The new Controls sit in a SECOND
+// `if #available` block on purpose: the first already lists eight, and a
+// result-builder block takes a limited number of entries (ten in SwiftUI's
+// own builders) -- two blocks keep both well under it.
 
 import WidgetKit
 import SwiftUI
@@ -33,6 +40,9 @@ struct GarminFoodWidgetBundle: WidgetBundle {
         GarminFoodHomeWidget()
         GarminFoodStreakWidget()
         GarminFoodLockScreenWidget()
+        // add-training-shortcuts-and-widgets D4, D7.
+        MorningCheckInWidget()
+        CountdownWidget()
 
         if #available(iOS 18.0, *) {
             QuickPickControl1()
@@ -44,6 +54,12 @@ struct GarminFoodWidgetBundle: WidgetBundle {
             MorningCheckInGreenControl()
             MorningCheckInAmberControl()
             MorningCheckInRedControl()
+        }
+        if #available(iOS 18.0, *) {
+            // add-training-shortcuts-and-widgets D5, D6: one glass of
+            // water; the weigh-in form.
+            LogWaterControl()
+            LogWeightControl()
         }
     }
 }

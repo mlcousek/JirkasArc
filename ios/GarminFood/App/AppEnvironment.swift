@@ -355,6 +355,9 @@ final class AppEnvironment {
             self.router.selectedTab = .today
             Task { await self.goToToday() }
         }
+        // add-training-shortcuts-and-widgets D5: a weigh-in or a drink
+        // logged without its screen (AppEnvironment+QuickHealthLog.swift).
+        wireQuickHealthLog()
         // improve-food-day-flow: a re-read of a day found an entry Garmin
         // had answered as deleted. Its delete is "Couldn't delete" again:
         // list it in the sync queue (and the failure banner) at once.

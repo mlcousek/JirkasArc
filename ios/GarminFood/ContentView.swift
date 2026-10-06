@@ -42,6 +42,14 @@ struct ContentView: View {
         .onChange(of: environment.experience) { _, experience in
             environment.router.experienceDidChange(to: experience)
         }
+        // add-training-shortcuts-and-widgets D6: the weight Control opens
+        // the weigh-in form over whichever tab is showing. Inside the
+        // themed root, like the Weight screen's own sheet.
+        .sheet(isPresented: $router.weighInRequested) {
+            NavigationStack {
+                AddWeightSheet()
+            }
+        }
         // add-themes-and-layout R4: tint, forced scheme and accessibility
         // inputs for the theme (replaces `.tint(Theme.accent)`).
         .themed(environment.themeStore)

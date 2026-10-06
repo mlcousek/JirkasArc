@@ -33,6 +33,10 @@ final class AppNavigationBridge {
 
     enum PendingRoute: Equatable {
         case barcodeScanner
+        /// add-training-shortcuts-and-widgets D6: the weight Control
+        /// (`OpenWeighInIntent`). `AppRouter.applyPendingRoute` consumes it
+        /// and presents the weigh-in form.
+        case weighIn
     }
 
     private(set) var pendingRoute: PendingRoute?

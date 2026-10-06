@@ -18,7 +18,9 @@
 // `PaletteResolver`) for the scheme WidgetKit renders in. The label is the
 // theme's `onAccent`, which the contrast policy guarantees on `accent`.
 //
-// Used by GarminFoodHomeWidget and GarminFoodStreakWidget.
+// Used by GarminFoodHomeWidget, GarminFoodStreakWidget and
+// MorningCheckInWidget (`WidgetThemeIntent`), and by CountdownWidget,
+// whose own configuration carries the same `WidgetThemeOption`.
 
 import AppIntents
 import SwiftUI
@@ -98,6 +100,12 @@ struct WidgetThemeColors {
     func color(_ role: ThemeRole) -> Color {
         ThemePalette.previewColor(palette, role)
     }
+
+    /// The scheme the palette was resolved for. A theme with one scheme (a
+    /// dark-only theme in light mode) differs from the system's, so a view
+    /// that puts the system text styles on this palette's surfaces sets it
+    /// (MorningCheckInWidget; add-training-shortcuts-and-widgets D4).
+    var colorScheme: ColorScheme { palette.scheme == .dark ? .dark : .light }
 
     /// Text and glyphs on the accent (white or black per theme and scheme).
     var label: Color { color(.onAccent) }

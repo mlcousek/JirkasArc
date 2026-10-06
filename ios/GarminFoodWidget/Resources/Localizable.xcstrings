@@ -1,6 +1,138 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld days": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget: whole days until the event. Plural.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dny"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dne"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld den"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dní"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld days ago": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget: whole days since the event. Plural.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "před %lld dny"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "před %lld dne"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "před %lld dnem"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "před %lld dny"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld day ago"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Achilles (left)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the left Achilles tendon. Same wording as the pain step on Today.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achilovka (levá)"
+          }
+        }
+      }
+    },
+    "Achilles (right)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the right Achilles tendon.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achilovka (pravá)"
+          }
+        }
+      }
+    },
     "Barcode Scanner": {
       "comment": "App Intents value (Shared/OpenBarcodeScannerIntent.swift): the one screen the scan intent can open.",
       "extractionState": "manual",
@@ -25,6 +157,30 @@
         }
       }
     },
+    "Check-in recorded: %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Confirmation of the morning check-in (Siri, Shortcuts, widget, Control). %@ is the light: Green, Amber or Red.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola zaznamenána: %@."
+          }
+        }
+      }
+    },
+    "Check-in recorded: %@. Pain %@/10, %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Confirmation of a morning check-in with a pain score. %@ = the light, the score out of ten (e.g. 4.5), the pain site.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola zaznamenána: %1$@. Bolest %2$@/10, %3$@."
+          }
+        }
+      }
+    },
     "Choose the colors of this widget.": {
       "comment": "Description of the widget configuration (Edit Widget).",
       "extractionState": "manual",
@@ -33,6 +189,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vyber barvy tohoto widgetu."
+          }
+        }
+      }
+    },
+    "Choose the event to count down to.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the countdown widget's configuration (Edit Widget).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyber událost, ke které se má odpočítávat."
           }
         }
       }
@@ -61,6 +229,54 @@
         }
       }
     },
+    "Countdown": {
+      "comment": "add-training-shortcuts-and-widgets: Name of the countdown widget, its configuration's title, and its heading before an event name is set.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpočet"
+          }
+        }
+      }
+    },
+    "Date": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget configuration: the event's day.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum"
+          }
+        }
+      }
+    },
+    "Edit the widget to choose an event": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget before it is set up: how to set an event.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uprav widget a vyber událost"
+          }
+        }
+      }
+    },
+    "Event": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget configuration: the event's name (typed by the user).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Událost"
+          }
+        }
+      }
+    },
     "Forest": {
       "comment": "Theme name (widget theme option).",
       "extractionState": "manual",
@@ -69,6 +285,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les"
+          }
+        }
+      }
+    },
+    "From 0 to 10, in half steps. Leave it empty to record the light only. A score replaces this morning's earlier pain answer.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the check-in shortcut's Pain Score parameter (Shortcuts app).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Od 0 do 10, po půl bodu. Když ho necháš prázdné, zaznamená se jen barva. Skóre nahradí dřívější dnešní odpověď o bolesti."
           }
         }
       }
@@ -169,6 +397,42 @@
         }
       }
     },
+    "Knee (left)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the left knee.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koleno (levé)"
+          }
+        }
+      }
+    },
+    "Knee (right)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the right knee.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koleno (pravé)"
+          }
+        }
+      }
+    },
+    "Log a Glass of Water": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title: the water Control's action, one 250 ml glass.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat sklenici vody"
+          }
+        }
+      }
+    },
     "Log Food": {
       "comment": "Home Screen / Lock Screen widget name, label and VoiceOver label: opens the food catalog.",
       "extractionState": "manual",
@@ -237,6 +501,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zapiš dnešek"
+          }
+        }
+      }
+    },
+    "Log Water": {
+      "comment": "add-training-shortcuts-and-widgets: Name and label of the water Control.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat vodu"
+          }
+        }
+      }
+    },
+    "Log Weight": {
+      "comment": "add-training-shortcuts-and-widgets: Name and label of the weight Control, which opens the weigh-in form.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat váhu"
+          }
+        }
+      }
+    },
+    "Logs a 250 ml glass of water": {
+      "comment": "add-training-shortcuts-and-widgets: Action hint of the water Control.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapíše sklenici vody (250 ml)"
+          }
+        }
+      }
+    },
+    "Logs one 250 ml glass of water in Jirka's Arc.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description: the water Control's action.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapíše do Jirka's Arc jednu sklenici vody (250 ml)."
+          }
+        }
+      }
+    },
+    "Logs one 250 ml glass of water. Briefly opens Jirka's Arc to do it.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the water Control.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapíše jednu sklenici vody (250 ml). Kvůli tomu na chvíli otevře Jirka's Arc."
           }
         }
       }
@@ -433,6 +757,18 @@
         }
       }
     },
+    "Open the Weigh-in Form": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title: the weight Control's action, opens the weigh-in form.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít zápis váhy"
+          }
+        }
+      }
+    },
     "Opens Jirka's Arc": {
       "comment": "VoiceOver hint on the Home Screen / Lock Screen 'Log Food' widget.",
       "extractionState": "manual",
@@ -457,6 +793,18 @@
         }
       }
     },
+    "Opens Jirka's Arc on the weigh-in form.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description, and the description of the Log Weight Control.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevře Jirka's Arc rovnou na zápisu váhy."
+          }
+        }
+      }
+    },
     "Opens Jirka's Arc to log today": {
       "comment": "VoiceOver hint on the streak widget.",
       "extractionState": "manual",
@@ -465,6 +813,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Otevře Jirka's Arc, ať můžeš zapsat dnešek"
+          }
+        }
+      }
+    },
+    "Other site": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: anywhere else.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jiné místo"
+          }
+        }
+      }
+    },
+    "Pain Score": {
+      "comment": "add-training-shortcuts-and-widgets: Parameter of the check-in shortcut: an optional pain score from 0 to 10.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skóre bolesti"
+          }
+        }
+      }
+    },
+    "Pain Site": {
+      "comment": "add-training-shortcuts-and-widgets: App Intents type and parameter name: where it hurts (morning check-in shortcut).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Místo bolesti"
           }
         }
       }
@@ -525,6 +909,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rychlý zápis 4"
+          }
+        }
+      }
+    },
+    "Record a ${light} morning check-in": {
+      "comment": "add-training-shortcuts-and-widgets: Shortcuts parameter summary (MorningCheckInIntent.parameterSummary). ${light} is the traffic-light parameter; keep it verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaznamenat ranní kontrolu: ${light}"
           }
         }
       }
@@ -601,6 +997,18 @@
         }
       }
     },
+    "The days to an event you name. Set the event and its date by editing the widget.": {
+      "comment": "add-training-shortcuts-and-widgets: Widget gallery description of the countdown widget.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počet dní do události, kterou si pojmenuješ. Název a datum nastavíš v úpravě widgetu."
+          }
+        }
+      }
+    },
     "Theme": {
       "comment": "Edit Widget: name of the widget's theme option.",
       "extractionState": "manual",
@@ -609,6 +1017,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Motiv"
+          }
+        }
+      }
+    },
+    "Today": {
+      "comment": "add-training-shortcuts-and-widgets: Countdown widget: the event is today.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dnes"
           }
         }
       }
@@ -649,6 +1069,18 @@
         }
       }
     },
+    "Where it hurts, used with a pain score. Leave it empty for the site you scored last.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the check-in shortcut's Pain Site parameter (Shortcuts app).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kde to bolí; použije se jen se skóre bolesti. Když ho necháš prázdné, vezme se naposledy hodnocené místo."
+          }
+        }
+      }
+    },
     "Green": {
       "comment": "add-training-checkins: the green morning check-in light (App Intents).",
       "extractionState": "manual",
@@ -657,6 +1089,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zelená"
+          }
+        }
+      }
+    },
+    "Green, amber or red in one tap. Briefly opens Jirka's Arc to record it.": {
+      "comment": "add-training-shortcuts-and-widgets: Widget gallery description of the check-in widget.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelená, oranžová, nebo červená jedním klepnutím. Kvůli záznamu na chvíli otevře Jirka's Arc."
+          }
+        }
+      }
+    },
+    "Green, amber or red?": {
+      "comment": "add-training-shortcuts-and-widgets: Siri's question when the check-in shortcut runs without a light.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelená, oranžová, nebo červená?"
           }
         }
       }
@@ -721,6 +1177,30 @@
         }
       }
     },
+    "Nothing saved: the amount must be above 0 and below 5000 ml.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the Log Water shortcut: not an amount the water form would accept. Nothing was saved.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se neuložilo: množství musí být větší než 0 a menší než 5000 ml."
+          }
+        }
+      }
+    },
+    "Nothing saved: the weight must be above 0 and below 500 kg.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the Log Weight shortcut: not a weight the weigh-in form would accept. Nothing was saved.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se neuložilo: váha musí být větší než 0 a menší než 500 kg."
+          }
+        }
+      }
+    },
     "Nothing recorded: test the vault connection in Jirka's Arc first.": {
       "comment": "add-training-checkins: check-in Control error, the vault connection has no device id yet.",
       "extractionState": "manual",
@@ -729,6 +1209,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nic se nezaznamenalo: nejdřív v Jirka's Arc otestuj připojení k vaultu."
+          }
+        }
+      }
+    },
+    "Nothing recorded: the pain score must be between 0 and 10.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the check-in shortcut: the pain score given is outside 0 to 10. Nothing was recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nezaznamenalo: skóre bolesti musí být od 0 do 10."
           }
         }
       }
@@ -801,6 +1293,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zaznamená oranžovou ranní kontrolu. Kvůli tomu na chvíli otevře Jirka's Arc."
+          }
+        }
+      }
+    },
+    "Records the check-in. Briefly opens Jirka's Arc to do it.": {
+      "comment": "add-training-shortcuts-and-widgets: VoiceOver hint of a button of the check-in widget.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaznamená ranní kontrolu. Kvůli tomu na chvíli otevře Jirka's Arc."
           }
         }
       }

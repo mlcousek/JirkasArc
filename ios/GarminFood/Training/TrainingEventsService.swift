@@ -9,12 +9,15 @@
 // Who calls it:
 //   - TrainingModel's actions (Today's check-in and habit toggles, the
 //     session detail's RPE and note);
-//   - the lock-screen Controls, through `MorningCheckInControlAction.handler`
+//   - the lock-screen Controls, the Home Screen check-in widget and the
+//     "Morning check-in" App Shortcut (add-training-shortcuts-and-widgets),
+//     through `MorningCheckInControlAction.handler`
 //     (Shared/MorningCheckInIntents.swift), which `GarminFoodApp.init()`
-//     points at `handleControlCheckIn` before any scene exists: the
-//     Controls' intent runs in the app's process (`openAppWhenRun`), but
+//     points at `handleCheckIn` before any scene exists: the
+//     intent runs in the app's process (`openAppWhenRun`), but
 //     Shared/ is compiled into the widget too and can't import TrainingCore.
-//     A Control records the light only; afterwards `onControlCheckIn`
+//     The shortcut may add one pain number (design D3 there). A Control or
+//     a widget button records the light only; afterwards `onControlCheckIn`
 //     brings Today's today forward, where the pain step asks the rest
 //     (add-checkin-pain-score D7) -- in pain mode only
 //     (add-daily-checkin-and-pain-mode: AppEnvironment's handler checks
@@ -120,27 +123,63 @@ final class TrainingEventsService {
         await onChange?()
     }
 
-    /// The Controls' check-in: today's training day and session from the
-    /// cached plan (no network), recorded like a tap on Today.
-    func handleControlCheckIn(_ rawLight: String) async throws {
-        guard let light = MorningLight(rawValue: rawLight) else {
+    /// The check-in from outside Today's row -- a Control, the Home Screen
+    /// widget or the App Shortcut: today's training day and session from
+    /// the cached plan (no network), recorded like a tap on Today.
+    ///
+    /// add-training-shortcuts-and-widgets D2/D3: the shortcut may add one
+    /// pain number. TrainingCore's `CheckInPlanning` (QuickCheckIn.swift)
+    /// checks it, puts it on the half-step grid and picks the site when
+    /// none was given; the receipt says what is in the event. Without a
+    /// score the check-in carries no pain answer, and only then is Today
+    /// brought forward for the pain step (`onControlCheckIn`).
+    func handleCheckIn(_ request: MorningCheckInRequest) async throws -> MorningCheckInReceipt {
+        guard let light = MorningLight(rawValue: request.light) else {
             throw MorningCheckInControlAction.ActionError.notAvailable
         }
+        // Before anything else, so "the vault is off" is never hidden
+        // behind a complaint about the score.
+        guard isConnectionOn() else {
+            throw MorningCheckInControlAction.ActionError.vaultOff
+        }
         let cached = await services.projectionStore.loadCached()
-        let payload = CheckInPlanning.morningCheckIn(
-            light: light,
-            projection: cached?.projection,
-            now: Date(),
-            deviceTimeZone: .current
-        )
+        let pain = request.painScore.map { score in
+            QuickPainAnswer(score: score, site: request.painSite.map(PainSite.init(wire:)))
+        }
+        // The phone's own earlier answers matter for the default site only
+        // (the same overlay TrainingModel lays over the plan).
+        var checkIns = CheckInOverlay.empty
+        if pain != nil {
+            checkIns = await recorder.overlay(
+                acks: cached?.projection.acks ?? [:],
+                outcomes: cached?.projection.outcomes ?? []
+            )
+        }
+        let payload: MorningCheckInPayload
+        do {
+            payload = try CheckInPlanning.morningCheckIn(
+                light: light,
+                pain: pain,
+                projection: cached?.projection,
+                checkIns: checkIns,
+                now: Date(),
+                deviceTimeZone: .current
+            )
+        } catch {
+            throw MorningCheckInControlAction.ActionError.painScoreOutOfRange
+        }
         do {
             try await record(.morningCheckIn(payload))
-            onControlCheckIn?()
         } catch RecordError.vaultOff {
             throw MorningCheckInControlAction.ActionError.vaultOff
         } catch RecordError.notTested {
             throw MorningCheckInControlAction.ActionError.notTested
         }
+        let recordedPain = payload.pains?.first
+        if recordedPain == nil {
+            onControlCheckIn?()
+        }
+        return MorningCheckInReceipt(painScore: recordedPain?.score, painSite: recordedPain?.site.rawValue)
     }
 
     // MARK: Delivery

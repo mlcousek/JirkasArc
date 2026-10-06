@@ -163,10 +163,24 @@ final class AppRouter {
         }
     }
 
-    /// The barcode Control: Today plus the catalog, in both experiences.
+    /// add-training-shortcuts-and-widgets D6: the weight Control fired.
+    /// ContentView presents the weigh-in form over whichever tab is showing
+    /// and clears this when the form closes.
+    var weighInRequested = false
+
+    /// A Control's route. The barcode Control: Today plus the catalog, in
+    /// both experiences (the catalog consumes the route). The weight
+    /// Control: the weigh-in form, consumed here.
     func applyPendingRoute() {
-        guard AppNavigationBridge.shared.pendingRoute == .barcodeScanner else { return }
-        selectedTab = AppShell.destination(for: .logFood, experience: experience())
-        catalogRequested = true
+        switch AppNavigationBridge.shared.pendingRoute {
+        case .barcodeScanner?:
+            selectedTab = AppShell.destination(for: .logFood, experience: experience())
+            catalogRequested = true
+        case .weighIn?:
+            AppNavigationBridge.shared.consume()
+            weighInRequested = true
+        case nil:
+            break
+        }
     }
 }

@@ -1,6 +1,30 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "${light} in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (MorningCheckInIntent). ${applicationName} is replaced by the app name and ${light} by Green, Amber or Red; keep both verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${light} v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Check in ${light} in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (MorningCheckInIntent). ${applicationName} is replaced by the app name and ${light} by Green, Amber or Red; keep both verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranní kontrola ${light} v ${applicationName}"
+          }
+        }
+      }
+    },
     "Log a food by name in ${applicationName}" : {
       "comment" : "Siri/App Shortcut phrase (GarminFoodShortcuts.swift, LogNamedFoodIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
       "extractionState" : "manual",
@@ -25,6 +49,18 @@
         }
       }
     },
+    "Log a glass of water in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (LogWaterIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiš sklenici vody do ${applicationName}"
+          }
+        }
+      }
+    },
     "Log my usual food in ${applicationName}" : {
       "comment" : "Siri/App Shortcut phrase (LogTopQuickPickIntent: logs the most-used food). ${applicationName} is replaced by the app name; keep it verbatim.",
       "extractionState" : "manual",
@@ -37,6 +73,18 @@
         }
       }
     },
+    "Log my weight in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (LogWeightIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiš moji váhu do ${applicationName}"
+          }
+        }
+      }
+    },
     "Log the usual in ${applicationName}" : {
       "comment" : "Siri/App Shortcut phrase (LogTopQuickPickIntent). ${applicationName} is replaced by the app name; keep it verbatim.",
       "extractionState" : "manual",
@@ -45,6 +93,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zapiš obvyklé do ${applicationName}"
+          }
+        }
+      }
+    },
+    "Log water in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (LogWaterIntent: one 250 ml glass). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiš vodu do ${applicationName}"
+          }
+        }
+      }
+    },
+    "Log weight in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (LogWeightIntent: asks for the kilograms). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiš váhu do ${applicationName}"
           }
         }
       }
@@ -81,6 +153,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Odškrtni návyk v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Morning check-in in ${applicationName}" : {
+      "comment" : "Siri/App Shortcut phrase (MorningCheckInIntent: asks for the light). ${applicationName} is replaced by the app name; keep it verbatim.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranní kontrola v ${applicationName}"
           }
         }
       }

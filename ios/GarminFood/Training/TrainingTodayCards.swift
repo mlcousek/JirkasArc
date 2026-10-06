@@ -30,6 +30,14 @@
 // add-daily-checkin-and-pain-mode: that is pain mode. Outside it the row is
 // the three lights and one small "Something hurts?" link that opens the
 // same step; the pain line is not built at all (TrainingCore decides).
+// add-training-gates-and-load: the card also carries the vault's data-gap
+// notices and the recovery window at its top, the week's load line ("the
+// plan is the ceiling") under the sessions, the morning step's "yesterday
+// after the session -> today" lines, and the weekly gate test -- a card of
+// its own under it on Saturday and Sunday, one link in the pain area on
+// other days (GateAndLoadViews.swift). All of it in pain mode only where
+// TrainingCore says so; a session ticked by hand reads "Done (logged by
+// hand)".
 // Both only call back; TodayView turns the callbacks into TrainingModel
 // actions (local events, never a network wait). Option cards follow D9: a token tint
 // only as a light wash, the letter AND a shape, larger shapes with
@@ -52,11 +60,37 @@ struct TrainingDayCard: View {
     var onCheckIn: (CheckInRowModel, MorningLight) -> Void = { _, _ in }
     /// add-checkin-pain-score: the pain step's Save (the whole check-in).
     var onSavePain: (MorningCheckInPayload) -> Void = { _ in }
+    /// add-training-gates-and-load: the weekly gate test's Save.
+    var onSaveGate: (GateTestPayload) -> Void = { _ in }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Density.stackSpacing) {
+            mainCard
+            // add-training-gates-and-load: on the weekend the gate test is
+            // a card of its own; on other days a link inside the card.
+            if let gate = model.gate, gate.isProminent {
+                GateTestCard(model: gate, onSave: onSaveGate)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
+            }
+        }
+    }
+
+    private var mainCard: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            // add-training-gates-and-load: why nothing is marked done from
+            // the watch, and the recovery window -- both about now.
+            Group {
+                VaultNoticeLines(lines: model.vaultNotices)
+                if let recovery = model.recovery {
+                    RecoveryChipView(model: recovery)
+                }
+            }
             if let row = model.checkIn {
                 CheckInRowView(row: row, onSelect: { light in onCheckIn(row, light) }, onSavePain: onSavePain)
+            }
+            if let gate = model.gate, !gate.isProminent {
+                GateTestCard(model: gate, onSave: onSaveGate)
             }
             if let state = model.emptyState {
                 TrainingEmptyStateView(state: state)
@@ -96,6 +130,10 @@ struct TrainingDayCard: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            }
+            // add-training-gates-and-load: "the plan is the ceiling".
+            if let load = model.weekLoad {
+                WeekLoadLine(model: load)
             }
             TrainingNoticeLines(notices: model.notices)
         }
@@ -351,11 +389,23 @@ private struct PainStepView: View {
     }
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             if showsEditor {
                 editor
             } else {
                 folded
+            }
+            // add-training-gates-and-load: how each site settled since
+            // yesterday's session (two recorded numbers, nothing judged).
+            ForEach(step.settledLines, id: \.self) { line in
+                Label {
+                    Text(verbatim: line)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "moon.zzz")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .onChange(of: step.date) { _, _ in

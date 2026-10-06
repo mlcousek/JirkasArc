@@ -24,6 +24,12 @@
 // light, an unplanned activity, pain tags in pain mode) --
 // `WeekAgendaModel.unwrittenDays`, from the projection's day skeletons.
 //
+// add-training-gates-and-load: the header shows the week's load line ("the
+// plan is the ceiling": run km of the target, km over plan, unplanned km,
+// the longest run of its cap, hills, hard sessions; "–" for what the vault
+// does not know) in place of the plain run line, and an unplanned run the
+// vault flags `over-plan` carries an amber "Over plan" badge with a symbol.
+//
 // Everything shown is `WeekAgendaModel` from TrainingCore's PlanBuilder;
 // nothing is summed here. Depended on by: PlanTabView (and `DayRowView` by
 // its day sheet).
@@ -112,7 +118,12 @@ struct WeekAgendaView: View {
                     }
                 }
             }
-            if let run = model.runLine {
+            // add-training-gates-and-load: "the plan is the ceiling" in
+            // place of the plain run line when the vault publishes the
+            // week's load (an older file keeps the plain line).
+            if let load = model.load {
+                WeekLoadLine(model: load)
+            } else if let run = model.runLine {
                 Label {
                     Text(verbatim: run)
                 } icon: {
@@ -211,13 +222,21 @@ struct DayRowView: View {
                 .foregroundStyle(Theme.accent)
             }
             ForEach(row.unplanned) { activity in
-                Label {
-                    Text(verbatim: activity.text)
-                } icon: {
-                    Image(systemName: activity.sportSymbol)
+                HStack(spacing: Theme.Spacing.sm) {
+                    Label {
+                        Text(verbatim: activity.text)
+                    } icon: {
+                        Image(systemName: activity.sportSymbol)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    // add-training-gates-and-load: the vault flags a run
+                    // of a week at or over its target -- never praise.
+                    if let overPlan = activity.overPlanText {
+                        OverPlanBadge(text: overPlan)
+                    }
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .accessibilityElement(children: .combine)
             }
             if let rest = row.restText {
                 Text(verbatim: rest)

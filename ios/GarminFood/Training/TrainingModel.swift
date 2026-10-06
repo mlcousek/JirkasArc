@@ -51,6 +51,13 @@
 // (TrainingCore's `PainModeState`: the vault's word, or this phone's own
 // unread pain answer).
 //
+// add-training-gates-and-load: five more facts go through the same
+// recorder -- the weekly gate test, pain during and after a session (with
+// the RPE), "done without a watch", the fuel log and a race result -- and
+// their undo is a retraction per event. Every payload is built by a
+// TrainingCore model (bounds checked there); nothing is recorded unless the
+// vault connection can record, and nothing waits for the network.
+//
 // Owned by AppEnvironment (`environment.training`); read by the Today
 // training cards, the Plan tab and the Habits screens.
 
@@ -157,6 +164,45 @@ final class TrainingModel {
     func saveNote(sessionID: String, date: LocalDate, text: String) async {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(SessionNotePayload.maxLength))
         await perform(.sessionNote(SessionNotePayload(date: date, sessionId: sessionID, text: trimmed)))
+    }
+
+    // MARK: Gates, load and results (add-training-gates-and-load)
+
+    /// The weekly gate test (`GateCardModel.payload`); the vault judges it.
+    func recordGateTest(_ payload: GateTestPayload) async {
+        await perform(.testGate(payload))
+    }
+
+    /// Pain during and after a session: the same RPE again with `pains`
+    /// (`SessionPainModel.payload`).
+    func recordSessionPain(_ payload: SessionRPEPayload) async {
+        await perform(.sessionRPE(payload))
+    }
+
+    /// "Mark done (no watch)" (`ManualDoneModel.payload`). Shown as done at
+    /// once; the vault counts it at the next sync.
+    func markDone(_ payload: SessionDonePayload) async {
+        Haptics.success()
+        await perform(.sessionDone(payload))
+    }
+
+    /// The fuel log of a long run or a race (`SessionFuelModel.payload`).
+    func logFuel(_ payload: SessionFuelPayload) async {
+        await perform(.sessionFuel(payload))
+    }
+
+    /// How a race ended (`RaceResultEditorModel.payload`).
+    func recordRaceResult(_ payload: RaceResultPayload) async {
+        await perform(.raceResult(payload))
+    }
+
+    /// Undo of "done without a watch" and Withdraw of a race result: one
+    /// retraction per event of this phone that still stands (the vault
+    /// takes the last one that is not retracted).
+    func retractEvents(_ eventIDs: [String]) async {
+        for id in eventIDs {
+            await perform(.eventRetracted(EventRetractedPayload(target: id)))
+        }
     }
 
     /// Records locally (durable), then the service schedules delivery and
@@ -317,8 +363,11 @@ final class TrainingModel {
 
     // MARK: Builders
 
+    /// add-training-gates-and-load: the builder knows the current training
+    /// day, so what describes "now" (the gate test, the recovery window,
+    /// the vault's notices) is not shown on a day being browsed.
     var todayBuilder: TodayTrainingBuilder {
-        TodayTrainingBuilder(source: source, language: language)
+        TodayTrainingBuilder(source: source, language: language, today: today())
     }
 
     func planBuilder(now: Date = Date()) -> PlanBuilder {

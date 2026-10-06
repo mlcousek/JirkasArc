@@ -1177,4 +1177,40 @@ final class GatesAndLoadTests: XCTestCase {
         XCTAssertNil(try raceFuel(NSNull()), "no verdict is not known")
         XCTAssertNil(try raceFuel("sideways"), "a verdict this build does not know")
     }
+
+    // MARK: - Typed numbers
+
+    func testANumberFieldIsBlankANumberOrNotOne() {
+        XCTAssertEqual(RecordInput.whole(""), .blank)
+        XCTAssertEqual(RecordInput.whole("  "), .blank)
+        XCTAssertEqual(RecordInput.whole(" 45 "), .number(45))
+        XCTAssertEqual(RecordInput.whole("0"), .number(0))
+        XCTAssertEqual(RecordInput.whole("4.5"), .invalid)
+        XCTAssertEqual(RecordInput.whole("-3"), .invalid)
+        XCTAssertEqual(RecordInput.whole("12 min"), .invalid)
+        XCTAssertEqual(RecordInput.whole("12345678901"), .invalid, "never an overflow")
+
+        XCTAssertEqual(RecordInput.decimal(""), .blank)
+        XCTAssertEqual(RecordInput.decimal("10"), .number(10))
+        XCTAssertEqual(RecordInput.decimal("10.5"), .number(10.5))
+        XCTAssertEqual(RecordInput.decimal("10,5"), .number(10.5), "a Czech keyboard types the comma")
+        XCTAssertEqual(RecordInput.decimal("0"), .number(0), "0 is an answer")
+        XCTAssertEqual(RecordInput.decimal("1.2.3"), .invalid)
+        XCTAssertEqual(RecordInput.decimal("."), .invalid)
+        XCTAssertEqual(RecordInput.decimal("-1"), .invalid)
+        XCTAssertEqual(RecordInput.decimal("1e3"), .invalid)
+        XCTAssertEqual(RecordInput.decimal("ten"), .invalid)
+
+        XCTAssertEqual(RecordInput.whole("45").value, 45)
+        XCTAssertNil(RecordInput.whole("x").value, "text that is not a number never becomes 0")
+        XCTAssertNil(RecordInput.decimal("").value)
+        XCTAssertTrue(RecordInput.whole("x").isInvalid)
+        XCTAssertTrue(RecordInput.decimal(" ").isBlank)
+
+        XCTAssertEqual(RecordInput.text(10.0), "10")
+        XCTAssertEqual(RecordInput.text(42.2), "42.2")
+        XCTAssertEqual(RecordInput.text(Double?.none), "")
+        XCTAssertEqual(RecordInput.text(45), "45")
+        XCTAssertEqual(RecordInput.text(Int?.none), "")
+    }
 }

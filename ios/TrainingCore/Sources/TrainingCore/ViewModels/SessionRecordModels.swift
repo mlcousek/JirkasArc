@@ -27,6 +27,10 @@
 //     (grams per hour against the plan, the neutral below / on / above
 //     chip); the phone computes none of it. `0 g` is an answer.
 //
+//   - `RecordInput` / `TypedNumber`: what a number field of a record sheet
+//     holds (blank, a number, or text that is not one), so "not said" and
+//     "not a number" never become 0 and the sheets hold no parsing.
+//
 // The vault's `session-pain` / `pain-not-settled` notes need nothing here:
 // they are the session's rule notes and are listed with its other notes.
 //
@@ -131,6 +135,9 @@ public struct SessionPainModel: Equatable, Sendable {
     public let removeLabels: [PainSite: String]
     public let scoreTexts: [String]
     public let scoreAccessibilityValues: [String]
+    /// "Edit pain": opens the editor again over a recorded answer.
+    public var editTitle: String = ""
+    public var cancelTitle: String = ""
 
     public func siteName(_ site: PainSite) -> String {
         siteNames[site] ?? site.rawValue
@@ -264,6 +271,60 @@ public struct SessionFuelModel: Equatable, Sendable {
     }
 }
 
+// MARK: - Typed numbers
+
+/// What a number field of a record sheet holds (minutes, kilometres, grams,
+/// millilitres, laps): nothing, a number, or text that is not one. Kept
+/// here so the sheets only draw: a blank optional field is "not said", and
+/// text that is not a number never becomes 0.
+public enum TypedNumber<Value: Equatable & Sendable>: Equatable, Sendable {
+    case blank
+    case number(Value)
+    case invalid
+
+    /// The number; `nil` for a blank or an unreadable field.
+    public var value: Value? {
+        if case .number(let number) = self { return number }
+        return nil
+    }
+
+    public var isInvalid: Bool { self == .invalid }
+    public var isBlank: Bool { self == .blank }
+}
+
+public enum RecordInput {
+    /// A whole number from 0 ("45"); digits only.
+    public static func whole(_ text: String) -> TypedNumber<Int> {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return .blank }
+        guard trimmed.count <= 9, trimmed.allSatisfy({ $0.isASCII && $0.isNumber }), let number = Int(trimmed) else { return .invalid }
+        return .number(number)
+    }
+
+    /// A number from 0 with a decimal point or a decimal comma ("10.5",
+    /// "10,5" -- a Czech keyboard types the comma).
+    public static func decimal(_ text: String) -> TypedNumber<Double> {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: ".")
+        if trimmed.isEmpty { return .blank }
+        let isPlain = trimmed.allSatisfy { ($0.isASCII && $0.isNumber) || $0 == "." }
+        guard trimmed.count <= 12, isPlain, trimmed.filter({ $0 == "." }).count <= 1, trimmed != ".",
+              let number = Double(trimmed), number.isFinite
+        else { return .invalid }
+        return .number(number)
+    }
+
+    /// A number as a field shows it again ("10", "10.5"; never "10.0").
+    public static func text(_ value: Double?) -> String {
+        guard let value, value.isFinite else { return "" }
+        if value.rounded() == value, abs(value) < 1e9 { return String(Int(value)) }
+        return String(value)
+    }
+
+    public static func text(_ value: Int?) -> String {
+        value.map { String($0) } ?? ""
+    }
+}
+
 // MARK: - Builders
 
 extension PlanBuilder {
@@ -288,7 +349,7 @@ extension PlanBuilder {
             removes[site] = text.format(.painRemoveSite, name)
         }
         let steps = (0...20).map { Double($0) / 2 }
-        return SessionPainModel(
+        var model = SessionPainModel(
             sessionID: session.id,
             date: day.date,
             title: text(.sessionPainTitle),
@@ -308,6 +369,9 @@ extension PlanBuilder {
             scoreTexts: steps.map(format.painScoreText),
             scoreAccessibilityValues: steps.map { text.format(.a11yPainValue, NumberText.decimal($0, format.language)) }
         )
+        model.editTitle = text(.painEdit)
+        model.cancelTitle = text(.actionCancel)
+        return model
     }
 
     /// "Mark done (no watch)" and its undo; `nil` when there is neither.

@@ -152,13 +152,14 @@ extension SessionPainEntry: Decodable {
 }
 
 extension SessionPainEntry: Encodable {
-    /// Both scores are written, `null` when not asked; a whole score as an
-    /// integer (`WireNumber`, HubEvent.swift).
+    /// A score that was not asked is left out (the vault's own example
+    /// does so; absent and `null` mean the same); a whole score is written
+    /// as an integer (`WireNumber`, HubEvent.swift).
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(site.rawValue, forKey: .site)
-        try WireNumber.encode(during, steps: 2, into: &c, forKey: .during)
-        try WireNumber.encode(after, steps: 2, into: &c, forKey: .after)
+        try WireNumber.encodeIfPresent(during, steps: 2, into: &c, forKey: .during)
+        try WireNumber.encodeIfPresent(after, steps: 2, into: &c, forKey: .after)
     }
 }
 

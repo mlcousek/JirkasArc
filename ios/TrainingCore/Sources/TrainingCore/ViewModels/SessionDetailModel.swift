@@ -17,6 +17,14 @@
 // plan" card with this phone's latest command on the session, the
 // vault's answer and the edits PlanEditPolicy allows.
 //
+// add-training-gates-and-load adds what the detail records beyond the RPE
+// and the note (SessionRecordModels.swift): `pain` (during and after, pain
+// mode only), `manualDone` ("Mark done (no watch)" and its undo) and
+// `fuelLog`. A session the vault says was ticked by hand reads "Done
+// (logged by hand)" and its done card says what was said (`manualTitle`,
+// `manualLine`); when an activity matched as well, the activity is the
+// card and the manual record one line under it.
+//
 // Depended on by: the app's SessionDetailView. Tests: PlanBuilderTests.
 
 import Foundation
@@ -43,6 +51,12 @@ public struct DoneDetailModel: Equatable, Sendable {
     public let activityLine: String?
     /// "Inferred from the sport", ...
     public let recognisedText: String?
+    /// add-training-gates-and-load: "Done without a watch" when the
+    /// session was ticked by hand and no activity matched; else `nil`.
+    public var manualTitle: String? = nil
+    /// What was said by hand: "45 min · the note" for a session done by
+    /// hand, "Also logged by hand: 55 min · 10 km" beside an activity.
+    public var manualLine: String? = nil
 }
 
 public enum TestTrend: String, Equatable, Sendable {
@@ -93,6 +107,12 @@ public struct SessionDetailModel: Equatable, Sendable {
     /// add-plan-editing: move, swap, skip, override, withdraw, and what
     /// became of this phone's last change.
     public var editing: SessionEditModel? = nil
+    /// add-training-gates-and-load: pain during and after (pain mode).
+    public var pain: SessionPainModel? = nil
+    /// add-training-gates-and-load: "Mark done (no watch)" and its undo.
+    public var manualDone: ManualDoneModel? = nil
+    /// add-training-gates-and-load: the fuel log of a long run or a race.
+    public var fuelLog: SessionFuelModel? = nil
 }
 
 public extension PlanBuilder {
@@ -168,7 +188,8 @@ public extension PlanBuilder {
             sportName: text.sportName(session.sport),
             sportSymbol: SportSymbol.name(session.sport),
             status: status,
-            statusText: text.statusName(session.status),
+            // add-training-gates-and-load: ticked done by hand, no activity.
+            statusText: status == .done && session.done?.isManual == true ? text(.doneByHand) : text.statusName(session.status),
             badgeText: badgeText,
             options: options,
             single: single,
@@ -182,6 +203,9 @@ public extension PlanBuilder {
         )
         model.rating = ratingModel(session, day: day, snapshot: snapshot)
         model.editing = sessionEdit(session, day: day, snapshot: snapshot)
+        model.pain = sessionPainModel(session, day: day, snapshot: snapshot)
+        model.manualDone = manualDoneModel(session, day: day, snapshot: snapshot)
+        model.fuelLog = sessionFuelModel(session, day: day, snapshot: snapshot)
         return model
     }
 
@@ -231,15 +255,27 @@ public extension PlanBuilder {
             switch done.matchedBy?.known {
             case .testResult?: recognised = text(.recognisedTest)
             case .dateSportGroup?: recognised = text(.recognisedDateSport)
-            case nil: recognised = nil
+            // Ticked by hand: the card's title says so (below).
+            case .manual?, nil: recognised = nil
             }
         }
-        // add-daily-checkin-and-pain-mode: a `done` this build can say
-        // nothing about -- the vault's "done without a watch" of 2026-10-01
-        // (`source` and `matchedBy` are `manual`, no activity) on a session
-        // without options -- gets no card; the status already says "Done".
-        guard optionText != nil || activityLine != nil || recognised != nil else { return nil }
-        return DoneDetailModel(optionText: optionText, activityLine: activityLine, recognisedText: recognised)
+        // add-training-gates-and-load: what was said by hand. With no
+        // activity it is the card; beside an activity (the activity won)
+        // it is one line under it.
+        var manualTitle: String?
+        var manualLine = format.manualDoneLine(done.manual)
+        if done.isManual, done.activity == nil {
+            manualTitle = text(.manualDoneTitle)
+        } else if let line = manualLine {
+            manualLine = text.format(.manualAlsoLogged, line)
+        }
+        // A `done` this build can say nothing about gets no card; the
+        // status already says "Done".
+        guard optionText != nil || activityLine != nil || recognised != nil || manualTitle != nil || manualLine != nil else { return nil }
+        var model = DoneDetailModel(optionText: optionText, activityLine: activityLine, recognisedText: recognised)
+        model.manualTitle = manualTitle
+        model.manualLine = manualLine
+        return model
     }
 
     /// Reserved (`null` in v1): "Moved from Mon 19 Oct", "Changed by a rule".

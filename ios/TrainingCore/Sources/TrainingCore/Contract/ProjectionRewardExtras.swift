@@ -58,7 +58,9 @@ public struct ProjectionRewardExtras: Equatable, Sendable {
         }
     }
 
-    /// A race's machine-readable result (not published yet).
+    /// A race's machine-readable result, as the rewards read it (the
+    /// vault's `season.races[].result` since 2026-10-05; the full record
+    /// the Race screen shows is the top-level `RaceResult`).
     public struct RaceResult: Equatable, Sendable {
         public var outcome: OpenEnum<RaceOutcome>?
         public var goalReached: Bool?

@@ -55,7 +55,10 @@
 //     not retracted, with its event id (the undo names it);
 //   - `fuelLogs` per session and `raceResults` per race, the last not
 //     retracted; a race result the vault refused (a `race.result` outcome)
-//     carries its reason.
+//     carries its reason. `liveDoneEventIDs` / `liveRaceResultEventIDs`
+//     list every event of a session / race that is still in the fold, so
+//     Undo and Withdraw retract them all, and `pendingRaceWithdrawals`
+//     names the races whose withdrawal the vault has not read yet.
 // A retracted fact leaves the fold (same device, a later `seq`), as it
 // leaves the vault's. A session done by hand is laid over the plan like a
 // check-in light, but only WHILE THE VAULT HAS NOT READ IT: an
@@ -168,6 +171,16 @@ public struct CheckInOverlay: Equatable, Sendable {
     public private(set) var retractedDone: [String: EventDelivery] = [:]
     public private(set) var fuelLogs: [String: OverlayRecord<SessionFuelPayload>] = [:]
     public private(set) var raceResults: [String: RaceResultRecord] = [:]
+    /// Per session, the ids of every `session.done` of this phone that is
+    /// not retracted, oldest first. Undo retracts them all: the vault
+    /// takes the last one that is not retracted, so retracting only the
+    /// newest would bring an older one back.
+    public private(set) var liveDoneEventIDs: [String: [String]] = [:]
+    /// Per race, the same for `race.result` (Withdraw).
+    public private(set) var liveRaceResultEventIDs: [String: [String]] = [:]
+    /// Races whose `race.result` this phone withdrew, while the vault has
+    /// not read the retraction and no newer result of this phone stands.
+    public private(set) var pendingRaceWithdrawals: Set<String> = []
 
     public init() {}
 
@@ -203,6 +216,24 @@ public struct CheckInOverlay: Equatable, Sendable {
 
     public func raceResult(race id: String) -> RaceResultRecord? {
         raceResults[id]
+    }
+
+    /// Every `session.done` of this phone for session `id` that is still
+    /// in the fold (what Undo retracts).
+    public func doneEventIDs(session id: String) -> [String] {
+        liveDoneEventIDs[id] ?? []
+    }
+
+    /// Every `race.result` of this phone for race `id` that is still in
+    /// the fold (what Withdraw retracts).
+    public func raceResultEventIDs(race id: String) -> [String] {
+        liveRaceResultEventIDs[id] ?? []
+    }
+
+    /// This phone withdrew its result for race `id` and the vault has not
+    /// read that yet.
+    public func hasPendingRaceWithdrawal(race id: String) -> Bool {
+        pendingRaceWithdrawals.contains(id)
     }
 
     public func light(on date: LocalDate) -> OverlayValue<MorningLight>? {
@@ -325,12 +356,22 @@ public struct CheckInOverlay: Equatable, Sendable {
                     continue
                 }
                 overlay.manualDone[payload.sessionId] = OverlayRecord(eventID: logged.event.id, value: payload, delivery: delivery)
+                overlay.liveDoneEventIDs[payload.sessionId, default: []].append(logged.event.id)
             case .sessionFuel(let payload):
                 if retraction(of: logged) != nil { continue }
                 overlay.fuelLogs[payload.sessionId] = OverlayRecord(eventID: logged.event.id, value: payload, delivery: delivery)
             case .raceResult(let payload):
-                if retraction(of: logged) != nil { continue }
+                if let withdrawn = retraction(of: logged) {
+                    // Until the vault has read the retraction, the result
+                    // it still publishes is on its way out.
+                    if withdrawn != .received {
+                        overlay.pendingRaceWithdrawals.insert(payload.raceId)
+                    }
+                    continue
+                }
+                overlay.pendingRaceWithdrawals.remove(payload.raceId)
                 let event = logged.event
+                overlay.liveRaceResultEventIDs[payload.raceId, default: []].append(event.id)
                 let refusal = raceRefusals.first { outcome in
                     if let id = outcome.event { return id.lowercased() == event.id.lowercased() }
                     return outcome.deviceId == event.deviceId && outcome.seq == event.seq

@@ -19,7 +19,8 @@
 //     points at); kilometres are asked for a run, ride or walk. Undo is
 //     offered while this phone still holds the `session.done` the session
 //     is done by (a completion from another install can not be retracted
-//     here -- the vault only lets a device retract its own events).
+//     here -- the vault only lets a device retract its own events), and
+//     not once an activity has matched: then there is nothing to undo.
 //   - `SessionFuelModel` (D11): the fuel log -- offered after a long
 //     session (planned or done at 2 h or more), a session with a fuel
 //     plan, or a race session. It shows the vault's `feedback.fuel`
@@ -178,9 +179,11 @@ public struct ManualDoneModel: Equatable, Sendable {
     public let distanceLabel: String
     public let initialKm: Double?
     public let notePlaceholder: String
-    /// This phone's `session.done` the session is done by: Undo retracts
-    /// it. `nil` = nothing of this phone's to undo.
-    public let undoEventID: String?
+    /// This phone's `session.done` events for the session, when it is done
+    /// by one of them: Undo retracts them all (the vault takes the last
+    /// one that is not retracted). Empty = nothing of this phone's to undo.
+    public let undoEventIDs: [String]
+    public var canUndo: Bool { !undoEventIDs.isEmpty }
     public let deliveryLine: String?
 
     /// The `session.done` Save records; `nil` when a value is out of the
@@ -316,11 +319,12 @@ extension PlanBuilder {
 
         // Undo: this phone still holds the event the session is done by.
         let local = snapshot.checkIns.doneByHand(session: session.id)
-        var undoID: String?
-        if let local, let event = session.done?.manual?.event, event.lowercased() == local.eventID.lowercased() {
-            undoID = local.eventID
+        var undoIDs: [String] = []
+        if let local, session.done?.isManual == true, let event = session.done?.manual?.event,
+           event.lowercased() == local.eventID.lowercased() {
+            undoIDs = snapshot.checkIns.doneEventIDs(session: session.id)
         }
-        guard canMark || undoID != nil else { return nil }
+        guard canMark || !undoIDs.isEmpty else { return nil }
 
         let codes = session.options.compactMap { $0.code.known }
         var optionNames: [OptionCode: String] = [:]
@@ -355,8 +359,8 @@ extension PlanBuilder {
             distanceLabel: text(.distanceKmLabel),
             initialKm: targets.km ?? session.targets.km,
             notePlaceholder: text(.noteOptional),
-            undoEventID: undoID,
-            deliveryLine: undoID == nil ? nil : format.deliveryLine(local?.delivery)
+            undoEventIDs: undoIDs,
+            deliveryLine: undoIDs.isEmpty ? nil : format.deliveryLine(local?.delivery)
         )
     }
 

@@ -53,15 +53,24 @@
 //                  officialTime?, distanceKm?, laps?, note?}   (no `date`)
 //   session.rpe   gains pains?: [{site, during?, after?}]
 //
-// Optional keys are written as `null` like everywhere else -- with ONE
-// exception the contract asks for: `officialTime` is left out unless the
-// owner filled it ("omit it for a race with one time, never send a copy of
-// `time`"). Numbers that can carry a fraction go through `WireNumber`: a
-// whole value is written as an integer (`4`, `10`), anything else as an
-// exact decimal (`1.5`, `42.2`), so the bytes never depend on how a
-// platform prints a double. The app's byte-exact golden file for them is
+// Optional keys are written as `null` like everywhere else -- with THREE
+// exceptions, each one where the vault's own example line leaves the key
+// out, so this app's line is the same JSON object as the vault's:
+//   - `officialTime` is left out unless the owner filled it (the contract:
+//     "omit it for a race with one time, never send a copy of `time`");
+//   - `pains` on `session.rpe` is left out when the pain was not asked (a
+//     tap on an RPE number alone) -- the vault keeps the session's earlier
+//     answer either way, and every rating recorded before this change
+//     keeps its bytes;
+//   - `during` / `after` of one site are left out when that score was not
+//     asked.
+// Numbers that can carry a fraction go through `WireNumber`: a whole value
+// is written as an integer (`4`, `10`), anything else as an exact decimal
+// (`1.5`, `42.2`), so the bytes never depend on how a platform prints a
+// double. The app's byte-exact golden file for them is
 // Fixtures/Events/gates.v1.app.jsonl -- the vault example's own six lines
-// as this app encodes them.
+// (seq 25-28, 32, 33) as this app encodes them: key-sorted, nothing else
+// changed.
 //
 // Encoding is deterministic (sorted keys, unescaped slashes, `\n` after
 // every line) because a sealed segment's bytes and git blob SHA must be the
@@ -189,8 +198,8 @@ public struct SessionRPEPayload: Equatable, Sendable {
     /// (tasks 0.5) and writes `null`.
     public var feel: Int?
     /// add-training-gates-and-load: pain during / after the session.
-    /// `nil` = not asked (the vault keeps the session's earlier answer),
-    /// `[]` = asked, nothing hurt.
+    /// `nil` = not asked (the key is left out and the vault keeps the
+    /// session's earlier answer), `[]` = asked, nothing hurt.
     public var pains: [SessionPainEntry]?
 
     public init(date: LocalDate, sessionId: String, rpe: Int, feel: Int? = nil, pains: [SessionPainEntry]? = nil) {
@@ -336,8 +345,15 @@ public struct RaceResultPayload: Equatable, Sendable {
 /// to a grid of 1/`steps`, written as an integer when whole (`4`, not
 /// `4.0`) and as an exact decimal otherwise (`1.5`, `42.2`) -- a
 /// `Decimal`, which every Foundation prints digit for digit, never a
-/// binary double. `nil` is written as `null`.
+/// binary double. `nil` is written as `null` by `encode` and left out by
+/// `encodeIfPresent`.
 enum WireNumber {
+    /// Like `encode`, but a `nil` leaves the key out.
+    static func encodeIfPresent<Key: CodingKey>(_ value: Double?, steps: Int, into container: inout KeyedEncodingContainer<Key>, forKey key: Key) throws {
+        guard let value else { return }
+        try encode(value, steps: steps, into: &container, forKey: key)
+    }
+
     static func encode<Key: CodingKey>(_ value: Double?, steps: Int, into container: inout KeyedEncodingContainer<Key>, forKey key: Key) throws {
         guard let value, value.isFinite, steps >= 1 else {
             try container.encodeNil(forKey: key)
@@ -899,7 +915,10 @@ extension HubEvent: Codable {
             try p.encode(value.sessionId, forKey: .sessionId)
             try p.encode(value.rpe, forKey: .rpe)
             try p.encode(value.feel, forKey: .feel)
-            try p.encode(value.pains, forKey: .pains)
+            // Left out when the pain was not asked (this file's header).
+            if let pains = value.pains {
+                try p.encode(pains, forKey: .pains)
+            }
         case .testGate(let value):
             try p.encode(value.date.description, forKey: .date)
             try WireNumber.encode(value.walkPain, steps: 2, into: &p, forKey: .walkPain)

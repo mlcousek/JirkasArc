@@ -282,11 +282,19 @@ public extension TodayTrainingBuilder {
         let weekHasTest = (vault.map { ISOWeek(containing: $0.date) == week } ?? false)
             || snapshot.checkIns.gateTests.keys.contains { ISOWeek(containing: $0) == week }
         let todays = snapshot.checkIns.gateTest(on: date)?.value
-        let siteDefault = phone?.value.site
-            ?? vault?.site
-            ?? snapshot.painMode.vault.sites.first(where: \.isAchilles)
-            ?? PainDraft.defaultSites(before: date.adding(days: 1), days: snapshot.allDays).first
-            ?? .achillesLeft
+        // The tested site: the last test's (this phone's, else the file's),
+        // else the first Achilles site of the pain episode, else the pain
+        // step's own default.
+        var siteDefault = PainDraft.defaultSites(before: date.adding(days: 1), days: snapshot.allDays).first ?? PainSite.achillesLeft
+        if let episode = snapshot.painMode.vault.sites.first(where: { $0.isAchilles }) {
+            siteDefault = episode
+        }
+        if let tested = vault?.site {
+            siteDefault = tested
+        }
+        if let tested = phone?.value.site {
+            siteDefault = tested
+        }
 
         var names: [PainSite: String] = [:]
         for site in PainSite.allCases {

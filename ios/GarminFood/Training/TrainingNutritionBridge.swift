@@ -47,7 +47,10 @@ extension TrainingModel {
         else { return nil }
         // A race is looked up by id, never by position; an id the plan
         // doesn't list has no name.
-        let raceName = snapshot.race(id: targets.carbLoadRaceId)?.name.resolvedText(language)
+        var raceName: String?
+        if let race = snapshot.race(id: targets.carbLoadRaceId) {
+            raceName = race.name.resolvedText(language)
+        }
         return FuelDayTarget(
             carbsMinG: targets.carbsMinG,
             carbsMaxG: targets.carbsMaxG,

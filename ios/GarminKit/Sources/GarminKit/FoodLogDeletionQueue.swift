@@ -331,12 +331,14 @@ extension Outbox {
     @discardableResult
     public func queueDeletion(logId: String, date: String, now: Date = Date()) async throws -> FoodLogDeletion {
         guard !logId.isEmpty, !date.isEmpty else { throw FoodLogDeletionError.missingIdentifier }
+        // Stamped with the account signed in now (DeliverySafety.swift).
+        let currentAccount = await accountKey()
         let deletion = FoodLogDeletion(
             date: date,
             logId: logId,
             createdAt: now,
             nextAttemptAt: now,
-            accountKey: await accountKey()
+            accountKey: currentAccount
         )
         return try await deletions.enqueue(deletion, now: now)
     }

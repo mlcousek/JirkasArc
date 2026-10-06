@@ -25,8 +25,12 @@
 // Garmin. The coordinator queues the delete; `rebuild()` hands the queued
 // deletes to `MealDashboard.build`, which marks the row "Deleting…" and
 // takes its share off the totals; and every successful read of a day tells
-// the queue which confirmed deletes that read no longer lists
-// (`Outbox.pruneConfirmedDeletions`).
+// the queue which entries that read lists
+// (`Outbox.pruneConfirmedDeletions`): a confirmed delete whose entry is gone
+// is done, and one whose entry Garmin STILL lists a few minutes after
+// answering goes back to "Couldn't delete" -- an entry that is still in
+// Garmin is never left hidden (`onDeletionNotApplied` then lets the app
+// refresh its sync queue).
 
 import Foundation
 import Observation
@@ -65,6 +69,10 @@ final class DayLogLoader {
     /// re-reads it (a file read, no network) and a just-confirmed entry
     /// shows at once -- the job the outbox overlay does in Garmin mode.
     @ObservationIgnored private let dataMode: @Sendable () -> DataMode
+    /// improve-food-day-flow: a read of the day (`yyyy-MM-dd`) found an
+    /// entry Garmin had answered as deleted; its delete is back to "gave
+    /// up". Set by AppEnvironment (sync queue state, the day's goal status).
+    @ObservationIgnored var onDeletionNotApplied: (@MainActor (String) async -> Void)?
 
     private(set) var selectedDate: Date
     private(set) var dashboard: DayDashboard
@@ -214,7 +222,10 @@ final class DayLogLoader {
                 if date == dateString { isStale = false }
                 try? await digestStore?.save(DayLogDigest(log: log, day: date, fetchedAt: Date()))
                 if mode == .garminConnected {
-                    await outbox.pruneConfirmedDeletions(date: date, remainingLogIds: MealDashboard.logIds(in: log))
+                    let notApplied = await outbox.pruneConfirmedDeletions(date: date, remainingLogIds: MealDashboard.logIds(in: log))
+                    if !notApplied.isEmpty {
+                        await onDeletionNotApplied?(date)
+                    }
                 }
             } else {
                 logsByDate.removeValue(forKey: date)

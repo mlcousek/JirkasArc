@@ -373,29 +373,109 @@ final class FoodLogDeletionQueueTests: XCTestCase {
         try await queue.outbox.queueDeletion(logId: "log-2", date: day, now: now)
         _ = await queue.outbox.drainDeletions(using: ScriptedDeleter(), now: now)
 
-        // A read that still lists log-1 (it started before Garmin's answer).
-        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1", "other"])
+        // A read that still lists log-1 (it started before Garmin's answer),
+        // a minute after that answer: inside the grace.
+        let soon = now.addingTimeInterval(60)
+        let notApplied = await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1", "other"], now: soon)
+        XCTAssertTrue(notApplied.isEmpty)
         var stored = await queue.outbox.allDeletions()
         XCTAssertEqual(stored.map(\.logId), ["log-1"], "log-2 is gone from the day, so its record is done")
+        XCTAssertEqual(stored.map(\.state), [.sent], "still listed inside the grace: unchanged")
 
         // Another day's read says nothing about this one.
-        await queue.outbox.pruneConfirmedDeletions(date: "2026-10-03", remainingLogIds: [])
+        await queue.outbox.pruneConfirmedDeletions(date: "2026-10-03", remainingLogIds: [], now: soon)
         stored = await queue.outbox.allDeletions()
         XCTAssertEqual(stored.count, 1)
 
-        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: [])
+        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: [], now: soon)
         stored = await queue.outbox.allDeletions()
         XCTAssertTrue(stored.isEmpty)
+    }
+
+    // Review finding (2026-10-06): a delete Garmin answered as done but did
+    // not apply must not stay hidden.
+
+    func testAConfirmedDeleteGarminStillListsAfterTheGraceGoesBackToFailed() async throws {
+        let queue = try makeQueue()
+        let queued = try await queue.outbox.queueDeletion(logId: "log-1", date: day, now: now)
+        // A 404 from a wrong route would look exactly like this "success".
+        let deleter = ScriptedDeleter([.fail(GarminClientError.httpError(statusCode: 404, body: nil))])
+        _ = await queue.outbox.drainDeletions(using: deleter, now: now)
+
+        let later = now.addingTimeInterval(Outbox.deletionConfirmationGrace + 1)
+        let notApplied = await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1"], now: later)
+
+        XCTAssertEqual(notApplied.map(\.id), [queued.id])
+        let stored = await queue.outbox.allDeletions()
+        XCTAssertEqual(stored.map(\.state), [.failed], "the entry is still in Garmin: the row must come back")
+        XCTAssertTrue(stored.first?.needsManualRetry ?? false)
+        XCTAssertNil(stored.first?.deliveredAt)
+        XCTAssertEqual(stored.first?.lastError, "Garmin answered the delete as done, but the day still lists the entry")
+
+        // Not sent again by itself; "Retry" and "Keep entry" both work on it.
+        _ = await queue.outbox.drainDeletions(using: deleter, now: later)
+        let calls = await deleter.deleteCount
+        XCTAssertEqual(calls, 1)
+        try await queue.outbox.cancelDeletion(id: queued.id)
+        let afterKeep = await queue.outbox.allDeletions()
+        XCTAssertTrue(afterKeep.isEmpty)
+    }
+
+    func testAConfirmedDeleteStillListedInsideTheGraceIsLeftAlone() async throws {
+        let queue = try makeQueue()
+        try await queue.outbox.queueDeletion(logId: "log-1", date: day, now: now)
+        _ = await queue.outbox.drainDeletions(using: ScriptedDeleter(), now: now)
+
+        // Exactly at the grace is still inside it.
+        let atTheEdge = now.addingTimeInterval(Outbox.deletionConfirmationGrace)
+        let notApplied = await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1"], now: atTheEdge)
+
+        XCTAssertTrue(notApplied.isEmpty)
+        let stored = await queue.outbox.allDeletions()
+        XCTAssertEqual(stored.map(\.state), [.sent], "a stale read right after a delete is normal")
+        XCTAssertEqual(stored.first?.deliveredAt, now)
+    }
+
+    func testAConfirmedDeleteNoLongerListedIsRemovedHoweverLateTheRead() async throws {
+        let queue = try makeQueue()
+        try await queue.outbox.queueDeletion(logId: "log-1", date: day, now: now)
+        _ = await queue.outbox.drainDeletions(using: ScriptedDeleter(), now: now)
+
+        let muchLater = now.addingTimeInterval(3 * 24 * 3600)
+        let notApplied = await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["another-entry"], now: muchLater)
+
+        XCTAssertTrue(notApplied.isEmpty)
+        let stored = await queue.outbox.allDeletions()
+        XCTAssertTrue(stored.isEmpty, "the day no longer lists it: the delete really happened")
+    }
+
+    func testRetryingADeleteGarminStillListedSendsItAgain() async throws {
+        let queue = try makeQueue()
+        let queued = try await queue.outbox.queueDeletion(logId: "log-1", date: day, now: now)
+        let deleter = ScriptedDeleter()
+        _ = await queue.outbox.drainDeletions(using: deleter, now: now)
+        let later = now.addingTimeInterval(Outbox.deletionConfirmationGrace + 60)
+        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1"], now: later)
+
+        try await queue.outbox.retryDeletion(id: queued.id, now: later)
+        _ = await queue.outbox.drainDeletions(using: deleter, now: later)
+
+        let calls = await deleter.deleteCount
+        XCTAssertEqual(calls, 2)
+        let stored = await queue.outbox.allDeletions()
+        XCTAssertEqual(stored.map(\.state), [.sent])
+        XCTAssertEqual(stored.first?.deliveredAt, later, "the grace starts again from the new answer")
     }
 
     func testPruningNeverDropsADeleteThatIsNotConfirmed() async throws {
         let queue = try makeQueue()
         try await queue.outbox.queueDeletion(logId: "log-1", date: day, now: now)
 
-        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: [])
+        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: [], now: now.addingTimeInterval(3_600))
+        await queue.outbox.pruneConfirmedDeletions(date: day, remainingLogIds: ["log-1"], now: now.addingTimeInterval(3_600))
 
         let stored = await queue.outbox.allDeletions()
-        XCTAssertEqual(stored.map(\.state), [.pending])
+        XCTAssertEqual(stored.map(\.state), [.pending], "a delete that was never confirmed is neither dropped nor failed by a read")
     }
 
     func testAConfirmedDeleteOfADayNeverReadAgainExpires() async throws {

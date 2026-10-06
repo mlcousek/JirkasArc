@@ -107,6 +107,34 @@ again.
 - **WHEN** the delete has given up
 - **THEN** the entry is marked "Couldn't delete" and the day shows 500 kcal
 
+### Requirement: A confirmed delete is checked against the day
+
+After Garmin has answered a delete as done, the next read of that day SHALL
+decide what the answer was worth. When the day no longer lists the entry,
+the delete SHALL be finished and forgotten. When the day still lists the
+entry more than five minutes after Garmin's answer, the app SHALL treat the
+delete as one that gave up: the entry SHALL be shown again marked "Couldn't
+delete", SHALL count in the totals, and SHALL offer "Retry" and "Keep
+entry"; its error SHALL say that the day still lists the entry. A read
+within five minutes of the answer that still lists the entry SHALL change
+nothing. An entry that is still in Garmin SHALL NOT stay hidden once such a
+read has happened.
+
+#### Scenario: Still listed after the grace
+
+- **WHEN** Garmin answered a delete as done (a 404 included) and a read of the day six minutes later still lists the entry
+- **THEN** the entry is shown again marked "Couldn't delete" and the day's totals include it
+
+#### Scenario: Still listed right after the answer
+
+- **WHEN** a read of the day one minute after Garmin's answer still lists the entry
+- **THEN** the entry stays hidden and the delete is still counted as confirmed
+
+#### Scenario: No longer listed
+
+- **WHEN** a read of the day no longer lists the entry
+- **THEN** the delete is forgotten and the entry is not shown
+
 ### Requirement: A delete that gave up can be retried or dropped
 
 A delete that gave up SHALL be marked on its entry and listed in the sync

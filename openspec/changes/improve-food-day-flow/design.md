@@ -86,6 +86,17 @@ without that entry (`pruneConfirmedDeletions`), or for a week at most. Without
 that, the row would come back between Garmin's answer and the next read of
 the day.
 
+**Garmin's answer is checked, not trusted** (review, 2026-10-06). The route
+has never been exercised on a device and a 404 counts as "already gone", so
+a wrong route, date or id would make every delete look delivered while the
+entry stays in Garmin -- hidden on the phone. The same re-read that drops a
+confirmed delete therefore checks it: when the day still lists the entry
+more than `Outbox.deletionConfirmationGrace` (5 minutes) after Garmin's
+answer, the delete goes back to `failed` with an error that says the day
+still lists it. The row reappears as "Couldn't delete", counts again and
+offers Retry and "Keep entry". Inside the grace nothing changes: a read
+that started before the delete landed is normal.
+
 *Alternative:* an `operation` field on `OutboxEntry`, as the weight queue
 did. Refused: the weight queue added it before anything else read the file;
 the food outbox is read by Reconciliation, the dashboard, the mode switch
@@ -212,6 +223,9 @@ No badge is added and no badge id changes.
 - **A delete confirmed by Garmin but not yet read back** is hidden by the
   `.sent` record. If that record were lost (a quarantined file), the row
   reappears until the next read; nothing is deleted twice (404).
+- **A delete Garmin answered but did not apply** stays hidden only until
+  the day is read again five minutes or more after the answer; a day that
+  is never read again keeps the record for a week, then shows the entry.
 - **"Edited after closing" misses edits made in Garmin Connect** (D6).
 - **A `food-log` tick for a day the vault no longer accepts** is not sent
   (the back-fill window); the day is still closed on the phone.

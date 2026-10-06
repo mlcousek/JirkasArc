@@ -408,6 +408,40 @@ final class MealDashboardTests: XCTestCase {
         XCTAssertEqual(dashboard.totals.calories.consumed, 500)
     }
 
+    /// Review finding (2026-10-06): through the real queue. Garmin answers
+    /// the delete as done, but the day keeps listing the entry -- a few
+    /// minutes later the row is back and counted again, not hidden.
+    func testADeleteGarminAnsweredButDidNotApplyComesBackAndCountsAgain() async throws {
+        let outbox = Outbox(processName: "dashboard-delete-\(UUID().uuidString)")
+        let answeredAt = Date(timeIntervalSince1970: 1_790_000_000)
+        let log = try twoEntryDay()
+        try await outbox.queueDeletion(logId: "log-gone", date: day, now: answeredAt)
+        _ = await outbox.drainDeletions(using: AcceptingGarmin(), now: answeredAt)
+
+        // A read half a minute after Garmin's answer may simply be stale.
+        await outbox.pruneConfirmedDeletions(date: day, remainingLogIds: MealDashboard.logIds(in: log), now: answeredAt.addingTimeInterval(30))
+        let hidden = await outbox.allDeletions()
+        let soon = MealDashboard.build(date: day, log: log, outboxEntries: [], foods: [:], deletions: hidden)
+        XCTAssertEqual(soon.section(for: .lunch)?.entries.map(\.name), ["Rice"])
+        XCTAssertEqual(soon.totals.calories.consumed, 300)
+
+        // Still listed after the grace: it was never deleted.
+        let late = answeredAt.addingTimeInterval(Outbox.deletionConfirmationGrace + 1)
+        await outbox.pruneConfirmedDeletions(date: day, remainingLogIds: MealDashboard.logIds(in: log), now: late)
+        let back = await outbox.allDeletions()
+        let later = MealDashboard.build(date: day, log: log, outboxEntries: [], foods: [:], deletions: back)
+        let lunch = try XCTUnwrap(later.section(for: .lunch))
+        let bread = try XCTUnwrap(lunch.entries.last)
+
+        XCTAssertEqual(lunch.entries.map(\.name), ["Rice", "Bread"], "the row is back")
+        XCTAssertEqual(later.totals.calories.consumed, 500, "and counted again")
+        XCTAssertEqual(lunch.totals.calories.consumed, 500)
+        guard let deletion = bread.deletion, case .failed(_, let reason) = deletion else {
+            return XCTFail("expected a delete that gave up, got \(String(describing: bread.deletion))")
+        }
+        XCTAssertEqual(reason, "Garmin answered the delete as done, but the day still lists the entry")
+    }
+
     func testTheLogIdsAndNamesOfADayAreFoundForTheDeleteQueue() throws {
         let log = try twoEntryDay()
 
@@ -470,5 +504,17 @@ final class MealDashboardTests: XCTestCase {
             MealTypeDefaulting.defaultMealType(for: morning, calendar: calendar),
             "no windows falls back to the hour table"
         )
+    }
+}
+
+/// Garmin for the delete-queue test above: every request is answered as
+/// done. No network; synthetic.
+private struct AcceptingGarmin: FoodLogDelivering {
+    func createFoodLogEntry(_ entry: CreateFoodLogEntryRequest) async throws -> HTTPURLResponse {
+        HTTPURLResponse(url: URL(string: "https://example.invalid/")!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+    }
+
+    func deleteFoodLogEntries(logIds: [String], date: String) async throws -> HTTPURLResponse {
+        HTTPURLResponse(url: URL(string: "https://example.invalid/")!, statusCode: 204, httpVersion: nil, headerFields: nil)!
     }
 }

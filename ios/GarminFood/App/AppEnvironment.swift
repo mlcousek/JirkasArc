@@ -350,6 +350,12 @@ final class AppEnvironment {
             self.router.selectedTab = .today
             Task { await self.goToToday() }
         }
+        // improve-food-day-flow: a re-read of a day found an entry Garmin
+        // had answered as deleted. Its delete is "Couldn't delete" again:
+        // list it in the sync queue (and the failure banner) at once.
+        dayLog.onDeletionNotApplied = { [weak self] _ in
+            await self?.refreshQueueState()
+        }
         // add-winter-arc-nutrition-and-rewards: the plan's food targets,
         // reward facts and paused fasting days, in the training experience
         // only (AppEnvironment+TrainingNutrition.swift).

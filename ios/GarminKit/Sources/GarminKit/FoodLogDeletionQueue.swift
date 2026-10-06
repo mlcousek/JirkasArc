@@ -36,6 +36,17 @@
 // `confirmedRetention` at most. Without it the row would come back between
 // Garmin's answer and the app's next read of that day.
 //
+// "Garmin said yes" is NOT trusted on its own (review finding, 2026-10-06).
+// The delete route has never been exercised on a device by this project, and
+// a 404 counts as "already gone" -- so a wrong route, date or id would make
+// every delete look delivered while the entry still sits in Garmin, hidden
+// on the phone. So the same re-read that drops a confirmed delete also
+// CHECKS it: when the day still lists the entry and Garmin's answer is older
+// than `deletionConfirmationGrace` (a read right after a delete may simply
+// be stale), the delete goes back to `.failed` with an error that says so.
+// The row then reappears as "Couldn't delete", counts again, and offers
+// "Retry" and "Keep entry" -- loud, never a silently hidden entry.
+//
 // The route is the one the app already called for this
 // (`DELETE /nutrition-service/food/logs/{date}`, body `{ "logIds": [...] }`,
 // docs/garmin-routes.json: last verified 2026-09-16, modelled on a
@@ -294,16 +305,49 @@ actor FoodLogDeletionStore {
         try write(updated)
     }
 
-    /// Drops the confirmed deletes of `date` whose entry is not among
-    /// `remainingLogIds` any more (the day was read again without it).
-    func removeConfirmed(date: String, remainingLogIds: Set<String>) throws {
+    /// `date` was read again and lists `remainingLogIds`. For each confirmed
+    /// delete of that day:
+    ///   - its entry is no longer listed: the record is done and dropped;
+    ///   - its entry is STILL listed and Garmin's answer is older than
+    ///     `grace`: the delete did not happen -- the record becomes
+    ///     `.failed` with `stillListedError`, so the row comes back;
+    ///   - still listed inside `grace`: left alone (the read may be stale).
+    /// Returns the records that went back to `.failed`.
+    func checkConfirmed(date: String, remainingLogIds: Set<String>, now: Date, grace: TimeInterval) throws -> [FoodLogDeletion] {
         loadIfNeeded()
-        let kept = deletions.filter { deletion in
-            !(deletion.state == .sent && deletion.date == date && !remainingLogIds.contains(deletion.logId))
+        var updated: [FoodLogDeletion] = []
+        var notApplied: [FoodLogDeletion] = []
+        var changed = false
+        for deletion in deletions {
+            guard deletion.state == .sent, deletion.date == date else {
+                updated.append(deletion)
+                continue
+            }
+            guard remainingLogIds.contains(deletion.logId) else {
+                changed = true
+                continue
+            }
+            let confirmedAt = deletion.deliveredAt ?? deletion.createdAt
+            guard now.timeIntervalSince(confirmedAt) > grace else {
+                updated.append(deletion)
+                continue
+            }
+            var failed = deletion
+            failed.state = .failed
+            failed.lastError = FoodLogDeletionStore.stillListedError
+            failed.deliveredAt = nil
+            updated.append(failed)
+            notApplied.append(failed)
+            changed = true
         }
-        guard kept.count != deletions.count else { return }
-        try write(kept)
+        guard changed else { return [] }
+        try write(updated)
+        return notApplied
     }
+
+    /// What a delete is marked with when Garmin answered it as done but a
+    /// later read of the day still lists the entry.
+    static let stillListedError = "Garmin answered the delete as done, but the day still lists the entry"
 
     /// Drops the confirmed deletes Garmin confirmed before `cutoff`.
     func removeConfirmed(before cutoff: Date) throws {
@@ -323,6 +367,12 @@ extension Outbox {
     /// again (after that, a copy of the day still listing the entry would
     /// be a week old).
     public static let confirmedDeletionRetention: TimeInterval = 7 * 24 * 3600
+
+    /// How long after Garmin's answer a read of the day may still list the
+    /// entry without that meaning anything (the read may have started
+    /// before the delete landed, or be a moment behind). After it, an entry
+    /// that is still listed was not deleted.
+    public static let deletionConfirmationGrace: TimeInterval = 5 * 60
 
     /// Queues deleting the Garmin entry `logId` of `date`. Durable on
     /// return and makes no network call, like `logFood`. Queuing the same
@@ -361,13 +411,29 @@ extension Outbox {
         try await deletions.cancel(id: id)
     }
 
-    /// Called after `date` was read from Garmin: a confirmed delete whose
-    /// entry that read no longer lists is done and leaves the file.
-    public func pruneConfirmedDeletions(date: String, remainingLogIds: Set<String>) async {
+    /// Called after `date` was read from Garmin (`remainingLogIds` = every
+    /// entry that read lists). A confirmed delete whose entry is no longer
+    /// listed is done and leaves the file. One whose entry is STILL listed
+    /// more than `deletionConfirmationGrace` after Garmin's answer was not
+    /// applied: it goes back to `.failed` ("Couldn't delete", Retry, "Keep
+    /// entry") instead of hiding an entry that is still in Garmin -- see
+    /// this file's header. Returns the deletes that went back to `.failed`.
+    @discardableResult
+    public func pruneConfirmedDeletions(date: String, remainingLogIds: Set<String>, now: Date = Date()) async -> [FoodLogDeletion] {
         do {
-            try await deletions.removeConfirmed(date: date, remainingLogIds: remainingLogIds)
+            let notApplied = try await deletions.checkConfirmed(
+                date: date,
+                remainingLogIds: remainingLogIds,
+                now: now,
+                grace: Self.deletionConfirmationGrace
+            )
+            if !notApplied.isEmpty {
+                DiagnosticsLog.log(.error, category: "Outbox", "delete: Garmin answered \(notApplied.count) delete(s) on \(date) as done, but the day still lists the entr(ies); marked as not deleted")
+            }
+            return notApplied
         } catch {
-            DiagnosticsLog.log(.warning, category: "Outbox", "couldn't drop confirmed deletes of \(date): \(error)")
+            DiagnosticsLog.log(.warning, category: "Outbox", "couldn't check confirmed deletes of \(date): \(error)")
+            return []
         }
     }
 

@@ -206,7 +206,7 @@
       "path": "/nutrition-service/food/logs/{date}",
       "lastVerified": "2026-09-16",
       "observedStatus": "modelled on a live-tested client, not yet exercised by this project",
-      "notes": "Per garmin_mcp (delete_food_log): the date is part of the PATH, which the earlier dex-string inference omitted; body { logIds: [...] }, each a 32-char hex logId from a read entry (not a foodId). Used by Reconciliation to remove a detected duplicate -- which, now that writes can succeed, is only allowed for entries logged no earlier than the local entry was queued (Reconciliation.couldBeThisAppsDelivery), so an identical entry made in the official app is never mistaken for one."
+      "notes": "Per garmin_mcp (delete_food_log): the date is part of the PATH, which the earlier dex-string inference omitted; body { logIds: [...] }, each a 32-char hex logId from a read entry (not a foodId). Used by Reconciliation to remove a detected duplicate -- which, now that writes can succeed, is only allowed for entries logged no earlier than the local entry was queued (Reconciliation.couldBeThisAppsDelivery), so an identical entry made in the official app is never mistaken for one. improve-food-day-flow (2026-10-06): the app's own delete of a synced entry no longer calls this route directly from the screen. It is saved in a durable queue first (GarminKit FoodLogDeletionQueue.swift, one file per process) and delivered later with the SAME path and body, retried like the outbox; a 404 is treated as already deleted. That changes when the request is made, not what is sent, so lastVerified is unchanged -- the route is still not exercised on a device by this project."
     },
     {
       "operation": "createCustomFood",

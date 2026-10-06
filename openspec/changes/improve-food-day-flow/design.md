@@ -82,7 +82,7 @@ A delete of another account is held, never sent. There is no send marker
 404.
 
 A delivered delete is kept as `.sent` until the day has been read again
-without that entry (`pruneConfirmedDeletions`), or for a day at most. Without
+without that entry (`pruneConfirmedDeletions`), or for a week at most. Without
 that, the row would come back between Garmin's answer and the next read of
 the day.
 

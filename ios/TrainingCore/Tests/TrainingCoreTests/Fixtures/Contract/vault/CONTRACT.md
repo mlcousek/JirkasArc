@@ -53,9 +53,10 @@
   branch after its training load and gates (2026-10-01, all additive,
   `schemaVersion` still 1). Both projection files and the event example
   changed; the minimal event file did not (all four compared by blob hash
-  with the vault's). What is new in the projection -- this app decodes
-  none of it yet (unknown keys are ignored, new enumeration values read as
-  unknown), it only has to keep reading the files:
+  with the vault's). What is new in the projection -- decoded and shown
+  since add-training-gates-and-load (habit `streak` / `history` /
+  `adherence` since add-interactive-habits); at the time the app only had
+  to keep reading the files:
   - `athlete.gate` (the weekly gate test; `null` in the minimal file);
   - seven load fields on every non-null `week.actual` (`plannedRunKm`,
     `unplannedRunKm`, `overPlanKm`, `longestRunKm`, `longestRunCapKm`,
@@ -114,7 +115,7 @@
 Do not edit these files. When the vault changes its fixtures (additive
 changes only within v1), copy them again verbatim, update the date above and
 re-run `swift test` (ProjectionDecodingTests, TodayBuilderTests,
-PlanBuilderTests, DailyCheckInTests). App-authored edge cases are mutations of the example made
+PlanBuilderTests, DailyCheckInTests, GatesAndLoadTests). App-authored edge cases are mutations of the example made
 in the tests (`Fixtures.mutatedExample`), never hand-copied vault data.
 
 # Event contract fixtures (mirrored)
@@ -147,16 +148,20 @@ in the tests (`Fixtures.mutatedExample`), never hand-copied vault data.
 
 | File | What it is |
 |---|---|
-| `events.v1.example.jsonl` | 33 events of every v1 type (seq 32 a `race.result`, seq 33 a `session.fuel`, 2026-10-05), including the plan commands (seq 16 a refused race move, seq 23 a superseded move) and `event.retracted`, which this app writes since add-plan-editing, `device.hello`, which it doesn't write yet, (seq 24, 2026-09-30) a second check-in of 2030-10-23 with `pains`, and (seq 25-31, 2026-10-01) `test.gate` and `session.done`, which this app doesn't write yet, an RPE with `pains` and three more habit ticks. |
+| `events.v1.example.jsonl` | 33 events of every v1 type (seq 32 a `race.result`, seq 33 a `session.fuel`, 2026-10-05), including the plan commands (seq 16 a refused race move, seq 23 a superseded move) and `event.retracted`, which this app writes since add-plan-editing, `device.hello`, which it doesn't write yet, (seq 24, 2026-09-30) a second check-in of 2030-10-23 with `pains`, and (seq 25-31, 2026-10-01) `test.gate`, `session.done` and an RPE with `pains` -- which this app writes since add-training-gates-and-load, like seq 32 and 33 -- and three more habit ticks. |
 | `events.v1.minimal.jsonl` | 3 events with every optional key omitted. |
 
 `HubEventTests` decodes both: every type this app writes decodes to its
-payload (`device.hello`, `test.gate` and `session.done` to `.other`; the
-`pains` of an RPE is an ignored key), no line is invalid, and each
-command and retraction line re-encodes to the same JSON object
-(add-plan-editing). `PlanEditingTests` folds the example's commands with
-the example projection's `acks` and `outcomes`. The app's
-own byte-exact golden files are `../../Events/events.v1.app.jsonl` (every
-check-in now carries `"pains":null`), `plan-commands.v1.app.jsonl` and
+payload (only `device.hello` reads as `.other`), no line is invalid, and
+each command and retraction line re-encodes to the same JSON object
+(add-plan-editing). Since add-training-gates-and-load the six lines of the
+new facts (seq 25-28, 32, 33) do too, and byte for byte to the app's
+golden file `../../Events/gates.v1.app.jsonl`. `PlanEditingTests` folds
+the example's commands with the example projection's `acks` and
+`outcomes`; `GatesAndLoadTests` reads the projection's gate, load, manual
+records, session pain, fuel log, race results, recovery window and
+notices. The app's other byte-exact golden files are
+`../../Events/events.v1.app.jsonl` (every check-in carries
+`"pains":null`), `plan-commands.v1.app.jsonl` and
 `checkin-pains.v1.app.jsonl` (add-checkin-pain-score), which the vault's
 validator (`validateEvent`) accepted on 2026-09-29 and 2026-09-30.

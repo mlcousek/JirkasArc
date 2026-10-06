@@ -34,14 +34,14 @@ final class FoodLogDeletionQueueTests: XCTestCase {
         let entriesURL = dir.appendingPathComponent("entries.json")
         let deletionsURL = dir.appendingPathComponent("deletions.json")
         return Queue(
-            outbox: open(entriesURL: entriesURL, deletionsURL: deletionsURL, maxAttempts: maxAttempts, accountKey: accountKey),
+            outbox: makeOutbox(entriesURL: entriesURL, deletionsURL: deletionsURL, maxAttempts: maxAttempts, accountKey: accountKey),
             entriesURL: entriesURL,
             deletionsURL: deletionsURL
         )
     }
 
     /// A fresh `Outbox` over the same two files: a relaunch.
-    private func open(entriesURL: URL, deletionsURL: URL, maxAttempts: Int = 5, accountKey: @escaping AccountScope.Provider = { nil }) -> Outbox {
+    private func makeOutbox(entriesURL: URL, deletionsURL: URL, maxAttempts: Int = 5, accountKey: @escaping AccountScope.Provider = { nil }) -> Outbox {
         Outbox(
             store: OutboxStore(fileURL: entriesURL),
             deletions: FoodLogDeletionStore(fileURL: deletionsURL),
@@ -64,7 +64,7 @@ final class FoodLogDeletionQueueTests: XCTestCase {
         XCTAssertEqual(calls, 0, "queuing never touches Garmin")
 
         // A relaunch reads the very same record back from the file.
-        let reopened = open(entriesURL: queue.entriesURL, deletionsURL: queue.deletionsURL)
+        let reopened = makeOutbox(entriesURL: queue.entriesURL, deletionsURL: queue.deletionsURL)
         let afterRelaunch = await reopened.allDeletions()
         XCTAssertEqual(afterRelaunch, [queued])
     }
@@ -229,7 +229,8 @@ final class FoodLogDeletionQueueTests: XCTestCase {
             let stored = await queue.outbox.allDeletions()
             XCTAssertEqual(stored.first?.attemptCount, attempt)
             XCTAssertEqual(result.failed.count, attempt == 5 ? 1 : 0)
-            XCTAssertEqual(stored.first?.state, attempt == 5 ? .failed : .pending)
+            let expectedState: FoodLogDeletionState = attempt == 5 ? .failed : .pending
+            XCTAssertEqual(stored.first?.state, expectedState)
             // Past the capped backoff (8 s).
             clock = clock.addingTimeInterval(60)
         }

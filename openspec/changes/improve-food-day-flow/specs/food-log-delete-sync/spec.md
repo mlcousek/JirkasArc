@@ -109,8 +109,9 @@ again.
 
 ### Requirement: A delete that gave up can be retried or dropped
 
-A delete that gave up SHALL be shown on its entry and in the sync queue
-with its last error, and both places SHALL offer "Retry" and "Keep entry".
+A delete that gave up SHALL be marked on its entry and listed in the sync
+queue with its last error, and both places SHALL offer "Retry" and "Keep
+entry".
 Retry SHALL make the delete wait again with a fresh attempt count. "Keep
 entry" SHALL remove the delete from the queue, leaving the entry in Garmin
 and on the day; it SHALL also be offered for a delete that is still

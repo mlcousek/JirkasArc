@@ -218,7 +218,7 @@ final class GatesAndLoadTests: XCTestCase {
     }
 
     func testTheMinimalFileHasNoGateAndOneNotice() throws {
-        let projection = try projection(try Fixtures.minimal())
+        let projection = try self.projection(try Fixtures.minimal())
         XCTAssertNil(projection.athlete.gate)
         XCTAssertNil(projection.athlete.recovery)
         XCTAssertEqual(projection.notices.count, 1)
@@ -252,7 +252,7 @@ final class GatesAndLoadTests: XCTestCase {
             plan["weeks"] = weeks
             object["plan"] = plan
         }
-        let projection = try projection(older)
+        let projection = try self.projection(older)
         XCTAssertNil(projection.athlete.gate)
         XCTAssertNil(projection.athlete.recovery)
         XCTAssertEqual(projection.notices, [])
@@ -308,7 +308,7 @@ final class GatesAndLoadTests: XCTestCase {
                 day["unplanned"] = unplanned
             }
         }
-        let projection = try projection(data)
+        let projection = try self.projection(data)
         XCTAssertEqual(projection.notices.map(\.kind), ["watch-battery"], "an unknown kind is kept; an entry without a text is dropped")
         XCTAssertEqual(projection.notices.first?.date, D.date("2030-10-20"))
         XCTAssertNil(projection.athlete.recovery, "day 0 of 14 is not a window")

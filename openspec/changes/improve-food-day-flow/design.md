@@ -130,13 +130,26 @@ A row that is being deleted cannot be edited, moved or duplicated
 (`canRelog` is false). `MealEntry.Status` keeps its three cases, so no
 existing `switch` changes.
 
-### D4. Standalone mode and queued rows are unchanged
+### D4. Standalone mode is unchanged; a queued edit's original is queued too
 
 `ModeRoutingFoodLogging.deleteCommitted` still goes to the local food log
 in standalone mode. Deleting a row that never reached Garmin still cancels
-it in the outbox. Deleting a queued *edit* of a Garmin entry still cancels
-the edit and deletes the original with a direct call (`DayLogLoader`): that
-path is a rare leftover and moving it would touch the mode rules.
+it in the outbox.
+
+Deleting a queued *edit* of a Garmin entry cancels the edit and must also
+delete the original, or "Delete" would only bring the old amount back. That
+second half was a direct Garmin call from the screen: offline it failed
+after the edit was already cancelled, so the intent was lost (review,
+2026-10-06). It now goes through the queue like every other delete
+(`PendingDeletion.originalToDelete(in:)`, then `deleteCommitted`), and
+nothing in the delete path waits for the network.
+
+Decided for standalone mode: nothing is queued. Such a row can only be a
+leftover from before the switch; standalone mode makes no Garmin call and
+keeps nothing to send later (the rule "Keep on this phone" already
+follows), so the cancelled edit leaves the phone's day and the original
+stays in Garmin. The direct call that used to be made here even in
+standalone mode is gone.
 
 ### D5. Quick logging: one rule for both shelves
 
@@ -238,7 +251,9 @@ back leaves the two files unused on disk.
 
 ## Open Questions
 
-- Should deleting a queued edit of a Garmin entry (D4) also go through the
-  queue? It would need a decision about standalone mode.
+- In standalone mode, deleting a leftover queued edit leaves its original
+  in Garmin (D4). If the owner switches back to Garmin, that entry is there
+  again at its old amount. Acceptable, or should the delete wait in the
+  queue for that switch?
 - Should the complete-days streak earn anything? Deferred to a gamification
   change, which can read `FoodDayCloseStore`.

@@ -43,7 +43,6 @@ final class DayLogLoader {
     /// add-standalone-mode D3: the day log, meal windows and active
     /// calories. The app's GarminClient today.
     @ObservationIgnored private let reader: any NutritionLogReading
-    @ObservationIgnored private let client: GarminClient
     @ObservationIgnored private let outbox: Outbox
     @ObservationIgnored private let foodCache: FoodCacheStore
     /// Deleting goes through it: a still-queued row by claim-guarded
@@ -106,7 +105,6 @@ final class DayLogLoader {
 
     init(
         reader: any NutritionLogReading,
-        client: GarminClient,
         outbox: Outbox,
         foodCache: FoodCacheStore,
         coordinator: any FoodLogging,
@@ -116,7 +114,6 @@ final class DayLogLoader {
         now: Date = Date()
     ) {
         self.reader = reader
-        self.client = client
         self.outbox = outbox
         self.foodCache = foodCache
         self.coordinator = coordinator
@@ -311,14 +308,11 @@ final class DayLogLoader {
 
     enum DeleteError: LocalizedError {
         case missingIdentifier
-        case garmin(String)
 
         var errorDescription: String? {
             switch self {
             case .missingIdentifier:
                 return String(localized: "This entry has no Garmin identifier, so it can't be deleted from here. Delete it in Garmin Connect.")
-            case .garmin(let detail):
-                return String(localized: "Garmin didn't delete this entry: \(detail). You can also delete it in Garmin Connect.", comment: "%@ = short reason, e.g. 'HTTP 500' or 'not signed in'.")
             }
         }
     }
@@ -328,7 +322,10 @@ final class DayLogLoader {
     /// the row marked "Deleting…"; the caller starts delivery. In standalone
     /// mode the entry is removed from the local log and the day re-read. A
     /// queued entry never reached Garmin, so it is only removed from the
-    /// queue.
+    /// queue -- and when it was an EDIT of a Garmin entry, the original's
+    /// delete is queued too (review finding, 2026-10-06: that used to be a
+    /// direct Garmin call, which failed offline after the edit was already
+    /// cancelled). Nothing here waits for the network any more.
     func delete(_ entry: MealEntry) async throws {
         switch entry.status {
         case .synced(let logId):
@@ -344,38 +341,24 @@ final class DayLogLoader {
             }
         case .syncing(let outboxId), .failed(let outboxId, _):
             // Claim-guarded (code-review fix): refuses while a drain is
-            // sending it or Garmin already has it, and for an edit also
-            // deletes the original Garmin entry the edit was replacing.
+            // sending it or Garmin already has it.
             let outcome = try await coordinator.deletePending(outboxId: outboxId)
-            await rebuild()
-            if case .deleteOriginal(let date, let logId) = outcome {
-                // Stays a direct Garmin call: an outbox edit only ever
-                // replaces a Garmin entry, whatever the data mode is now.
+            // For a cancelled edit, the Garmin entry it was replacing is
+            // deleted too -- queued like any other delete (a local write).
+            // In standalone mode there is nothing to queue: no Garmin call
+            // is made there, and the original simply stays in Garmin.
+            if let original = outcome.originalToDelete(in: dataMode()) {
                 do {
-                    try await client.deleteFoodLogEntries(logIds: [logId], date: date)
-                } catch GarminClientError.httpError(let statusCode, _) where statusCode == 404 {
-                    // Already gone from Garmin: nothing left to remove.
+                    try await coordinator.deleteCommitted(logId: original.logId, date: original.date)
                 } catch {
-                    // The edit is cancelled, so the original shows again at
-                    // its old amount -- say so; deleting it once more works.
-                    await refresh()
-                    throw DeleteError.garmin(Self.describe(error))
+                    // The edit is cancelled but the delete couldn't be
+                    // saved: the original shows again at its old amount,
+                    // and the error says why. Deleting it once more works.
+                    await rebuild()
+                    throw error
                 }
-                await refresh()
             }
-        }
-    }
-
-    private static func describe(_ error: Error) -> String {
-        switch error {
-        case GarminClientError.httpError(let statusCode, _):
-            return "HTTP \(statusCode)"
-        case GarminClientError.unauthorized:
-            return String(localized: "not signed in", comment: "Short reason after 'Garmin didn't delete this entry: '.")
-        case GarminClientError.rateLimited:
-            return String(localized: "too many requests, try again shortly", comment: "Short reason after 'Garmin didn't delete this entry: '.")
-        default:
-            return error.localizedDescription
+            await rebuild()
         }
     }
 }

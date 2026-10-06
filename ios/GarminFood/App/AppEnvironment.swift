@@ -257,7 +257,6 @@ final class AppEnvironment {
         )
         self.dayLog = DayLogLoader(
             reader: reader,
-            client: client,
             outbox: services.outbox,
             foodCache: services.foodCache,
             coordinator: services.logEntryCoordinator,
@@ -827,7 +826,9 @@ final class AppEnvironment {
         await donations.entryDeleted(foodId: entry.foodId, date: date)
         await refreshQueueState()
         await foodDayChanged(day: date)
-        if entry.isSynced {
+        // A synced entry's delete was queued -- and so was the original's
+        // when a queued EDIT of a Garmin entry was deleted.
+        if entry.isSynced || entry.replacesLogId != nil {
             await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
             Task { await self.drainAndReconcile() }
         }

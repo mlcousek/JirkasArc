@@ -376,6 +376,25 @@ public struct LogEntryCoordinator: Sendable {
         /// otherwise "Delete" would just undo the edit and bring the old
         /// amount back (code-review finding, 2026-09-23).
         case deleteOriginal(date: String, logId: String)
+
+        /// The Garmin entry whose delete the caller must now QUEUE
+        /// (`deleteCommitted`), or `nil` when there is none.
+        ///
+        /// Review finding (2026-10-06): the caller used to delete the
+        /// original with a direct Garmin call, so offline the delete failed
+        /// after the edit was already cancelled -- the intent was lost and
+        /// the old amount came back. It goes through the same durable queue
+        /// as every other delete now.
+        ///
+        /// Garmin-connected mode only. In standalone mode nothing is sent
+        /// to Garmin and nothing is queued for it: the cancelled edit
+        /// simply leaves the phone's day, and the original stays in Garmin
+        /// -- the same rule as "Keep on this phone" when switching modes
+        /// (`UndeliveredFoodConversion`: "nothing is sent later").
+        public func originalToDelete(in mode: DataMode) -> (logId: String, date: String)? {
+            guard mode == .garminConnected, case .deleteOriginal(let date, let logId) = self else { return nil }
+            return (logId: logId, date: date)
+        }
     }
 
     /// Removes a row that hasn't reached Garmin yet (`.syncing`/`.failed`
@@ -386,7 +405,8 @@ public struct LogEntryCoordinator: Sendable {
     /// the local record would leave whatever lands in Garmin untracked --
     /// a duplicate the user explicitly asked to get rid of. Those cases
     /// throw `.stillSyncing` ("try again in a moment") and change nothing.
-    /// Local only; the caller performs `.deleteOriginal` in Garmin.
+    /// Local only; for `.deleteOriginal` the caller queues the original's
+    /// delete (`PendingDeletion.originalToDelete(in:)`, `deleteCommitted`).
     public func deletePending(outboxId: UUID) async throws -> PendingDeletion {
         guard let entry = await outbox.entry(id: outboxId) else { throw LogEntryEditError.entryGone }
         do {

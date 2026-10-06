@@ -27,6 +27,16 @@ nothing.
 - **WHEN** the phone is in standalone mode and the owner deletes an entry
 - **THEN** the entry is removed from the phone's food log and the delete queue is empty
 
+#### Scenario: Deleting an edit that has not been sent yet
+
+- **WHEN** the phone is offline in Garmin-connected mode and the owner deletes an entry whose edit is still queued
+- **THEN** the edit is cancelled, the delete of the original entry is in the queue, no request has been made and no error is shown
+
+#### Scenario: A leftover queued edit in standalone mode
+
+- **WHEN** the phone is in standalone mode and the owner deletes a row that is a queued edit of a Garmin entry
+- **THEN** the edit is cancelled, the delete queue is empty and no request is made
+
 ### Requirement: A queued delete is retried, and "already gone" is success
 
 The app SHALL deliver queued deletes on the same occasions as queued

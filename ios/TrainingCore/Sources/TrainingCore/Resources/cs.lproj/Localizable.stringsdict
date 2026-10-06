@@ -342,5 +342,47 @@
 			<string>Počítáno v telefonu z posledních %lld dnů, které zná</string>
 		</dict>
 	</dict>
+	<!-- add-training-gates-and-load: gate card: neutral advice after several weekly tests above 2/10. Plural. -->
+	<key>Hops above 2/10 for %lld weeks in a row — a physio check is advised.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Poskoky nad 2/10 už %lld týden v řadě — je vhodná kontrola u fyzioterapeuta.</string>
+			<key>few</key>
+			<string>Poskoky nad 2/10 už %lld týdny v řadě — je vhodná kontrola u fyzioterapeuta.</string>
+			<key>many</key>
+			<string>Poskoky nad 2/10 už %lld týdne v řadě — je vhodná kontrola u fyzioterapeuta.</string>
+			<key>other</key>
+			<string>Poskoky nad 2/10 už %lld týdnů v řadě — je vhodná kontrola u fyzioterapeuta.</string>
+		</dict>
+	</dict>
+	<!-- add-training-gates-and-load: race result: laps completed. Plural. -->
+	<key>%lld laps</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld kolo</string>
+			<key>few</key>
+			<string>%lld kola</string>
+			<key>many</key>
+			<string>%lld kola</string>
+			<key>other</key>
+			<string>%lld kol</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

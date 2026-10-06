@@ -116,6 +116,9 @@ public struct TrainingSnapshot: Equatable, Sendable {
     public let skeletonDays: [Day]
     /// add-daily-checkin-and-pain-mode: whether the pain features show.
     public let painMode: PainModeState
+    /// add-training-gates-and-load: the projection's `notices` (data gaps
+    /// the vault explains), as written.
+    public let notices: [ProjectionNotice]
 
     public init(
         asOf: LocalDate?,
@@ -129,7 +132,8 @@ public struct TrainingSnapshot: Equatable, Sendable {
         capabilities: TrainingCapabilities = .readOnly,
         checkIns: CheckInOverlay = .empty,
         skeletonDays: [Day] = [],
-        painMode: PainModeState? = nil
+        painMode: PainModeState? = nil,
+        notices: [ProjectionNotice] = []
     ) {
         self.asOf = asOf
         self.athlete = athlete
@@ -143,6 +147,7 @@ public struct TrainingSnapshot: Equatable, Sendable {
         self.checkIns = checkIns
         self.skeletonDays = skeletonDays
         self.painMode = painMode ?? PainModeState.resolve(vault: athlete.painMode, checkIns: checkIns, vaultPains: [:])
+        self.notices = notices
     }
 
     /// From a decoded projection, with an empty pending overlay and the
@@ -173,7 +178,8 @@ public struct TrainingSnapshot: Equatable, Sendable {
             capabilities: capabilities,
             checkIns: checkIns,
             skeletonDays: checkIns.applying(to: projection.days),
-            painMode: PainModeState.resolve(vault: projection.athlete.painMode, checkIns: checkIns, vaultPains: vaultPains)
+            painMode: PainModeState.resolve(vault: projection.athlete.painMode, checkIns: checkIns, vaultPains: vaultPains),
+            notices: projection.notices
         )
     }
 
@@ -264,9 +270,24 @@ public struct TrainingSnapshot: Equatable, Sendable {
         races.filter { $0.date == date }
     }
 
+    /// A race by its id -- never by its position in `races` (the list
+    /// grows and reorders by date).
     public func race(id: String?) -> Race? {
         guard let id else { return nil }
         return races.first { $0.id == id }
+    }
+
+    /// add-training-gates-and-load: the session with `id` and its day, in
+    /// the written weeks (the phone's pending edits and check-ins applied).
+    public func session(id: String) -> (session: Session, day: Day)? {
+        for week in plan?.weeks ?? [] {
+            for day in week.days {
+                if let session = day.sessions.first(where: { $0.id == id }) {
+                    return (session, day)
+                }
+            }
+        }
+        return nil
     }
 
     /// The workout an option or session points at.

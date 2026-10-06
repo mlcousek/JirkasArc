@@ -41,10 +41,27 @@
 // asked -- the vault then keeps the day's earlier answer -- and a list,
 // possibly empty, when it was (Pain.swift has the entry's shape). The
 // vault's `device.hello` decodes as `.other` here: this app doesn't write
-// it yet. So do `test.gate` and `session.done` (the vault's contract of
-// 2026-10-01, mirrored by add-daily-checkin-and-pain-mode), and the
-// `pains` that contract added to `session.rpe` is an ignored key until
-// the change that records them.
+// it yet.
+//
+// add-training-gates-and-load adds the vault's facts of 2026-10-01 and
+// 2026-10-05 (its design D1):
+//
+//   test.gate     {date, walkPain, hopPain, site?, note?}
+//   session.done  {date, sessionId, option?, min?, km?, note?}
+//   session.fuel  {date, sessionId, carbsG, fluidMl?, durationMin?, note?}
+//   race.result   {raceId, status: finished|dnf|dns, reason?, time?,
+//                  officialTime?, distanceKm?, laps?, note?}   (no `date`)
+//   session.rpe   gains pains?: [{site, during?, after?}]
+//
+// Optional keys are written as `null` like everywhere else -- with ONE
+// exception the contract asks for: `officialTime` is left out unless the
+// owner filled it ("omit it for a race with one time, never send a copy of
+// `time`"). Numbers that can carry a fraction go through `WireNumber`: a
+// whole value is written as an integer (`4`, `10`), anything else as an
+// exact decimal (`1.5`, `42.2`), so the bytes never depend on how a
+// platform prints a double. The app's byte-exact golden file for them is
+// Fixtures/Events/gates.v1.app.jsonl -- the vault example's own six lines
+// as this app encodes them.
 //
 // Encoding is deterministic (sorted keys, unescaped slashes, `\n` after
 // every line) because a sealed segment's bytes and git blob SHA must be the
@@ -56,7 +73,8 @@
 //
 // Depended on by: TrainingEventLog (stores these), EventSegment (writes
 // them), CheckInOverlay and PendingOverlay (fold them), PlanEditPolicy
-// (builds the commands), TrainingRecorder. Tests: HubEventTests.
+// (builds the commands), the record models (SessionRecordModels,
+// GateModels, RaceResultModels), TrainingRecorder. Tests: HubEventTests.
 
 import Foundation
 
@@ -73,11 +91,20 @@ public enum HubEventType: Hashable, Sendable {
     case sessionUnskipped
     case ruleOverridden
     case eventRetracted
+    /// add-training-gates-and-load.
+    case testGate
+    case sessionDone
+    case sessionFuel
+    case raceResult
     /// A type this build doesn't write (read from a newer fixture).
     case other(String)
 
     public init(rawValue: String) {
         switch rawValue {
+        case "test.gate": self = .testGate
+        case "session.done": self = .sessionDone
+        case "session.fuel": self = .sessionFuel
+        case "race.result": self = .raceResult
         case "checkin.morning": self = .morningCheckIn
         case "habit.tick": self = .habitTick
         case "session.rpe": self = .sessionRPE
@@ -104,6 +131,10 @@ public enum HubEventType: Hashable, Sendable {
         case .sessionUnskipped: return "plan.session.unskipped"
         case .ruleOverridden: return "plan.rule.overridden"
         case .eventRetracted: return "event.retracted"
+        case .testGate: return "test.gate"
+        case .sessionDone: return "session.done"
+        case .sessionFuel: return "session.fuel"
+        case .raceResult: return "race.result"
         case .other(let raw): return raw
         }
     }
@@ -157,12 +188,177 @@ public struct SessionRPEPayload: Equatable, Sendable {
     /// The contract's optional 1-5 feel; the app doesn't ask for it yet
     /// (tasks 0.5) and writes `null`.
     public var feel: Int?
+    /// add-training-gates-and-load: pain during / after the session.
+    /// `nil` = not asked (the vault keeps the session's earlier answer),
+    /// `[]` = asked, nothing hurt.
+    public var pains: [SessionPainEntry]?
 
-    public init(date: LocalDate, sessionId: String, rpe: Int, feel: Int? = nil) {
+    public init(date: LocalDate, sessionId: String, rpe: Int, feel: Int? = nil, pains: [SessionPainEntry]? = nil) {
         self.date = date
         self.sessionId = sessionId
         self.rpe = rpe
         self.feel = feel
+        self.pains = pains
+    }
+}
+
+// MARK: Facts of add-training-gates-and-load
+
+/// The weekly gate test: pain when walking and on 20 single-leg hops.
+/// One per date (the last sent wins); the vault judges it.
+public struct GateTestPayload: Equatable, Sendable {
+    public var date: LocalDate
+    /// 0...10 in steps of 0.5.
+    public var walkPain: Double
+    /// 0...10 in steps of 0.5.
+    public var hopPain: Double
+    /// The tested site; `nil` leaves the vault's default.
+    public var site: PainSite?
+    /// 1-200 UTF-16 units.
+    public var note: String?
+
+    public init(date: LocalDate, walkPain: Double, hopPain: Double, site: PainSite? = nil, note: String? = nil) {
+        self.date = date
+        self.walkPain = walkPain
+        self.hopPain = hopPain
+        self.site = site
+        self.note = note
+    }
+}
+
+/// "Done without a watch": the session counts as done when no activity
+/// matched; a synced activity replaces it.
+public struct SessionDonePayload: Equatable, Sendable {
+    public static let minutesRange = 1...6000
+    public static let maxKm = 1000.0
+
+    public var date: LocalDate
+    public var sessionId: String
+    /// The option actually done, when the session has options.
+    public var option: OptionCode?
+    public var min: Int?
+    /// Above 0; written on a grid of 0.01 km.
+    public var km: Double?
+    public var note: String?
+
+    public init(date: LocalDate, sessionId: String, option: OptionCode? = nil, min: Int? = nil, km: Double? = nil, note: String? = nil) {
+        self.date = date
+        self.sessionId = sessionId
+        self.option = option
+        self.min = min
+        self.km = km
+        self.note = note
+    }
+}
+
+/// What was eaten during a session. `carbsG: 0` is an answer.
+public struct SessionFuelPayload: Equatable, Sendable {
+    public static let carbsRange: ClosedRange<Double> = 0...2000
+    public static let maxFluidMl = 50_000
+
+    public var date: LocalDate
+    public var sessionId: String
+    /// Grams of carbohydrate; written on a grid of 0.1 g.
+    public var carbsG: Double
+    public var fluidMl: Int?
+    /// How long the session really took, when the app knows.
+    public var durationMin: Int?
+    public var note: String?
+
+    public init(date: LocalDate, sessionId: String, carbsG: Double, fluidMl: Int? = nil, durationMin: Int? = nil, note: String? = nil) {
+        self.date = date
+        self.sessionId = sessionId
+        self.carbsG = carbsG
+        self.fluidMl = fluidMl
+        self.durationMin = durationMin
+        self.note = note
+    }
+}
+
+/// How a race ended. It carries no `date`: the race's date is the plan's.
+public struct RaceResultPayload: Equatable, Sendable {
+    public static let maxDistanceKm = 10_000.0
+    public static let maxLaps = 100_000
+
+    public var raceId: String
+    public var status: RaceOutcome
+    /// With `dnf` / `dns`.
+    public var reason: RaceResultReason?
+    /// The ELAPSED time, `h:mm:ss`.
+    public var time: String?
+    /// The organiser's results time when it is another one; `nil` is left
+    /// out of the event.
+    public var officialTime: String?
+    public var distanceKm: Double?
+    public var laps: Int?
+    public var note: String?
+
+    public init(
+        raceId: String,
+        status: RaceOutcome,
+        reason: RaceResultReason? = nil,
+        time: String? = nil,
+        officialTime: String? = nil,
+        distanceKm: Double? = nil,
+        laps: Int? = nil,
+        note: String? = nil
+    ) {
+        self.raceId = raceId
+        self.status = status
+        self.reason = reason
+        self.time = time
+        self.officialTime = officialTime
+        self.distanceKm = distanceKm
+        self.laps = laps
+        self.note = note
+    }
+
+    /// `h:mm:ss`: hours without a leading zero ("0:46:03", "21:31:23");
+    /// "3h24" and "3:24" are not times.
+    public static func isValidTime(_ text: String) -> Bool {
+        let parts = text.split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 3 else { return false }
+        let allDigits = parts.allSatisfy { part in
+            !part.isEmpty && part.allSatisfy { $0.isASCII && $0.isNumber }
+        }
+        guard allDigits else { return false }
+        let hours = parts[0]
+        guard hours.count <= 3, hours.count == 1 || hours.first != "0" else { return false }
+        guard parts[1].count == 2, parts[2].count == 2,
+              let minutes = Int(parts[1]), let seconds = Int(parts[2]),
+              minutes < 60, seconds < 60
+        else { return false }
+        return true
+    }
+}
+
+/// A number on the wire (add-training-gates-and-load D1): `value` rounded
+/// to a grid of 1/`steps`, written as an integer when whole (`4`, not
+/// `4.0`) and as an exact decimal otherwise (`1.5`, `42.2`) -- a
+/// `Decimal`, which every Foundation prints digit for digit, never a
+/// binary double. `nil` is written as `null`.
+enum WireNumber {
+    static func encode<Key: CodingKey>(_ value: Double?, steps: Int, into container: inout KeyedEncodingContainer<Key>, forKey key: Key) throws {
+        guard let value, value.isFinite, steps >= 1 else {
+            try container.encodeNil(forKey: key)
+            return
+        }
+        let scaled = (value * Double(steps)).rounded()
+        guard abs(scaled) < 1e12 else {
+            try container.encode(value, forKey: key)
+            return
+        }
+        let units = Int(scaled)
+        if units % steps == 0 {
+            try container.encode(units / steps, forKey: key)
+        } else {
+            try container.encode(Decimal(units) / Decimal(steps), forKey: key)
+        }
+    }
+
+    /// `value` on the grid of 1/`steps` (what `encode` writes).
+    static func rounded(_ value: Double, steps: Int) -> Double {
+        (value * Double(steps)).rounded() / Double(steps)
     }
 }
 
@@ -285,11 +481,19 @@ public enum HubEventPayload: Equatable, Sendable {
     case sessionUnskipped(SessionUnskippedPayload)
     case ruleOverridden(RuleOverriddenPayload)
     case eventRetracted(EventRetractedPayload)
+    case testGate(GateTestPayload)
+    case sessionDone(SessionDonePayload)
+    case sessionFuel(SessionFuelPayload)
+    case raceResult(RaceResultPayload)
     /// An unknown type, read only; `date` when its payload had one.
     case other(type: String, date: LocalDate?)
 
     public var type: HubEventType {
         switch self {
+        case .testGate: return .testGate
+        case .sessionDone: return .sessionDone
+        case .sessionFuel: return .sessionFuel
+        case .raceResult: return .raceResult
         case .morningCheckIn: return .morningCheckIn
         case .habitTick: return .habitTick
         case .sessionRPE: return .sessionRPE
@@ -305,9 +509,13 @@ public enum HubEventPayload: Equatable, Sendable {
     }
 
     /// The training day of a fact; `nil` for the commands (they carry a
-    /// week) and a retraction.
+    /// week), a retraction and a race result (it names its race).
     public var date: LocalDate? {
         switch self {
+        case .testGate(let payload): return payload.date
+        case .sessionDone(let payload): return payload.date
+        case .sessionFuel(let payload): return payload.date
+        case .raceResult: return nil
         case .morningCheckIn(let payload): return payload.date
         case .habitTick(let payload): return payload.date
         case .sessionRPE(let payload): return payload.date
@@ -359,6 +567,35 @@ public enum HubEventPayload: Equatable, Sendable {
             if payload.sessionId.isEmpty { throw HubEventError.invalidPayload("empty sessionId") }
             if !SessionRPEPayload.range.contains(payload.rpe) { throw HubEventError.invalidPayload("rpe out of range") }
             if let feel = payload.feel, !SessionRPEPayload.feelRange.contains(feel) { throw HubEventError.invalidPayload("feel out of range") }
+            for pain in payload.pains ?? [] where !pain.isValid {
+                throw HubEventError.invalidPayload("session pain must be 0-10 in steps of 0.5")
+            }
+        case .testGate(let payload):
+            if !PainEntry.isValidScore(payload.walkPain) || !PainEntry.isValidScore(payload.hopPain) {
+                throw HubEventError.invalidPayload("gate score must be 0-10 in steps of 0.5")
+            }
+            if !PainEntry.isValidNote(payload.note) { throw HubEventError.invalidPayload("gate note must be 1-200 characters") }
+        case .sessionDone(let payload):
+            if payload.sessionId.isEmpty { throw HubEventError.invalidPayload("empty sessionId") }
+            if let minutes = payload.min, !SessionDonePayload.minutesRange.contains(minutes) { throw HubEventError.invalidPayload("minutes out of range") }
+            if let km = payload.km, !(km.isFinite && km > 0 && km <= SessionDonePayload.maxKm) { throw HubEventError.invalidPayload("km out of range") }
+            try Self.validateText(payload.note)
+        case .sessionFuel(let payload):
+            if payload.sessionId.isEmpty { throw HubEventError.invalidPayload("empty sessionId") }
+            if !(payload.carbsG.isFinite && SessionFuelPayload.carbsRange.contains(payload.carbsG)) { throw HubEventError.invalidPayload("carbs out of range") }
+            if let fluid = payload.fluidMl, !(0...SessionFuelPayload.maxFluidMl).contains(fluid) { throw HubEventError.invalidPayload("fluid out of range") }
+            if let minutes = payload.durationMin, !SessionDonePayload.minutesRange.contains(minutes) { throw HubEventError.invalidPayload("duration out of range") }
+            try Self.validateText(payload.note)
+        case .raceResult(let payload):
+            if payload.raceId.isEmpty { throw HubEventError.invalidPayload("empty raceId") }
+            if let time = payload.time, !RaceResultPayload.isValidTime(time) { throw HubEventError.invalidPayload("time is not h:mm:ss") }
+            if let official = payload.officialTime {
+                if !RaceResultPayload.isValidTime(official) { throw HubEventError.invalidPayload("official time is not h:mm:ss") }
+                if official == payload.time { throw HubEventError.invalidPayload("official time is a copy of the elapsed time") }
+            }
+            if let km = payload.distanceKm, !(km.isFinite && km > 0 && km <= RaceResultPayload.maxDistanceKm) { throw HubEventError.invalidPayload("distance out of range") }
+            if let laps = payload.laps, !(0...RaceResultPayload.maxLaps).contains(laps) { throw HubEventError.invalidPayload("laps out of range") }
+            try Self.validateText(payload.note)
         case .sessionNote(let payload):
             if payload.sessionId.isEmpty { throw HubEventError.invalidPayload("empty sessionId") }
             if payload.text.isEmpty { throw HubEventError.invalidPayload("empty note") }
@@ -447,6 +684,10 @@ extension HubEvent: Codable {
     enum PayloadKeys: String, CodingKey {
         case date, light, sessionId, option, pains, habitId, done, rpe, feel, text
         case week, baseRevision, from, to, a, aDate, b, bDate, reason, rule, target
+        // add-training-gates-and-load.
+        case walkPain, hopPain, site, note, min, km
+        case carbsG, fluidMl, durationMin
+        case raceId, status, time, officialTime, distanceKm, laps
     }
 
     public init(from decoder: Decoder) throws {
@@ -500,7 +741,36 @@ extension HubEvent: Codable {
                 date: date,
                 sessionId: try p.decode(String.self, forKey: .sessionId),
                 rpe: try p.decode(Int.self, forKey: .rpe),
-                feel: try p.decodeIfPresent(Int.self, forKey: .feel)
+                feel: try p.decodeIfPresent(Int.self, forKey: .feel),
+                // Absent or null = not asked; an unknown site is `other`.
+                pains: try p.decodeIfPresent([SessionPainEntry].self, forKey: .pains)
+            ))
+        case .testGate:
+            payload = .testGate(GateTestPayload(
+                date: date,
+                walkPain: try p.decode(Double.self, forKey: .walkPain),
+                hopPain: try p.decode(Double.self, forKey: .hopPain),
+                site: try p.decodeIfPresent(String.self, forKey: .site).map { PainSite(wire: $0) },
+                note: try p.decodeIfPresent(String.self, forKey: .note)
+            ))
+        case .sessionDone:
+            let optionText = try p.decodeIfPresent(String.self, forKey: .option)
+            payload = .sessionDone(SessionDonePayload(
+                date: date,
+                sessionId: try p.decode(String.self, forKey: .sessionId),
+                option: optionText.flatMap { OptionCode(rawValue: $0) },
+                min: try p.decodeIfPresent(Int.self, forKey: .min),
+                km: try p.decodeIfPresent(Double.self, forKey: .km),
+                note: try p.decodeIfPresent(String.self, forKey: .note)
+            ))
+        case .sessionFuel:
+            payload = .sessionFuel(SessionFuelPayload(
+                date: date,
+                sessionId: try p.decode(String.self, forKey: .sessionId),
+                carbsG: try p.decode(Double.self, forKey: .carbsG),
+                fluidMl: try p.decodeIfPresent(Int.self, forKey: .fluidMl),
+                durationMin: try p.decodeIfPresent(Int.self, forKey: .durationMin),
+                note: try p.decodeIfPresent(String.self, forKey: .note)
             ))
         case .sessionNote:
             payload = .sessionNote(SessionNotePayload(
@@ -510,14 +780,14 @@ extension HubEvent: Codable {
             ))
         case .other(let raw):
             payload = .other(type: raw, date: date)
-        case .sessionMoved, .sessionsSwapped, .sessionSkipped, .sessionUnskipped, .ruleOverridden, .eventRetracted:
+        case .sessionMoved, .sessionsSwapped, .sessionSkipped, .sessionUnskipped, .ruleOverridden, .eventRetracted, .raceResult:
             // Already returned by `decodeCommand`.
             throw DecodingError.dataCorruptedError(forKey: .date, in: p, debugDescription: "a command has no date")
         }
     }
 
-    /// The commands and the retraction (they have no `date`); `nil` for
-    /// the facts.
+    /// The commands, the retraction and the race result (they have no
+    /// `date`); `nil` for the dated facts.
     private static func decodeCommand(_ type: HubEventType, _ p: KeyedDecodingContainer<PayloadKeys>) throws -> HubEventPayload? {
         func week() throws -> ISOWeek {
             let raw = try p.decode(String.self, forKey: .week)
@@ -576,7 +846,26 @@ extension HubEvent: Codable {
                 target: try p.decode(String.self, forKey: .target),
                 reason: try p.decodeIfPresent(String.self, forKey: .reason)
             ))
-        case .morningCheckIn, .habitTick, .sessionRPE, .sessionNote, .other:
+        case .raceResult:
+            // An unknown status decides nothing: the line is invalid (the
+            // vault rejects such an event too). An unknown reason is
+            // `other`, like the vault reads it.
+            let statusText = try p.decode(String.self, forKey: .status)
+            guard let status = RaceOutcome(rawValue: statusText) else {
+                throw DecodingError.dataCorruptedError(forKey: .status, in: p, debugDescription: "unknown race status")
+            }
+            let reasonText = try p.decodeIfPresent(String.self, forKey: .reason)
+            return .raceResult(RaceResultPayload(
+                raceId: try p.decode(String.self, forKey: .raceId),
+                status: status,
+                reason: reasonText.map { RaceResultReason(rawValue: $0) ?? .other },
+                time: try p.decodeIfPresent(String.self, forKey: .time),
+                officialTime: try p.decodeIfPresent(String.self, forKey: .officialTime),
+                distanceKm: try p.decodeIfPresent(Double.self, forKey: .distanceKm),
+                laps: try p.decodeIfPresent(Int.self, forKey: .laps),
+                note: try p.decodeIfPresent(String.self, forKey: .note)
+            ))
+        case .morningCheckIn, .habitTick, .sessionRPE, .sessionNote, .testGate, .sessionDone, .sessionFuel, .other:
             return nil
         }
     }
@@ -610,6 +899,40 @@ extension HubEvent: Codable {
             try p.encode(value.sessionId, forKey: .sessionId)
             try p.encode(value.rpe, forKey: .rpe)
             try p.encode(value.feel, forKey: .feel)
+            try p.encode(value.pains, forKey: .pains)
+        case .testGate(let value):
+            try p.encode(value.date.description, forKey: .date)
+            try WireNumber.encode(value.walkPain, steps: 2, into: &p, forKey: .walkPain)
+            try WireNumber.encode(value.hopPain, steps: 2, into: &p, forKey: .hopPain)
+            try p.encode(value.site?.rawValue, forKey: .site)
+            try p.encode(value.note, forKey: .note)
+        case .sessionDone(let value):
+            try p.encode(value.date.description, forKey: .date)
+            try p.encode(value.sessionId, forKey: .sessionId)
+            try p.encode(value.option?.rawValue, forKey: .option)
+            try p.encode(value.min, forKey: .min)
+            try WireNumber.encode(value.km, steps: 100, into: &p, forKey: .km)
+            try p.encode(value.note, forKey: .note)
+        case .sessionFuel(let value):
+            try p.encode(value.date.description, forKey: .date)
+            try p.encode(value.sessionId, forKey: .sessionId)
+            try WireNumber.encode(value.carbsG, steps: 10, into: &p, forKey: .carbsG)
+            try p.encode(value.fluidMl, forKey: .fluidMl)
+            try p.encode(value.durationMin, forKey: .durationMin)
+            try p.encode(value.note, forKey: .note)
+        case .raceResult(let value):
+            try p.encode(value.raceId, forKey: .raceId)
+            try p.encode(value.status.rawValue, forKey: .status)
+            try p.encode(value.reason?.rawValue, forKey: .reason)
+            try p.encode(value.time, forKey: .time)
+            // The one optional key that is left out when unknown (see this
+            // file's header): a race with one time has no `officialTime`.
+            if let official = value.officialTime {
+                try p.encode(official, forKey: .officialTime)
+            }
+            try WireNumber.encode(value.distanceKm, steps: 100, into: &p, forKey: .distanceKm)
+            try p.encode(value.laps, forKey: .laps)
+            try p.encode(value.note, forKey: .note)
         case .sessionNote(let value):
             try p.encode(value.date.description, forKey: .date)
             try p.encode(value.sessionId, forKey: .sessionId)

@@ -841,3 +841,285 @@
 
 /* add-interactive-habits: a tick the vault refused without giving a reason. */
 "The vault did not accept this entry." = "Vault tento záznam nepřijal.";
+
+/* add-training-gates-and-load: a value the vault does not know (a data gap, never 0). */
+"–" = "–";
+
+/* add-training-gates-and-load: placeholder of an optional note field. */
+"Note (optional)" = "Poznámka (nepovinná)";
+
+/* add-training-gates-and-load: button closing a sheet without recording. */
+"Cancel" = "Zrušit";
+
+/* add-training-gates-and-load: button taking back what was just recorded by hand. */
+"Undo" = "Vrátit zpět";
+
+/* add-training-gates-and-load: under something recorded on the phone that the vault has not read yet. */
+"The plan answers after the next sync." = "Plán odpoví po příští synchronizaci.";
+
+/* add-training-gates-and-load: title of the weekly gate test card. */
+"Weekly gate test" = "Týdenní test";
+
+/* add-training-gates-and-load: what the two gate test sliders ask. */
+"Pain 0–10 when walking, and on 20 single-leg hops." = "Bolest 0–10 při chůzi a při 20 poskocích na jedné noze.";
+
+/* add-training-gates-and-load: gate test slider: pain when walking. */
+"Walking" = "Chůze";
+
+/* add-training-gates-and-load: gate test slider: pain on 20 single-leg hops. */
+"20 single-leg hops" = "20 poskoků na jedné noze";
+
+/* add-training-gates-and-load: gate test: which body site was tested. */
+"Tested site" = "Testované místo";
+
+/* add-training-gates-and-load: button recording the gate test. */
+"Save test" = "Uložit test";
+
+/* add-training-gates-and-load: button opening the gate test editor when the week has no test. */
+"Record a test" = "Zapsat test";
+
+/* add-training-gates-and-load: button opening the gate test editor when the week already has a test. */
+"Test again" = "Otestovat znovu";
+
+/* add-training-gates-and-load: gate card without any test. */
+"No gate test yet" = "Zatím žádný test";
+
+/* add-training-gates-and-load: gate card: the date of the last test. */
+"Tested %@" = "Testováno %@";
+
+/* add-training-gates-and-load: gate verdict from the vault: the walking score, running allowed. */
+"Walking %@ — running is allowed" = "Chůze %@ — běh je povolen";
+
+/* add-training-gates-and-load: gate verdict from the vault: the walking score, running not allowed. */
+"Walking %@ — no running for now" = "Chůze %@ — zatím bez běhu";
+
+/* add-training-gates-and-load: gate card: the walking score when the vault gave no verdict. */
+"Walking %@" = "Chůze %@";
+
+/* add-training-gates-and-load: gate verdict from the vault: the hop score, speed work allowed. */
+"Hops %@ — speed, hills and jumps are allowed" = "Poskoky %@ — rychlost, kopce a skoky jsou povolené";
+
+/* add-training-gates-and-load: gate verdict from the vault: the hop score, speed work not allowed. */
+"Hops %@ — speed, hills and jumps stay locked" = "Poskoky %@ — rychlost, kopce a skoky zůstávají zamčené";
+
+/* add-training-gates-and-load: gate card: the hop score when the vault gave no verdict. */
+"Hops %@" = "Poskoky %@";
+
+/* add-training-gates-and-load: gate card: the vault calls the test stale. */
+"This test is more than two weeks old." = "Tento test je starší než dva týdny.";
+
+/* add-training-gates-and-load: gate card: the phone's own test the vault has not judged yet (date, two scores). */
+"Your test of %@: walking %@ · hops %@" = "Tvůj test z %@: chůze %@ · poskoky %@";
+
+/* add-training-gates-and-load: session detail: title of the pain block beside the RPE. */
+"Pain during and after" = "Bolest během a po";
+
+/* add-training-gates-and-load: session pain slider: pain during the session. */
+"During" = "Během";
+
+/* add-training-gates-and-load: session pain slider: pain after the session. */
+"After" = "Po";
+
+/* add-training-gates-and-load: button recording the session pain with the RPE. */
+"Save session pain" = "Uložit bolest z tréninku";
+
+/* add-training-gates-and-load: session pain: Save needs an RPE. */
+"Choose the effort first — the pain is sent with it." = "Nejdřív zvol úsilí — bolest se odesílá s ním.";
+
+/* add-training-gates-and-load: session detail: pain was asked and nothing hurt. */
+"Pain: nothing hurt" = "Bolest: nic nebolelo";
+
+/* add-training-gates-and-load: session detail: one site's recorded pain (site, two scores). */
+"%@: during %@ · after %@" = "%@: během %@ · po %@";
+
+/* add-training-gates-and-load: morning pain step: how a site settled overnight (site, two scores). */
+"%@ — yesterday after the session: %@ → today: %@" = "%@ — včera po tréninku: %@ → dnes: %@";
+
+/* add-training-gates-and-load: week load line: run km of the week's target. */
+"Week %@ of %@ km" = "Týden %@ z %@ km";
+
+/* add-training-gates-and-load: week load line: run km, no target. */
+"Week %@ km" = "Týden %@ km";
+
+/* add-training-gates-and-load: week load line: km over the week's target (a warning, never praise). */
+"%@ km over plan" = "%@ km nad plán";
+
+/* add-training-gates-and-load: week load line: run km no session planned. */
+"%@ km unplanned" = "%@ km mimo plán";
+
+/* add-training-gates-and-load: week load line: the longest run against the vault's cap. */
+"longest %@ of %@ km cap" = "nejdelší %@ z limitu %@ km";
+
+/* add-training-gates-and-load: week load line: climb of the week's runs in metres. */
+"hills %@ m" = "kopce %@ m";
+
+/* add-training-gates-and-load: week load line: how many done sessions the vault classes as hard. */
+"hard sessions %@" = "těžké tréninky %@";
+
+/* add-training-gates-and-load: amber badge on an unplanned run of a week at or over its target. */
+"Over plan" = "Nad plán";
+
+/* add-training-gates-and-load: session detail: button for a session done without a recorded activity. */
+"Mark done (no watch)" = "Označit jako hotové (bez hodinek)";
+
+/* add-training-gates-and-load: title of the sheet and card for a session done by hand. */
+"Done without a watch" = "Hotovo bez hodinek";
+
+/* add-training-gates-and-load: session status: done, said by hand, no activity. */
+"Done (logged by hand)" = "Hotovo (zapsáno ručně)";
+
+/* add-training-gates-and-load: session detail: an activity matched and a manual record exists too. */
+"Also logged by hand: %@" = "Zapsáno i ručně: %@";
+
+/* add-training-gates-and-load: done-by-hand sheet: which option was done. */
+"Option done" = "Provedená varianta";
+
+/* add-training-gates-and-load: done-by-hand sheet: how long it took. */
+"Minutes" = "Minuty";
+
+/* add-training-gates-and-load: a distance field in kilometres. */
+"Distance (km)" = "Vzdálenost (km)";
+
+/* add-training-gates-and-load: button recording a session as done by hand. */
+"Save as done" = "Uložit jako hotové";
+
+/* add-training-gates-and-load: race screen: title of the result card. */
+"Result" = "Výsledek";
+
+/* add-training-gates-and-load: race screen: button opening the result sheet. */
+"How did it go?" = "Jak to dopadlo?";
+
+/* add-training-gates-and-load: race screen: button opening the result sheet when a result exists. */
+"Change the result" = "Změnit výsledek";
+
+/* add-training-gates-and-load: race result status (neutral wording). */
+"Did not finish" = "Nedokončeno";
+
+/* add-training-gates-and-load: race result status (neutral wording). */
+"Did not start" = "Neodstartováno";
+
+/* add-training-gates-and-load: race result reason: the pre-agreed stop rule ended the race. */
+"Stopped by the stop rule" = "Zastaveno podle stop pravidla";
+
+/* add-training-gates-and-load: race result reason. */
+"Injury" = "Zranění";
+
+/* add-training-gates-and-load: race result reason. */
+"Illness" = "Nemoc";
+
+/* add-training-gates-and-load: race result reason. */
+"Other reason" = "Jiný důvod";
+
+/* add-training-gates-and-load: race result sheet: leave the reason out. */
+"No reason given" = "Bez udání důvodu";
+
+/* add-training-gates-and-load: race result: the elapsed time shown under the organiser's results time. */
+"%@ elapsed" = "%@ celkový čas";
+
+/* add-training-gates-and-load: race result: the vault says the typed goal was reached. */
+"Goal reached" = "Cíl splněn";
+
+/* add-training-gates-and-load: race result: the race report says it is a personal record. */
+"Personal record" = "Osobní rekord";
+
+/* add-training-gates-and-load: race result: where the record came from. */
+"From the race report" = "Ze závodního reportu";
+
+/* add-training-gates-and-load: race result: where the record came from. */
+"Logged in the app" = "Zapsáno v aplikaci";
+
+/* add-training-gates-and-load: race result the vault refused without giving a reason. */
+"The vault did not accept this result." = "Vault tento výsledek nepřijal.";
+
+/* add-training-gates-and-load: race result sheet: the status picker. */
+"How it ended" = "Jak závod skončil";
+
+/* add-training-gates-and-load: race result sheet: the reason picker. */
+"Reason" = "Důvod";
+
+/* add-training-gates-and-load: race result sheet: the elapsed time field. */
+"Elapsed time (h:mm:ss)" = "Celkový čas (h:mm:ss)";
+
+/* add-training-gates-and-load: race result sheet: the optional organiser's time field. */
+"Time in the results, if different (h:mm:ss)" = "Čas ve výsledcích, pokud je jiný (h:mm:ss)";
+
+/* add-training-gates-and-load: race result sheet: laps completed (lap races). */
+"Laps" = "Kola";
+
+/* add-training-gates-and-load: button recording the race result. */
+"Save result" = "Uložit výsledek";
+
+/* add-training-gates-and-load: race result sheet: why only one status is offered before the race. */
+"Before race day only a non-start can be recorded." = "Před dnem závodu lze zapsat jen neodstartování.";
+
+/* add-training-gates-and-load: race result sheet: the time format. */
+"Write a time as h:mm:ss, for example 3:24:10." = "Čas zapiš jako h:mm:ss, například 3:24:10.";
+
+/* add-training-gates-and-load: button retracting the phone's own race result. */
+"Withdraw this result" = "Stáhnout tento výsledek";
+
+/* add-training-gates-and-load: session detail: title of the fuel log card. */
+"Fuel log" = "Jídlo při tréninku";
+
+/* add-training-gates-and-load: button opening the fuel log sheet. */
+"Log fuel" = "Zapsat jídlo";
+
+/* add-training-gates-and-load: button opening the fuel log sheet when a log exists. */
+"Change the fuel log" = "Změnit záznam jídla";
+
+/* add-training-gates-and-load: fuel log sheet: grams of carbohydrate eaten. */
+"Carbs (g)" = "Sacharidy (g)";
+
+/* add-training-gates-and-load: fuel log sheet: millilitres drunk. */
+"Fluid (ml)" = "Tekutiny (ml)";
+
+/* add-training-gates-and-load: fuel log sheet: how long the session took. */
+"Duration (min), if you know it" = "Délka (min), pokud ji znáš";
+
+/* add-training-gates-and-load: button recording the fuel log. */
+"Save fuel log" = "Uložit záznam jídla";
+
+/* add-training-gates-and-load: fuel log: grams eaten. */
+"%@ g carbs eaten" = "%@ g sacharidů snědeno";
+
+/* add-training-gates-and-load: fuel log: millilitres drunk. */
+"%@ ml fluid" = "%@ ml tekutin";
+
+/* add-training-gates-and-load: fuel log: the vault's grams per hour against the plan. */
+"%@ g/h of %@ g/h planned" = "%@ g/h z plánovaných %@ g/h";
+
+/* add-training-gates-and-load: fuel log: the vault's grams per hour, no plan figure. */
+"%@ g/h" = "%@ g/h";
+
+/* add-training-gates-and-load: fuel log without a known duration. */
+"Add the duration to see grams per hour." = "Doplň délku a uvidíš gramy za hodinu.";
+
+/* add-training-gates-and-load: fuel log chip (neutral): below the planned grams per hour. */
+"Below plan" = "Pod plánem";
+
+/* add-training-gates-and-load: fuel log chip (neutral): within the planned grams per hour. */
+"On plan" = "Podle plánu";
+
+/* add-training-gates-and-load: fuel log chip (neutral): above the planned grams per hour. */
+"Above plan" = "Nad plánem";
+
+/* add-training-gates-and-load: Today chip: the day of the recovery window and its length (14 or 7). */
+"Recovery day %lld of %lld" = "Regenerace: den %lld z %lld";
+
+/* add-training-gates-and-load: Today chip: the last day of the recovery window. */
+"until %@" = "do %@";
+
+/* add-training-gates-and-load: Today chip: the race the recovery window follows. */
+"After %@" = "Po závodě %@";
+
+/* add-training-gates-and-load: recovery window: what the first week after a marathon means. */
+"No running this week — walking, mobility and sleep." = "Tento týden bez běhu — chůze, mobilita a spánek.";
+
+/* add-training-gates-and-load: recovery window: what the second week after a marathon means. */
+"Easy running only — no hard sessions yet." = "Jen lehký běh — zatím žádné těžké tréninky.";
+
+/* add-training-gates-and-load: recovery window: what two weeks after a very long race mean. */
+"Easy only — no build for two weeks." = "Jen lehce — dva týdny bez navyšování.";
+
+/* add-training-gates-and-load: recovery window: the seven-day window after a race that was not finished. */
+"A week of recovery after a race that ended early." = "Týden regenerace po předčasně ukončeném závodě.";

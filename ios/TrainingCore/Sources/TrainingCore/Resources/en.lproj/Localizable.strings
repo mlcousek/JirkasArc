@@ -841,3 +841,285 @@
 
 /* add-interactive-habits: a tick the vault refused without giving a reason. */
 "The vault did not accept this entry." = "The vault did not accept this entry.";
+
+/* add-training-gates-and-load: a value the vault does not know (a data gap, never 0). */
+"–" = "–";
+
+/* add-training-gates-and-load: placeholder of an optional note field. */
+"Note (optional)" = "Note (optional)";
+
+/* add-training-gates-and-load: button closing a sheet without recording. */
+"Cancel" = "Cancel";
+
+/* add-training-gates-and-load: button taking back what was just recorded by hand. */
+"Undo" = "Undo";
+
+/* add-training-gates-and-load: under something recorded on the phone that the vault has not read yet. */
+"The plan answers after the next sync." = "The plan answers after the next sync.";
+
+/* add-training-gates-and-load: title of the weekly gate test card. */
+"Weekly gate test" = "Weekly gate test";
+
+/* add-training-gates-and-load: what the two gate test sliders ask. */
+"Pain 0–10 when walking, and on 20 single-leg hops." = "Pain 0–10 when walking, and on 20 single-leg hops.";
+
+/* add-training-gates-and-load: gate test slider: pain when walking. */
+"Walking" = "Walking";
+
+/* add-training-gates-and-load: gate test slider: pain on 20 single-leg hops. */
+"20 single-leg hops" = "20 single-leg hops";
+
+/* add-training-gates-and-load: gate test: which body site was tested. */
+"Tested site" = "Tested site";
+
+/* add-training-gates-and-load: button recording the gate test. */
+"Save test" = "Save test";
+
+/* add-training-gates-and-load: button opening the gate test editor when the week has no test. */
+"Record a test" = "Record a test";
+
+/* add-training-gates-and-load: button opening the gate test editor when the week already has a test. */
+"Test again" = "Test again";
+
+/* add-training-gates-and-load: gate card without any test. */
+"No gate test yet" = "No gate test yet";
+
+/* add-training-gates-and-load: gate card: the date of the last test. */
+"Tested %@" = "Tested %@";
+
+/* add-training-gates-and-load: gate verdict from the vault: the walking score, running allowed. */
+"Walking %@ — running is allowed" = "Walking %@ — running is allowed";
+
+/* add-training-gates-and-load: gate verdict from the vault: the walking score, running not allowed. */
+"Walking %@ — no running for now" = "Walking %@ — no running for now";
+
+/* add-training-gates-and-load: gate card: the walking score when the vault gave no verdict. */
+"Walking %@" = "Walking %@";
+
+/* add-training-gates-and-load: gate verdict from the vault: the hop score, speed work allowed. */
+"Hops %@ — speed, hills and jumps are allowed" = "Hops %@ — speed, hills and jumps are allowed";
+
+/* add-training-gates-and-load: gate verdict from the vault: the hop score, speed work not allowed. */
+"Hops %@ — speed, hills and jumps stay locked" = "Hops %@ — speed, hills and jumps stay locked";
+
+/* add-training-gates-and-load: gate card: the hop score when the vault gave no verdict. */
+"Hops %@" = "Hops %@";
+
+/* add-training-gates-and-load: gate card: the vault calls the test stale. */
+"This test is more than two weeks old." = "This test is more than two weeks old.";
+
+/* add-training-gates-and-load: gate card: the phone's own test the vault has not judged yet (date, two scores). */
+"Your test of %@: walking %@ · hops %@" = "Your test of %@: walking %@ · hops %@";
+
+/* add-training-gates-and-load: session detail: title of the pain block beside the RPE. */
+"Pain during and after" = "Pain during and after";
+
+/* add-training-gates-and-load: session pain slider: pain during the session. */
+"During" = "During";
+
+/* add-training-gates-and-load: session pain slider: pain after the session. */
+"After" = "After";
+
+/* add-training-gates-and-load: button recording the session pain with the RPE. */
+"Save session pain" = "Save session pain";
+
+/* add-training-gates-and-load: session pain: Save needs an RPE. */
+"Choose the effort first — the pain is sent with it." = "Choose the effort first — the pain is sent with it.";
+
+/* add-training-gates-and-load: session detail: pain was asked and nothing hurt. */
+"Pain: nothing hurt" = "Pain: nothing hurt";
+
+/* add-training-gates-and-load: session detail: one site's recorded pain (site, two scores). */
+"%@: during %@ · after %@" = "%@: during %@ · after %@";
+
+/* add-training-gates-and-load: morning pain step: how a site settled overnight (site, two scores). */
+"%@ — yesterday after the session: %@ → today: %@" = "%@ — yesterday after the session: %@ → today: %@";
+
+/* add-training-gates-and-load: week load line: run km of the week's target. */
+"Week %@ of %@ km" = "Week %@ of %@ km";
+
+/* add-training-gates-and-load: week load line: run km, no target. */
+"Week %@ km" = "Week %@ km";
+
+/* add-training-gates-and-load: week load line: km over the week's target (a warning, never praise). */
+"%@ km over plan" = "%@ km over plan";
+
+/* add-training-gates-and-load: week load line: run km no session planned. */
+"%@ km unplanned" = "%@ km unplanned";
+
+/* add-training-gates-and-load: week load line: the longest run against the vault's cap. */
+"longest %@ of %@ km cap" = "longest %@ of %@ km cap";
+
+/* add-training-gates-and-load: week load line: climb of the week's runs in metres. */
+"hills %@ m" = "hills %@ m";
+
+/* add-training-gates-and-load: week load line: how many done sessions the vault classes as hard. */
+"hard sessions %@" = "hard sessions %@";
+
+/* add-training-gates-and-load: amber badge on an unplanned run of a week at or over its target. */
+"Over plan" = "Over plan";
+
+/* add-training-gates-and-load: session detail: button for a session done without a recorded activity. */
+"Mark done (no watch)" = "Mark done (no watch)";
+
+/* add-training-gates-and-load: title of the sheet and card for a session done by hand. */
+"Done without a watch" = "Done without a watch";
+
+/* add-training-gates-and-load: session status: done, said by hand, no activity. */
+"Done (logged by hand)" = "Done (logged by hand)";
+
+/* add-training-gates-and-load: session detail: an activity matched and a manual record exists too. */
+"Also logged by hand: %@" = "Also logged by hand: %@";
+
+/* add-training-gates-and-load: done-by-hand sheet: which option was done. */
+"Option done" = "Option done";
+
+/* add-training-gates-and-load: done-by-hand sheet: how long it took. */
+"Minutes" = "Minutes";
+
+/* add-training-gates-and-load: a distance field in kilometres. */
+"Distance (km)" = "Distance (km)";
+
+/* add-training-gates-and-load: button recording a session as done by hand. */
+"Save as done" = "Save as done";
+
+/* add-training-gates-and-load: race screen: title of the result card. */
+"Result" = "Result";
+
+/* add-training-gates-and-load: race screen: button opening the result sheet. */
+"How did it go?" = "How did it go?";
+
+/* add-training-gates-and-load: race screen: button opening the result sheet when a result exists. */
+"Change the result" = "Change the result";
+
+/* add-training-gates-and-load: race result status (neutral wording). */
+"Did not finish" = "Did not finish";
+
+/* add-training-gates-and-load: race result status (neutral wording). */
+"Did not start" = "Did not start";
+
+/* add-training-gates-and-load: race result reason: the pre-agreed stop rule ended the race. */
+"Stopped by the stop rule" = "Stopped by the stop rule";
+
+/* add-training-gates-and-load: race result reason. */
+"Injury" = "Injury";
+
+/* add-training-gates-and-load: race result reason. */
+"Illness" = "Illness";
+
+/* add-training-gates-and-load: race result reason. */
+"Other reason" = "Other reason";
+
+/* add-training-gates-and-load: race result sheet: leave the reason out. */
+"No reason given" = "No reason given";
+
+/* add-training-gates-and-load: race result: the elapsed time shown under the organiser's results time. */
+"%@ elapsed" = "%@ elapsed";
+
+/* add-training-gates-and-load: race result: the vault says the typed goal was reached. */
+"Goal reached" = "Goal reached";
+
+/* add-training-gates-and-load: race result: the race report says it is a personal record. */
+"Personal record" = "Personal record";
+
+/* add-training-gates-and-load: race result: where the record came from. */
+"From the race report" = "From the race report";
+
+/* add-training-gates-and-load: race result: where the record came from. */
+"Logged in the app" = "Logged in the app";
+
+/* add-training-gates-and-load: race result the vault refused without giving a reason. */
+"The vault did not accept this result." = "The vault did not accept this result.";
+
+/* add-training-gates-and-load: race result sheet: the status picker. */
+"How it ended" = "How it ended";
+
+/* add-training-gates-and-load: race result sheet: the reason picker. */
+"Reason" = "Reason";
+
+/* add-training-gates-and-load: race result sheet: the elapsed time field. */
+"Elapsed time (h:mm:ss)" = "Elapsed time (h:mm:ss)";
+
+/* add-training-gates-and-load: race result sheet: the optional organiser's time field. */
+"Time in the results, if different (h:mm:ss)" = "Time in the results, if different (h:mm:ss)";
+
+/* add-training-gates-and-load: race result sheet: laps completed (lap races). */
+"Laps" = "Laps";
+
+/* add-training-gates-and-load: button recording the race result. */
+"Save result" = "Save result";
+
+/* add-training-gates-and-load: race result sheet: why only one status is offered before the race. */
+"Before race day only a non-start can be recorded." = "Before race day only a non-start can be recorded.";
+
+/* add-training-gates-and-load: race result sheet: the time format. */
+"Write a time as h:mm:ss, for example 3:24:10." = "Write a time as h:mm:ss, for example 3:24:10.";
+
+/* add-training-gates-and-load: button retracting the phone's own race result. */
+"Withdraw this result" = "Withdraw this result";
+
+/* add-training-gates-and-load: session detail: title of the fuel log card. */
+"Fuel log" = "Fuel log";
+
+/* add-training-gates-and-load: button opening the fuel log sheet. */
+"Log fuel" = "Log fuel";
+
+/* add-training-gates-and-load: button opening the fuel log sheet when a log exists. */
+"Change the fuel log" = "Change the fuel log";
+
+/* add-training-gates-and-load: fuel log sheet: grams of carbohydrate eaten. */
+"Carbs (g)" = "Carbs (g)";
+
+/* add-training-gates-and-load: fuel log sheet: millilitres drunk. */
+"Fluid (ml)" = "Fluid (ml)";
+
+/* add-training-gates-and-load: fuel log sheet: how long the session took. */
+"Duration (min), if you know it" = "Duration (min), if you know it";
+
+/* add-training-gates-and-load: button recording the fuel log. */
+"Save fuel log" = "Save fuel log";
+
+/* add-training-gates-and-load: fuel log: grams eaten. */
+"%@ g carbs eaten" = "%@ g carbs eaten";
+
+/* add-training-gates-and-load: fuel log: millilitres drunk. */
+"%@ ml fluid" = "%@ ml fluid";
+
+/* add-training-gates-and-load: fuel log: the vault's grams per hour against the plan. */
+"%@ g/h of %@ g/h planned" = "%@ g/h of %@ g/h planned";
+
+/* add-training-gates-and-load: fuel log: the vault's grams per hour, no plan figure. */
+"%@ g/h" = "%@ g/h";
+
+/* add-training-gates-and-load: fuel log without a known duration. */
+"Add the duration to see grams per hour." = "Add the duration to see grams per hour.";
+
+/* add-training-gates-and-load: fuel log chip (neutral): below the planned grams per hour. */
+"Below plan" = "Below plan";
+
+/* add-training-gates-and-load: fuel log chip (neutral): within the planned grams per hour. */
+"On plan" = "On plan";
+
+/* add-training-gates-and-load: fuel log chip (neutral): above the planned grams per hour. */
+"Above plan" = "Above plan";
+
+/* add-training-gates-and-load: Today chip: the day of the recovery window and its length (14 or 7). */
+"Recovery day %lld of %lld" = "Recovery day %lld of %lld";
+
+/* add-training-gates-and-load: Today chip: the last day of the recovery window. */
+"until %@" = "until %@";
+
+/* add-training-gates-and-load: Today chip: the race the recovery window follows. */
+"After %@" = "After %@";
+
+/* add-training-gates-and-load: recovery window: what the first week after a marathon means. */
+"No running this week — walking, mobility and sleep." = "No running this week — walking, mobility and sleep.";
+
+/* add-training-gates-and-load: recovery window: what the second week after a marathon means. */
+"Easy running only — no hard sessions yet." = "Easy running only — no hard sessions yet.";
+
+/* add-training-gates-and-load: recovery window: what two weeks after a very long race mean. */
+"Easy only — no build for two weeks." = "Easy only — no build for two weeks.";
+
+/* add-training-gates-and-load: recovery window: the seven-day window after a race that was not finished. */
+"A week of recovery after a race that ended early." = "A week of recovery after a race that ended early.";

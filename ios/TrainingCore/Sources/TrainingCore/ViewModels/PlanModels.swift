@@ -65,6 +65,9 @@ public struct UnplannedRowModel: Equatable, Sendable, Identifiable {
     public let id: String
     public let sportSymbol: String
     public let text: String
+    /// add-training-gates-and-load: "Over plan" when the vault flags the
+    /// activity `over-plan` (an amber badge, never praise); else `nil`.
+    public var overPlanText: String? = nil
 }
 
 public struct DayRowModel: Equatable, Sendable, Identifiable {
@@ -117,6 +120,10 @@ public struct WeekAgendaModel: Equatable, Sendable {
     /// with no plan), the days that still have something to show -- a
     /// check-in light, an unplanned activity, pain tags in pain mode.
     public var unwrittenDays: [DayRowModel] = []
+    /// add-training-gates-and-load: "the plan is the ceiling" -- the
+    /// week's load line, drawn in place of `runLine` when the file
+    /// carries the load fields.
+    public var load: WeekLoadModel? = nil
 }
 
 public enum GlyphStyle: String, Equatable, Sendable {
@@ -250,6 +257,7 @@ public struct PlanBuilder: Sendable {
             )
             model.ruleNoteLines = written.ruleNotes.compactMap(format.freeText)
             model.planChanges = planChangeLines(isoWeek, snapshot: snapshot)
+            model.load = format.weekLoad(actual: written.actual, targetKm: targetKm)
             return model
         }
         if let outline {
@@ -325,7 +333,12 @@ public struct PlanBuilder: Sendable {
         let day = snapshot.day(date)
         let sessions = (day?.sessions ?? []).map { sessionRow($0, date: date, snapshot: snapshot) }
         let unplanned = (day?.unplanned ?? []).enumerated().map { index, activity in
-            UnplannedRowModel(id: "\(date)-unplanned-\(index)", sportSymbol: SportSymbol.name(activity.group), text: format.unplannedLine(activity))
+            UnplannedRowModel(
+                id: "\(date)-unplanned-\(index)",
+                sportSymbol: SportSymbol.name(activity.group),
+                text: format.unplannedLine(activity),
+                overPlanText: activity.isOverPlan ? text(.overPlanBadge) : nil
+            )
         }
         let races = snapshot.races(on: date).map { race in
             text.format(.raceDayLine, race.name.resolvedText(format.language) ?? race.id)
@@ -352,7 +365,10 @@ public struct PlanBuilder: Sendable {
     func sessionRow(_ session: Session, date: LocalDate, snapshot: TrainingSnapshot) -> SessionRowModel {
         let status = SessionStatusKind(session.status)
         var doneText: String?
-        if status == .done {
+        if status == .done, session.done?.isManual == true {
+            // add-training-gates-and-load: said by hand, no activity.
+            doneText = text(.doneByHand)
+        } else if status == .done {
             if let code = session.done?.option?.rawValue, !session.options.isEmpty {
                 doneText = text.format(.doneWithOption, code)
             } else {

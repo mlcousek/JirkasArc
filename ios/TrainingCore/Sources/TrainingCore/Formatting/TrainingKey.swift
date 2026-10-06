@@ -608,12 +608,206 @@ public enum TrainingKey: String, CaseIterable, Sendable {
     case habitStreakWeeks = "%lld weeks in a row"
     /// add-interactive-habits: the streak and percents are the phone's own count over the days it knows. Plural.
     case habitEstimateNote = "Counted on the phone from the last %lld days it knows"
+    /// add-training-gates-and-load: a value the vault does not know (a data gap, never 0).
+    case unknownValue = "–"
+    /// add-training-gates-and-load: placeholder of an optional note field.
+    case noteOptional = "Note (optional)"
+    /// add-training-gates-and-load: button closing a sheet without recording.
+    case actionCancel = "Cancel"
+    /// add-training-gates-and-load: button taking back what was just recorded by hand.
+    case actionUndo = "Undo"
+    /// add-training-gates-and-load: under something recorded on the phone that the vault has not read yet.
+    case answersAfterSync = "The plan answers after the next sync."
+    /// add-training-gates-and-load: title of the weekly gate test card.
+    case gateTitle = "Weekly gate test"
+    /// add-training-gates-and-load: what the two gate test sliders ask.
+    case gateHint = "Pain 0–10 when walking, and on 20 single-leg hops."
+    /// add-training-gates-and-load: gate test slider: pain when walking.
+    case gateWalkLabel = "Walking"
+    /// add-training-gates-and-load: gate test slider: pain on 20 single-leg hops.
+    case gateHopLabel = "20 single-leg hops"
+    /// add-training-gates-and-load: gate test: which body site was tested.
+    case gateSiteLabel = "Tested site"
+    /// add-training-gates-and-load: button recording the gate test.
+    case gateSave = "Save test"
+    /// add-training-gates-and-load: button opening the gate test editor when the week has no test.
+    case gateRecord = "Record a test"
+    /// add-training-gates-and-load: button opening the gate test editor when the week already has a test.
+    case gateRecordAgain = "Test again"
+    /// add-training-gates-and-load: gate card without any test.
+    case gateNone = "No gate test yet"
+    /// add-training-gates-and-load: gate card: the date of the last test.
+    case gateTested = "Tested %@"
+    /// add-training-gates-and-load: gate verdict from the vault: the walking score, running allowed.
+    case gateWalkAllowed = "Walking %@ — running is allowed"
+    /// add-training-gates-and-load: gate verdict from the vault: the walking score, running not allowed.
+    case gateWalkLocked = "Walking %@ — no running for now"
+    /// add-training-gates-and-load: gate card: the walking score when the vault gave no verdict.
+    case gateWalkPlain = "Walking %@"
+    /// add-training-gates-and-load: gate verdict from the vault: the hop score, speed work allowed.
+    case gateHopAllowed = "Hops %@ — speed, hills and jumps are allowed"
+    /// add-training-gates-and-load: gate verdict from the vault: the hop score, speed work not allowed.
+    case gateHopLocked = "Hops %@ — speed, hills and jumps stay locked"
+    /// add-training-gates-and-load: gate card: the hop score when the vault gave no verdict.
+    case gateHopPlain = "Hops %@"
+    /// add-training-gates-and-load: gate card: neutral advice after several weekly tests above 2/10. Plural.
+    case gatePhysio = "Hops above 2/10 for %lld weeks in a row — a physio check is advised."
+    /// add-training-gates-and-load: gate card: the vault calls the test stale.
+    case gateStale = "This test is more than two weeks old."
+    /// add-training-gates-and-load: gate card: the phone's own test the vault has not judged yet (date, two scores).
+    case gatePending = "Your test of %@: walking %@ · hops %@"
+    /// add-training-gates-and-load: session detail: title of the pain block beside the RPE.
+    case sessionPainTitle = "Pain during and after"
+    /// add-training-gates-and-load: session pain slider: pain during the session.
+    case sessionPainDuring = "During"
+    /// add-training-gates-and-load: session pain slider: pain after the session.
+    case sessionPainAfter = "After"
+    /// add-training-gates-and-load: button recording the session pain with the RPE.
+    case sessionPainSave = "Save session pain"
+    /// add-training-gates-and-load: session pain: Save needs an RPE.
+    case sessionPainNeedsRPE = "Choose the effort first — the pain is sent with it."
+    /// add-training-gates-and-load: session detail: pain was asked and nothing hurt.
+    case sessionPainNone = "Pain: nothing hurt"
+    /// add-training-gates-and-load: session detail: one site's recorded pain (site, two scores).
+    case sessionPainLine = "%@: during %@ · after %@"
+    /// add-training-gates-and-load: morning pain step: how a site settled overnight (site, two scores).
+    case painSettledLine = "%@ — yesterday after the session: %@ → today: %@"
+    /// add-training-gates-and-load: week load line: run km of the week's target.
+    case loadWeekOfTarget = "Week %@ of %@ km"
+    /// add-training-gates-and-load: week load line: run km, no target.
+    case loadWeek = "Week %@ km"
+    /// add-training-gates-and-load: week load line: km over the week's target (a warning, never praise).
+    case loadOverPlan = "%@ km over plan"
+    /// add-training-gates-and-load: week load line: run km no session planned.
+    case loadUnplanned = "%@ km unplanned"
+    /// add-training-gates-and-load: week load line: the longest run against the vault's cap.
+    case loadLongestOfCap = "longest %@ of %@ km cap"
+    /// add-training-gates-and-load: week load line: climb of the week's runs in metres.
+    case loadHills = "hills %@ m"
+    /// add-training-gates-and-load: week load line: how many done sessions the vault classes as hard.
+    case loadHardSessions = "hard sessions %@"
+    /// add-training-gates-and-load: amber badge on an unplanned run of a week at or over its target.
+    case overPlanBadge = "Over plan"
+    /// add-training-gates-and-load: session detail: button for a session done without a recorded activity.
+    case manualDoneAction = "Mark done (no watch)"
+    /// add-training-gates-and-load: title of the sheet and card for a session done by hand.
+    case manualDoneTitle = "Done without a watch"
+    /// add-training-gates-and-load: session status: done, said by hand, no activity.
+    case doneByHand = "Done (logged by hand)"
+    /// add-training-gates-and-load: session detail: an activity matched and a manual record exists too.
+    case manualAlsoLogged = "Also logged by hand: %@"
+    /// add-training-gates-and-load: done-by-hand sheet: which option was done.
+    case manualOptionLabel = "Option done"
+    /// add-training-gates-and-load: done-by-hand sheet: how long it took.
+    case manualMinutesLabel = "Minutes"
+    /// add-training-gates-and-load: a distance field in kilometres.
+    case distanceKmLabel = "Distance (km)"
+    /// add-training-gates-and-load: button recording a session as done by hand.
+    case manualSave = "Save as done"
+    /// add-training-gates-and-load: race screen: title of the result card.
+    case raceResultTitle = "Result"
+    /// add-training-gates-and-load: race screen: button opening the result sheet.
+    case raceResultAction = "How did it go?"
+    /// add-training-gates-and-load: race screen: button opening the result sheet when a result exists.
+    case raceResultEdit = "Change the result"
+    /// add-training-gates-and-load: race result status (neutral wording).
+    case raceStatusDNF = "Did not finish"
+    /// add-training-gates-and-load: race result status (neutral wording).
+    case raceStatusDNS = "Did not start"
+    /// add-training-gates-and-load: race result reason: the pre-agreed stop rule ended the race.
+    case raceReasonStopRule = "Stopped by the stop rule"
+    /// add-training-gates-and-load: race result reason.
+    case raceReasonInjury = "Injury"
+    /// add-training-gates-and-load: race result reason.
+    case raceReasonIllness = "Illness"
+    /// add-training-gates-and-load: race result reason.
+    case raceReasonOther = "Other reason"
+    /// add-training-gates-and-load: race result sheet: leave the reason out.
+    case raceReasonNone = "No reason given"
+    /// add-training-gates-and-load: race result: the elapsed time shown under the organiser's results time.
+    case raceElapsed = "%@ elapsed"
+    /// add-training-gates-and-load: race result: laps completed. Plural.
+    case raceLaps = "%lld laps"
+    /// add-training-gates-and-load: race result: the vault says the typed goal was reached.
+    case raceGoalReached = "Goal reached"
+    /// add-training-gates-and-load: race result: the race report says it is a personal record.
+    case racePR = "Personal record"
+    /// add-training-gates-and-load: race result: where the record came from.
+    case raceResultFromReport = "From the race report"
+    /// add-training-gates-and-load: race result: where the record came from.
+    case raceResultFromApp = "Logged in the app"
+    /// add-training-gates-and-load: race result the vault refused without giving a reason.
+    case raceResultRefused = "The vault did not accept this result."
+    /// add-training-gates-and-load: race result sheet: the status picker.
+    case raceResultStatusLabel = "How it ended"
+    /// add-training-gates-and-load: race result sheet: the reason picker.
+    case raceResultReasonLabel = "Reason"
+    /// add-training-gates-and-load: race result sheet: the elapsed time field.
+    case raceResultTimeLabel = "Elapsed time (h:mm:ss)"
+    /// add-training-gates-and-load: race result sheet: the optional organiser's time field.
+    case raceResultOfficialLabel = "Time in the results, if different (h:mm:ss)"
+    /// add-training-gates-and-load: race result sheet: laps completed (lap races).
+    case raceResultLapsLabel = "Laps"
+    /// add-training-gates-and-load: button recording the race result.
+    case raceResultSave = "Save result"
+    /// add-training-gates-and-load: race result sheet: why only one status is offered before the race.
+    case raceResultBeforeRace = "Before race day only a non-start can be recorded."
+    /// add-training-gates-and-load: race result sheet: the time format.
+    case raceTimeHint = "Write a time as h:mm:ss, for example 3:24:10."
+    /// add-training-gates-and-load: button retracting the phone's own race result.
+    case raceResultWithdraw = "Withdraw this result"
+    /// add-training-gates-and-load: session detail: title of the fuel log card.
+    case fuelLogTitle = "Fuel log"
+    /// add-training-gates-and-load: button opening the fuel log sheet.
+    case fuelLogAction = "Log fuel"
+    /// add-training-gates-and-load: button opening the fuel log sheet when a log exists.
+    case fuelLogEdit = "Change the fuel log"
+    /// add-training-gates-and-load: fuel log sheet: grams of carbohydrate eaten.
+    case fuelCarbsLabel = "Carbs (g)"
+    /// add-training-gates-and-load: fuel log sheet: millilitres drunk.
+    case fuelFluidLabel = "Fluid (ml)"
+    /// add-training-gates-and-load: fuel log sheet: how long the session took.
+    case fuelDurationLabel = "Duration (min), if you know it"
+    /// add-training-gates-and-load: button recording the fuel log.
+    case fuelSave = "Save fuel log"
+    /// add-training-gates-and-load: fuel log: grams eaten.
+    case fuelLogCarbs = "%@ g carbs eaten"
+    /// add-training-gates-and-load: fuel log: millilitres drunk.
+    case fuelLogFluid = "%@ ml fluid"
+    /// add-training-gates-and-load: fuel log: the vault's grams per hour against the plan.
+    case fuelLogPerHourOfPlan = "%@ g/h of %@ g/h planned"
+    /// add-training-gates-and-load: fuel log: the vault's grams per hour, no plan figure.
+    case fuelLogPerHour = "%@ g/h"
+    /// add-training-gates-and-load: fuel log without a known duration.
+    case fuelNoDuration = "Add the duration to see grams per hour."
+    /// add-training-gates-and-load: fuel log chip (neutral): below the planned grams per hour.
+    case fuelBelow = "Below plan"
+    /// add-training-gates-and-load: fuel log chip (neutral): within the planned grams per hour.
+    case fuelOn = "On plan"
+    /// add-training-gates-and-load: fuel log chip (neutral): above the planned grams per hour.
+    case fuelAbove = "Above plan"
+    /// add-training-gates-and-load: Today chip: the day of the recovery window and its length (14 or 7).
+    case recoveryChip = "Recovery day %lld of %lld"
+    /// add-training-gates-and-load: Today chip: the last day of the recovery window.
+    case recoveryUntil = "until %@"
+    /// add-training-gates-and-load: Today chip: the race the recovery window follows.
+    case recoveryAfterRace = "After %@"
+    /// add-training-gates-and-load: recovery window: what the first week after a marathon means.
+    case recoveryNoRunning = "No running this week — walking, mobility and sleep."
+    /// add-training-gates-and-load: recovery window: what the second week after a marathon means.
+    case recoveryEasyOnly = "Easy running only — no hard sessions yet."
+    /// add-training-gates-and-load: recovery window: what two weeks after a very long race mean.
+    case recoveryNoBuild = "Easy only — no build for two weeks."
+    /// add-training-gates-and-load: recovery window: the seven-day window after a race that was not finished.
+    case recoveryShortWeek = "A week of recovery after a race that ended early."
     /// Keys that live in `.stringsdict` (plural forms).
     public var isPlural: Bool {
         switch self {
         case .countdownInDays, .countdownInAboutDays, .noticeLastSynced, .habitRecordedDays, .scheduleEveryNWeeks, .weeksCount, .countdownDaysAgo, .countdownAboutDaysAgo, .phaseStartsIn, .phaseDaysLeft, .carbLoadDaysBefore, .carbLoadDaysAfter, .statsSessions: return true
         // add-interactive-habits (its own line, so the list above stays as it was).
         case .habitStreakDays, .habitStreakWeeks, .habitEstimateNote: return true
+        // add-training-gates-and-load (its own line, like the one above).
+        case .gatePhysio, .raceLaps: return true
         default: return false
         }
     }

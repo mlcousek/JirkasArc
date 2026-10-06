@@ -263,7 +263,9 @@ extension PlanBuilder {
         // report replaces the app's result whole).
         let reported = vault?.source?.known == .report
         let canRecord = snapshot.capabilities.canRateSession && !reported
-        let isBeforeRace = today < race.date && !race.dateApprox
+        // Before the race's date -- an approximate date too: the vault does
+        // not guard those, but a finish months ahead is never offered.
+        let isBeforeRace = today < race.date
         var editor: RaceResultEditorModel?
         if canRecord, !isBeforeRace || today.days(until: race.date) <= Self.nonStartWindowDays {
             editor = raceResultEditor(race, phone: phone?.payload, vault: vault, isBeforeRace: isBeforeRace)

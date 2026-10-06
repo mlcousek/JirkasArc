@@ -146,6 +146,8 @@ public enum DoneSource: String, OpenEnumValue {
     /// added to v1 by the vault's add-garmin-workout-push, 2026-09-29).
     case activityName = "activity-name"
     case sportInferred = "sport-inferred"
+    /// add-training-gates-and-load: ticked done by hand, no activity.
+    case manual
 }
 
 /// An option's state on the watch push's channel (contract point 12).
@@ -161,6 +163,8 @@ public enum WatchChannel: String, OpenEnumValue {
 public enum MatchedBy: String, OpenEnumValue {
     case dateSportGroup = "date-sport-group"
     case testResult = "test-result"
+    /// add-training-gates-and-load: the app's `session.done`.
+    case manual
 }
 
 public enum RacePriority: String, OpenEnumValue {

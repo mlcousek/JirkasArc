@@ -14,8 +14,12 @@
 // changed by it.
 //
 // Everything shown is `RaceDetailModel` from TrainingCore's PlanBuilder.
-// Read-only. Pushed from Plan -> Season, a phase's races and Today's race
-// chip (via AppRouter.openRace).
+// Pushed from Plan -> Season, a phase's races and Today's race chip (via
+// AppRouter.openRace).
+//
+// add-training-gates-and-load: under the header, how the race ended and
+// the result sheet (RaceResultViews.swift) -- the one thing this screen
+// records; everything else stays read-only.
 //
 // Depended on by: SeasonTimelineView, PhaseDetailView, PlanTabView.
 
@@ -54,6 +58,12 @@ struct RaceDetailView: View {
     private func content(_ detail: RaceDetailModel) -> some View {
         VStack(alignment: .leading, spacing: Theme.Density.stackSpacing) {
             header(detail)
+
+            // add-training-gates-and-load: how the race ended (the vault's
+            // record, the organiser's time first) and the result sheet.
+            if let result = detail.result {
+                RaceResultCard(model: result)
+            }
 
             if let stub = detail.stubText {
                 TrainingEmptyStateView(state: TrainingEmptyState(kind: .weekNotWritten, symbol: "square.and.pencil", title: stub, message: nil))

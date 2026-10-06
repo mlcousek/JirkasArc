@@ -154,7 +154,27 @@ ios/
                     above 0); outside it the check-in is the light plus a
                     "Something hurts?" link. The check-in reminder is
                     planned every day, at the owner's times
-                    (`TrainingReminderTimes`).
+                    (`TrainingReminderTimes`). Gates, load and results
+                    (add-training-gates-and-load): the vault's
+                    `athlete.gate` / `.recovery`, the load fields of
+                    `week.actual`, `done.manual`, `feedback.pains` / `.fuel`,
+                    race `result` and `notices` (Contract/
+                    LoadAndResults.swift), and five more facts in HubEvent
+                    -- `test.gate`, `session.done`, `session.fuel`,
+                    `race.result`, `pains` on `session.rpe` (golden:
+                    gates.v1.app.jsonl = the vault example's own lines,
+                    key-sorted). Models: GateModels (gate card in pain
+                    mode, "the plan is the ceiling", recovery chip,
+                    notices), SessionRecordModels (pain during/after, mark
+                    done by hand, fuel log), RaceResultModels (the
+                    organiser's `officialTime` is the result, the elapsed
+                    `time` the second line). A race is looked up by `id`
+                    (`TrainingSnapshot.race(id:)`), never by position; a
+                    missing number is unknown ("–"), never 0; the gate's
+                    verdict, the caps, grams per hour, "goal reached" and
+                    the recovery window are the vault's -- never computed
+                    here. The race rewards read the PUBLISHED result
+                    (ProjectionRewardExtras / TrainingPlanFacts).
   GarminFood/       The app target (SwiftUI views), organized by screen:
                     Today/, Plan/, Training/, Catalog/, CustomFood/,
                     LogEntry/, Profile/, Progress/, App/ (composition root:

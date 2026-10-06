@@ -124,6 +124,13 @@ public struct TodayTrainingModel: Equatable, Sendable {
     /// Achilles (left) 4.5/10", "Pain: none"); `nil` when not asked, and
     /// (add-daily-checkin-and-pain-mode) whenever pain mode is off.
     public var painLine: String? = nil
+    /// add-training-gates-and-load (GateModels.swift): the weekly gate
+    /// test (pain mode, the current day), the week's load line, the
+    /// recovery window and the vault's data-gap notices.
+    public var gate: GateCardModel? = nil
+    public var weekLoad: WeekLoadModel? = nil
+    public var recovery: RecoveryChipModel? = nil
+    public var vaultNotices: [String] = []
 }
 
 public enum HabitTick: Equatable, Sendable {
@@ -197,10 +204,16 @@ public struct WeeklyNoteTeaserModel: Equatable, Sendable, Identifiable {
 public struct TodayTrainingBuilder: Sendable {
     public let source: TrainingSource
     public let format: TrainingFormatting
+    /// add-training-gates-and-load: the current training day, when the
+    /// caller knows it. What describes "now" (the gate test, the recovery
+    /// window, the vault's notices) is built for that day only; without
+    /// it, for whatever day is asked.
+    public let today: LocalDate?
 
-    public init(source: TrainingSource, language: TrainingLanguage) {
+    public init(source: TrainingSource, language: TrainingLanguage, today: LocalDate? = nil) {
         self.source = source
         self.format = TrainingFormatting(language: language, zones: source.snapshot?.athlete.hrZones)
+        self.today = today
     }
 
     private var text: TrainingText { format.text }
@@ -215,6 +228,11 @@ public struct TodayTrainingBuilder: Sendable {
         if let snapshot = source.snapshot, snapshot.painMode.isActive {
             model.painLine = format.painLine(snapshot.day(date)?.pains)
         }
+        // add-training-gates-and-load: read, never computed.
+        model.gate = gateCard(on: date)
+        model.weekLoad = weekLoad(on: date)
+        model.recovery = recoveryChip(on: date)
+        model.vaultNotices = vaultNotices(on: date)
         return model
     }
 
@@ -289,7 +307,8 @@ public struct TodayTrainingBuilder: Sendable {
             return optionCard(option, session: session, highlight: highlight)
         }
         let single: OptionCardModel? = session.options.isEmpty ? singleCard(session, title: title, snapshot: snapshot) : nil
-        let statusText = text.statusName(session.status)
+        // add-training-gates-and-load: ticked done by hand, no activity.
+        let statusText = status == .done && session.done?.isManual == true ? text(.doneByHand) : text.statusName(session.status)
         let compact = [text.slotName(session.slot), title, format.targets.key(session.targets), statusText]
             .compactMap { $0 }
             .joined(separator: " · ")

@@ -45,8 +45,32 @@
 // outside every written week -- or with no plan at all -- shows too.
 // `unconfirmedPainDates` is the phone's half of pain mode (PainModeState).
 //
-// Plan commands and retractions (add-plan-editing) are not folded here:
-// they are PendingOverlay's (PlanCommandOverlay.swift).
+// add-training-gates-and-load (its design D3): four more facts ride the
+// same fold, each "latest wins" like the vault folds them --
+//   - `gateTests`: the last gate test per date;
+//   - `sessionPains`: per session the `pains` of the last rating that
+//     CARRIES them (a later RPE without them keeps the answer, like the
+//     morning pain);
+//   - `manualDone`: per session the last `session.done` this phone has
+//     not retracted, with its event id (the undo names it);
+//   - `fuelLogs` per session and `raceResults` per race, the last not
+//     retracted; a race result the vault refused (a `race.result` outcome)
+//     carries its reason. `liveDoneEventIDs` / `liveRaceResultEventIDs`
+//     list every event of a session / race that is still in the fold, so
+//     Undo and Withdraw retract them all, and `pendingRaceWithdrawals`
+//     names the races whose withdrawal the vault has not read yet.
+// A retracted fact leaves the fold (same device, a later `seq`), as it
+// leaves the vault's. A session done by hand is laid over the plan like a
+// check-in light, but only WHILE THE VAULT HAS NOT READ IT: an
+// unacknowledged `session.done` turns a session the file does not show as
+// done (and not skipped) into `done` with `source: manual`; an
+// unacknowledged retraction turns a session the file shows as done by
+// that very event back into `planned`. Once acknowledged, the projection
+// alone decides -- a completion the vault did not count never stays on
+// screen. The week's sums are never touched: `actual` is the vault's.
+//
+// Plan commands (add-plan-editing) are not folded here: they are
+// PendingOverlay's (PlanCommandOverlay.swift).
 //
 // Depended on by: TrainingSnapshot/EffectivePlan, the builders,
 // TrainingReminderPlanner. Tests: CheckInOverlayTests.
@@ -90,6 +114,39 @@ public struct HabitTickRefusal: Equatable, Sendable {
     }
 }
 
+/// add-training-gates-and-load: a fact of this phone with the id of the
+/// event that said it (an undo retracts that id).
+public struct OverlayRecord<Value: Equatable & Sendable>: Equatable, Sendable {
+    public let eventID: String
+    public let value: Value
+    public let delivery: EventDelivery
+
+    public init(eventID: String, value: Value, delivery: EventDelivery) {
+        self.eventID = eventID
+        self.value = value
+        self.delivery = delivery
+    }
+}
+
+/// add-training-gates-and-load: this phone's last result for a race, and
+/// the vault's refusal of it when there is one.
+public struct RaceResultRecord: Equatable, Sendable {
+    public let eventID: String
+    public let payload: RaceResultPayload
+    public let delivery: EventDelivery
+    public let isRefused: Bool
+    /// The vault's reason (`{ en, cz }`); `nil` when it gave none.
+    public let refusalReason: LocalizedText?
+
+    public init(eventID: String, payload: RaceResultPayload, delivery: EventDelivery, isRefused: Bool = false, refusalReason: LocalizedText? = nil) {
+        self.eventID = eventID
+        self.payload = payload
+        self.delivery = delivery
+        self.isRefused = isRefused
+        self.refusalReason = refusalReason
+    }
+}
+
 public struct CheckInOverlay: Equatable, Sendable {
     public static let empty = CheckInOverlay()
 
@@ -105,11 +162,78 @@ public struct CheckInOverlay: Equatable, Sendable {
     /// add-interactive-habits: the phone's ticks the vault refused (see
     /// this file's header). Never in `habitTicks`.
     public private(set) var refusedHabitTicks: [HabitDayKey: HabitTickRefusal] = [:]
+    /// add-training-gates-and-load (see this file's header).
+    public private(set) var gateTests: [LocalDate: OverlayValue<GateTestPayload>] = [:]
+    public private(set) var sessionPains: [String: OverlayValue<[SessionPainEntry]>] = [:]
+    public private(set) var manualDone: [String: OverlayRecord<SessionDonePayload>] = [:]
+    /// Retracted `session.done` events: lowercased event id -> the
+    /// retraction's delivery.
+    public private(set) var retractedDone: [String: EventDelivery] = [:]
+    public private(set) var fuelLogs: [String: OverlayRecord<SessionFuelPayload>] = [:]
+    public private(set) var raceResults: [String: RaceResultRecord] = [:]
+    /// Per session, the ids of every `session.done` of this phone that is
+    /// not retracted, oldest first. Undo retracts them all: the vault
+    /// takes the last one that is not retracted, so retracting only the
+    /// newest would bring an older one back.
+    public private(set) var liveDoneEventIDs: [String: [String]] = [:]
+    /// Per race, the same for `race.result` (Withdraw).
+    public private(set) var liveRaceResultEventIDs: [String: [String]] = [:]
+    /// Races whose `race.result` this phone withdrew, while the vault has
+    /// not read the retraction and no newer result of this phone stands.
+    public private(set) var pendingRaceWithdrawals: Set<String> = []
 
     public init() {}
 
     public var isEmpty: Bool {
         lights.isEmpty && habitTicks.isEmpty && rpes.isEmpty && notes.isEmpty && painAnswers.isEmpty
+            && gateTests.isEmpty && sessionPains.isEmpty && manualDone.isEmpty && retractedDone.isEmpty
+            && fuelLogs.isEmpty && raceResults.isEmpty
+    }
+
+    /// The phone's gate test of `date`.
+    public func gateTest(on date: LocalDate) -> OverlayValue<GateTestPayload>? {
+        gateTests[date]
+    }
+
+    /// The phone's newest gate test (by its date).
+    public var latestGateTest: OverlayValue<GateTestPayload>? {
+        gateTests.max { $0.key < $1.key }?.value
+    }
+
+    /// The phone's pain during / after for session `id`.
+    public func pains(session id: String) -> OverlayValue<[SessionPainEntry]>? {
+        sessionPains[id]
+    }
+
+    /// The phone's "done without a watch" for session `id`, not retracted.
+    public func doneByHand(session id: String) -> OverlayRecord<SessionDonePayload>? {
+        manualDone[id]
+    }
+
+    public func fuelLog(session id: String) -> OverlayRecord<SessionFuelPayload>? {
+        fuelLogs[id]
+    }
+
+    public func raceResult(race id: String) -> RaceResultRecord? {
+        raceResults[id]
+    }
+
+    /// Every `session.done` of this phone for session `id` that is still
+    /// in the fold (what Undo retracts).
+    public func doneEventIDs(session id: String) -> [String] {
+        liveDoneEventIDs[id] ?? []
+    }
+
+    /// Every `race.result` of this phone for race `id` that is still in
+    /// the fold (what Withdraw retracts).
+    public func raceResultEventIDs(race id: String) -> [String] {
+        liveRaceResultEventIDs[id] ?? []
+    }
+
+    /// This phone withdrew its result for race `id` and the vault has not
+    /// read that yet.
+    public func hasPendingRaceWithdrawal(race id: String) -> Bool {
+        pendingRaceWithdrawals.contains(id)
     }
 
     public func light(on date: LocalDate) -> OverlayValue<MorningLight>? {
@@ -160,19 +284,40 @@ public struct CheckInOverlay: Equatable, Sendable {
         let refusals = outcomes.filter { outcome in
             outcome.status.known == .refused && (outcome.type == nil || outcome.type == HubEventType.habitTick.rawValue)
         }
+        let raceRefusals = outcomes.filter { outcome in
+            outcome.status.known == .refused && outcome.type == HubEventType.raceResult.rawValue
+        }
         let ordered = events.sorted { lhs, rhs in
             if lhs.recordedAt != rhs.recordedAt { return lhs.recordedAt < rhs.recordedAt }
             return lhs.event.seq < rhs.event.seq
         }
-        for logged in ordered {
-            let delivery: EventDelivery
+        func deliveryOf(_ logged: LoggedEvent) -> EventDelivery {
             if let acked = ackedSeqs[logged.event.deviceId], logged.event.seq <= acked {
-                delivery = .received
-            } else if let segment = logged.segmentID, !unsentSegments.contains(segment) {
-                delivery = .sent
-            } else {
-                delivery = .savedOnPhone
+                return .received
             }
+            if let segment = logged.segmentID, !unsentSegments.contains(segment) {
+                return .sent
+            }
+            return .savedOnPhone
+        }
+        // add-training-gates-and-load: retractions by their target's id.
+        var retractions: [String: LoggedEvent] = [:]
+        for logged in ordered {
+            if case .eventRetracted(let payload) = logged.event.payload {
+                retractions[payload.target.lowercased()] = logged
+            }
+        }
+        /// The delivery of the retraction that took `logged` out of the
+        /// fold (same device, a later `seq`); `nil` when it is still in.
+        func retraction(of logged: LoggedEvent) -> EventDelivery? {
+            guard let found = retractions[logged.event.id.lowercased()],
+                  found.event.deviceId == logged.event.deviceId,
+                  found.event.seq > logged.event.seq
+            else { return nil }
+            return deliveryOf(found)
+        }
+        for logged in ordered {
+            let delivery = deliveryOf(logged)
             switch logged.event.payload {
             case .morningCheckIn(let payload):
                 overlay.lights[payload.date] = OverlayValue(value: payload.light, delivery: delivery)
@@ -198,11 +343,51 @@ public struct CheckInOverlay: Equatable, Sendable {
                 }
             case .sessionRPE(let payload):
                 overlay.rpes[payload.sessionId] = OverlayValue(value: payload.rpe, delivery: delivery)
+                // Keep without the key, replace with it (`[]` included).
+                if let pains = payload.pains {
+                    overlay.sessionPains[payload.sessionId] = OverlayValue(value: pains, delivery: delivery)
+                }
+            case .testGate(let payload):
+                if retraction(of: logged) != nil { continue }
+                overlay.gateTests[payload.date] = OverlayValue(value: payload, delivery: delivery)
+            case .sessionDone(let payload):
+                if let undone = retraction(of: logged) {
+                    overlay.retractedDone[logged.event.id.lowercased()] = undone
+                    continue
+                }
+                overlay.manualDone[payload.sessionId] = OverlayRecord(eventID: logged.event.id, value: payload, delivery: delivery)
+                overlay.liveDoneEventIDs[payload.sessionId, default: []].append(logged.event.id)
+            case .sessionFuel(let payload):
+                if retraction(of: logged) != nil { continue }
+                overlay.fuelLogs[payload.sessionId] = OverlayRecord(eventID: logged.event.id, value: payload, delivery: delivery)
+            case .raceResult(let payload):
+                if let withdrawn = retraction(of: logged) {
+                    // Until the vault has read the retraction, the result
+                    // it still publishes is on its way out.
+                    if withdrawn != .received {
+                        overlay.pendingRaceWithdrawals.insert(payload.raceId)
+                    }
+                    continue
+                }
+                overlay.pendingRaceWithdrawals.remove(payload.raceId)
+                let event = logged.event
+                overlay.liveRaceResultEventIDs[payload.raceId, default: []].append(event.id)
+                let refusal = raceRefusals.first { outcome in
+                    if let id = outcome.event { return id.lowercased() == event.id.lowercased() }
+                    return outcome.deviceId == event.deviceId && outcome.seq == event.seq
+                }
+                overlay.raceResults[payload.raceId] = RaceResultRecord(
+                    eventID: event.id,
+                    payload: payload,
+                    delivery: delivery,
+                    isRefused: refusal != nil,
+                    refusalReason: refusal?.reason
+                )
             case .sessionNote(let payload):
                 overlay.notes[payload.sessionId] = OverlayValue(value: payload.text, delivery: delivery)
             case .sessionMoved, .sessionsSwapped, .sessionSkipped, .sessionUnskipped, .ruleOverridden, .eventRetracted:
-                // Plan commands and retractions: PendingOverlay's
-                // (add-plan-editing). The app never retracts a fact.
+                // Plan commands: PendingOverlay's (add-plan-editing). A
+                // retraction of a fact was read above (`retractions`).
                 continue
             case .other:
                 continue
@@ -214,7 +399,7 @@ public struct CheckInOverlay: Equatable, Sendable {
     /// `plan` with each day's `light` replaced by the phone's check-in, and
     /// its `pains` by the phone's pain answer (add-checkin-pain-score).
     public func applyingLights(to plan: Plan) -> Plan {
-        guard !lights.isEmpty || !painAnswers.isEmpty else { return plan }
+        guard hasDayOverlay else { return plan }
         var result = plan
         for weekIndex in result.weeks.indices {
             result.weeks[weekIndex].days = applying(to: result.weeks[weekIndex].days)
@@ -225,7 +410,7 @@ public struct CheckInOverlay: Equatable, Sendable {
     /// `days` with the phone's check-in light and pain answer on each
     /// (plan-week days and day skeletons alike).
     public func applying(to days: [Day]) -> [Day] {
-        guard !lights.isEmpty || !painAnswers.isEmpty else { return days }
+        guard hasDayOverlay else { return days }
         var result = days
         for index in result.indices {
             let date = result[index].date
@@ -236,6 +421,54 @@ public struct CheckInOverlay: Equatable, Sendable {
             if let local = painAnswers[date] {
                 result[index].pains = local.value
             }
+            guard !manualDone.isEmpty || !retractedDone.isEmpty else { continue }
+            for sessionIndex in result[index].sessions.indices {
+                result[index].sessions[sessionIndex] = applyingManualDone(to: result[index].sessions[sessionIndex])
+            }
+        }
+        return result
+    }
+
+    /// Whether anything of the phone's is laid over a day.
+    private var hasDayOverlay: Bool {
+        !lights.isEmpty || !painAnswers.isEmpty || !manualDone.isEmpty || !retractedDone.isEmpty
+    }
+
+    /// add-training-gates-and-load D3: the phone's unacknowledged "done
+    /// without a watch" (and its unacknowledged undo) over one session.
+    func applyingManualDone(to session: Session) -> Session {
+        var result = session
+        let status = session.status?.known
+        if let local = manualDone[session.id], local.delivery != .received,
+           status != .done, status != .skipped, session.done == nil {
+            // The option counts only when the session has it (the vault's
+            // rule for `done.option`).
+            var option: OpenEnum<OptionCode>?
+            if let code = local.value.option, session.option(code) != nil {
+                option = OpenEnum<OptionCode>(code)
+            }
+            result.status = OpenEnum(SessionStatus.done)
+            result.done = Done(
+                option: option,
+                source: OpenEnum(DoneSource.manual),
+                matchedBy: OpenEnum(MatchedBy.manual),
+                activity: nil,
+                manual: ManualDone(
+                    date: local.value.date,
+                    option: local.value.option.map { OpenEnum<OptionCode>($0) },
+                    min: local.value.min,
+                    km: local.value.km,
+                    note: local.value.note,
+                    event: local.eventID
+                )
+            )
+            return result
+        }
+        if let done = session.done, done.isManual, done.activity == nil,
+           let event = done.manual?.event?.lowercased(),
+           let undo = retractedDone[event], undo != .received {
+            result.status = OpenEnum(SessionStatus.planned)
+            result.done = nil
         }
         return result
     }

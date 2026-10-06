@@ -55,7 +55,8 @@ final class PlanBuilderTests: XCTestCase {
         // Monday's gym session was done without a watch (the vault's
         // 2026-10-01 contract); Tuesday's mobility is the missed one.
         XCTAssertEqual(rows[0].sessions.first?.status, .done)
-        XCTAssertEqual(rows[0].sessions.first?.doneText, "Done")
+        XCTAssertEqual(rows[0].sessions.first?.doneText, "Done (logged by hand)")
+        XCTAssertEqual(rows[1].sessions.first?.doneText, "Done", "an activity matched: the manual record is only a note")
         XCTAssertEqual(rows[1].sessions.map(\.id), ["2030-w43-tue-am", "2030-w43-tue-pm"])
         XCTAssertEqual(rows[1].sessions.last?.status, .missed)
         XCTAssertEqual(rows[1].sessions.last?.statusText, "Missed")
@@ -229,20 +230,29 @@ final class PlanBuilderTests: XCTestCase {
         XCTAssertEqual(detail.initialOptionIndex, 0)
     }
 
-    /// add-daily-checkin-and-pain-mode: the vault's "done without a watch"
-    /// (2026-10-01; `source` and `matchedBy` are `manual`, no activity) is
-    /// done, with no empty "Done activity" card; an activity that won over
-    /// a manual record reads as any matched activity; the session pain note
+    /// The vault's "done without a watch" (2026-10-01; `source` and
+    /// `matchedBy` are `manual`, no activity) is done and says so
+    /// (add-training-gates-and-load: "Done (logged by hand)" with what was
+    /// said); an activity that won over a manual record reads as any
+    /// matched activity with the record as one line; the session pain note
     /// is shown with the other notes and is not a rule to override.
     func testDoneWithoutAWatchAndTheSessionPainNote() throws {
         let byHand = try XCTUnwrap(try builder().sessionDetail(id: "2030-w43-mon-pm"))
         XCTAssertEqual(byHand.status, .done)
-        XCTAssertEqual(byHand.statusText, "Done")
-        XCTAssertNil(byHand.done)
+        XCTAssertEqual(byHand.statusText, "Done (logged by hand)")
+        XCTAssertEqual(byHand.done?.manualTitle, "Done without a watch")
+        XCTAssertEqual(byHand.done?.manualLine, "45 min · Gym A done, watch left at home")
+        XCTAssertNil(byHand.done?.activityLine)
+        XCTAssertNil(byHand.done?.recognisedText)
+        XCTAssertNil(byHand.done?.optionText, "a session without options")
+        XCTAssertEqual(try builder(.czech).sessionDetail(id: "2030-w43-mon-pm")?.statusText, "Hotovo (zapsáno ručně)")
 
         let tempo = try XCTUnwrap(try builder().sessionDetail(id: "2030-w43-tue-am"))
+        XCTAssertEqual(tempo.statusText, "Done")
         XCTAssertEqual(tempo.done?.activityLine, "Run · 05:05 · 10.1 km · 55 min")
         XCTAssertEqual(tempo.done?.recognisedText, "Matched by date and sport")
+        XCTAssertNil(tempo.done?.manualTitle, "the activity won")
+        XCTAssertEqual(tempo.done?.manualLine, "Also logged by hand: 55 min · 10 km")
         XCTAssertNil(tempo.done?.optionText)
         XCTAssertTrue(tempo.whyLines.last?.hasPrefix("Achilles (left) 4/10 during, 6/10 after this session (2030-10-22)") ?? false)
         XCTAssertNil(tempo.originText)

@@ -38,9 +38,14 @@
 // the unplanned km of the days as a fallback).
 //
 // Also: the active habits and the ladder's gate share, the season's races
-// (prep complete, report, the not-yet-published result), every phase
-// (closed, recap), the season's end, the last gate test and the plan edits
-// the vault applied.
+// (prep complete, report, and -- since the vault publishes it,
+// add-training-gates-and-load -- the result: `status` as the outcome, the
+// three-state `goalReached` and `pr`, `reason: "stop-rule"` as "stopped by
+// the rule", and whether the fuel plan was followed from the vault's
+// verdict on the race session's fuel log), every phase (closed, recap),
+// the season's end, the last gate test and the plan edits the vault
+// applied. Only what the VAULT published counts: this phone's own unread
+// `race.result` releases nothing, and one the vault refused never will.
 //
 // Gamification never imports TrainingCore (nor the reverse): the app's
 // adapter (TrainingPlanSignalsBridge.swift) copies these facts into
@@ -333,7 +338,9 @@ public struct TrainingPlanFacts: Equatable, Sendable {
             weeks: weeks,
             activeHabitIds: snapshot.habits.ladder.filter { $0.state?.known == .active }.map(\.id),
             habitGatePercent: gatePercent,
-            races: snapshot.races.map { raceFact($0, result: extras.raceResults[$0.id]) },
+            races: snapshot.races.map { race in
+                raceFact(race, result: extras.raceResults[race.id], fuelOnPlan: raceFuelOnPlan(race.id, snapshot: snapshot))
+            },
             phases: snapshot.phases.filter { !$0.id.isEmpty }.map { phase in
                 PlanPhaseFact(
                     id: phase.id,
@@ -417,7 +424,26 @@ public struct TrainingPlanFacts: Equatable, Sendable {
         )
     }
 
-    static func raceFact(_ race: Race, result: ProjectionRewardExtras.RaceResult?) -> PlanRaceFact {
+    /// add-training-gates-and-load: whether the race's fuel plan was
+    /// followed, from the VAULT's verdict on the race session's fuel log
+    /// (`feedback.fuel.vsPlan`): `on` is yes, `below` / `above` no, and no
+    /// log or no verdict is unknown (`nil`, never "no"). The phone's own
+    /// unread log says nothing here -- the vault has not judged it yet.
+    static func raceFuelOnPlan(_ raceID: String, snapshot: TrainingSnapshot) -> Bool? {
+        var verdict: Bool?
+        for week in snapshot.plan?.weeks ?? [] {
+            for day in week.days {
+                for session in day.sessions where session.raceId == raceID {
+                    guard let known = session.feedback?.fuel?.vsPlan?.known else { continue }
+                    if known == .on { return true }
+                    verdict = false
+                }
+            }
+        }
+        return verdict
+    }
+
+    static func raceFact(_ race: Race, result: ProjectionRewardExtras.RaceResult?, fuelOnPlan: Bool? = nil) -> PlanRaceFact {
         var prepComplete = false
         if let prep = race.prep {
             prepComplete = prep.startTime != nil
@@ -433,7 +459,9 @@ public struct TrainingPlanFacts: Equatable, Sendable {
             goalReached: result?.goalReached,
             isPersonalRecord: result?.pr,
             stoppedByRule: result?.stopRule,
-            fuelPlanFollowed: result?.fuelPlanFollowed
+            // The vault publishes no such key: the race session's fuel log
+            // says it (the draft's key still wins when a file carries it).
+            fuelPlanFollowed: result?.fuelPlanFollowed ?? fuelOnPlan
         )
     }
 }

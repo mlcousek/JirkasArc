@@ -301,13 +301,14 @@ final class TodayBuilderTests: XCTestCase {
         let data = try Fixtures.mutatedExample { object in
             var season = try XCTUnwrap(object["season"] as? [String: Any])
             var races = try XCTUnwrap(season["races"] as? [[String: Any]])
-            races[1]["priority"] = "A"
+            races[try Fixtures.raceIndex(races, id: "valley-30k-2030")]["priority"] = "A"
             season["races"] = races
             object["season"] = season
         }
-        let chip = try XCTUnwrap(try builder(data: data).raceChip(from: D.date("2030-10-11")))
+        // From the day after the marathon of 13 Oct (the 2026-10-05 fixture).
+        let chip = try XCTUnwrap(try builder(data: data).raceChip(from: D.date("2030-10-14")))
         XCTAssertEqual(chip.raceID, "valley-30k-2030")
-        XCTAssertEqual(chip.countdown, "in 23 days")
+        XCTAssertEqual(chip.countdown, "in 20 days")
         // The hero (not the A race) is the main race.
         XCTAssertEqual(chip.mainRace?.raceID, "ridge-ultra-2031")
         XCTAssertEqual(try builder(.czech, data: data).raceChip(from: D.date("2030-11-02"))?.countdown, "zítra")

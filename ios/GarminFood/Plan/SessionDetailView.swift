@@ -19,6 +19,10 @@
 // RPE 1-10 as ten buttons and a note with Save, each a local event
 // (TrainingModel), shown with "Saved on phone" / "Sent". Everything shown is
 // `SessionDetailModel` from TrainingCore.
+// add-training-gates-and-load adds (SessionRecordViews.swift): pain during
+// and after inside "How did it feel?" (pain mode), "Mark done (no watch)"
+// with its undo, and the fuel log of a long run or a race; a session ticked
+// by hand reads "Done (logged by hand)" and its card says what was said.
 //
 // Depended on by: TodayView, PlanTabView.
 
@@ -95,12 +99,26 @@ struct SessionDetailView: View {
                 .card()
             }
 
-            if let done = detail.done {
-                doneCard(done)
+            // add-training-gates-and-load: what was done (an activity, or
+            // said by hand), then "Mark done (no watch)" or its undo.
+            Group {
+                if let done = detail.done {
+                    doneCard(done)
+                }
+                if let manual = detail.manualDone {
+                    ManualDoneCard(model: manual)
+                }
             }
 
-            if let rating = detail.rating {
-                SessionRatingCard(rating: rating)
+            // "How did it feel?": the RPE, the note and -- in pain mode --
+            // pain during and after; then the fuel log of a long run or race.
+            Group {
+                if let rating = detail.rating {
+                    SessionRatingCard(rating: rating, pain: detail.pain)
+                }
+                if let fuelLog = detail.fuelLog {
+                    FuelLogCard(model: fuelLog)
+                }
             }
 
             if let editing = detail.editing {
@@ -222,7 +240,10 @@ struct SessionDetailView: View {
 
     private func doneCard(_ done: DoneDetailModel) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            SectionHeader(title: String(localized: "Done activity", comment: "Session detail: the activity that completed the session."))
+            // add-training-gates-and-load: ticked by hand with no activity,
+            // the card is titled "Done without a watch" (TrainingCore's
+            // words) and says what was said.
+            SectionHeader(title: done.manualTitle ?? String(localized: "Done activity", comment: "Session detail: the activity that completed the session."))
             if let option = done.optionText {
                 Text(verbatim: option)
                     .font(.subheadline.weight(.semibold))
@@ -241,7 +262,18 @@ struct SessionDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            if let manual = done.manualLine {
+                Label {
+                    Text(verbatim: manual)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "hand.tap")
+                }
+                .font(done.manualTitle == nil ? .caption : .subheadline)
+                .foregroundStyle(done.manualTitle == nil ? AnyShapeStyle(Color.secondary) : AnyShapeStyle(Color.primary))
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .card()
     }
 
@@ -300,6 +332,8 @@ struct SessionDetailView: View {
 /// saved on "Save note" only, so typing never records half a sentence.
 private struct SessionRatingCard: View {
     let rating: SessionRatingModel
+    /// add-training-gates-and-load: pain during and after, in pain mode.
+    var pain: SessionPainModel? = nil
 
     @Environment(AppEnvironment.self) private var environment
     @State private var draft = ""
@@ -348,6 +382,9 @@ private struct SessionRatingCard: View {
                     Task { await environment.training.saveNote(sessionID: rating.sessionID, date: rating.date, text: text) }
                 }
                 .disabled(!canSave)
+            }
+            if let painModel = pain {
+                SessionPainBlock(model: painModel)
             }
         }
         .card()

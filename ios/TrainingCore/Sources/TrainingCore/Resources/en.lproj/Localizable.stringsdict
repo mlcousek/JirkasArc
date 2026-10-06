@@ -278,5 +278,39 @@
 			<string>Counted on the phone from the last %lld days it knows</string>
 		</dict>
 	</dict>
+	<!-- add-training-gates-and-load: gate card: neutral advice after several weekly tests above 2/10. Plural. -->
+	<key>Hops above 2/10 for %lld weeks in a row — a physio check is advised.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Hops above 2/10 for %lld week in a row — a physio check is advised.</string>
+			<key>other</key>
+			<string>Hops above 2/10 for %lld weeks in a row — a physio check is advised.</string>
+		</dict>
+	</dict>
+	<!-- add-training-gates-and-load: race result: laps completed. Plural. -->
+	<key>%lld laps</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld lap</string>
+			<key>other</key>
+			<string>%lld laps</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

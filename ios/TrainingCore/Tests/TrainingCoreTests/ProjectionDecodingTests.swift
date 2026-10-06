@@ -61,7 +61,7 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertEqual(zones.zones.map(\.number), [1, 2, 3, 4, 5])
         XCTAssertEqual(zones.zone(number: 2), HRZone(number: 2, low: 129, high: 145))
         // Filled from the event log since the vault's add-hub-ingest.
-        XCTAssertEqual(CheckInOverlay.ackedSeqs(from: projection.acks), ["ios-0a1b2c3d": 31, "ios-5e6f7a8b": 3])
+        XCTAssertEqual(CheckInOverlay.ackedSeqs(from: projection.acks), ["ios-0a1b2c3d": 33, "ios-5e6f7a8b": 3])
         // Ten plan-command outcomes and two refused habit ticks (the
         // vault's 2026-10-01 contract: a tick too far back, one in the future).
         XCTAssertEqual(projection.outcomes.count, 12)
@@ -87,14 +87,16 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertNil(base.outline[4].runKmTarget)
         XCTAssertEqual(base.outline[0].note?.resolved(.czech), "Start plánu")
 
-        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "valley-30k-2030", "ridge-ultra-2031"])
-        let ultra = season.races[2]
+        // Date order. The vault's 2026-10-05 fixture added the marathon at
+        // index 1: races are looked up by id, never by position.
+        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "harvest-marathon-2030", "valley-30k-2030", "ridge-ultra-2031"])
+        let ultra = try XCTUnwrap(season.races.first { $0.id == "ridge-ultra-2031" })
         XCTAssertEqual(ultra.priority, .known(.a))
         XCTAssertTrue(ultra.hero)
         XCTAssertTrue(ultra.dateApprox)
         XCTAssertEqual(ultra.date, D.date("2031-06-21"))
         XCTAssertEqual(ultra.name?.resolved(.czech), "Ridge Ultra")
-        let valley = season.races[1]
+        let valley = try XCTUnwrap(season.races.first { $0.id == "valley-30k-2030" })
         XCTAssertEqual(valley.priority, .known(.b))
         let prep = try XCTUnwrap(valley.prep)
         XCTAssertEqual(prep.startTime?.description, "09:00")
@@ -230,8 +232,16 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertEqual(walk.origin?["from"]?.stringValue, "2030-10-27")
 
         // add-hub-ingest: feedback, a skipped session, a rule's edit.
-        XCTAssertEqual(tempo.feedback, SessionFeedback(rpe: 7, feel: 3, note: "Calf tight on the last repeat, eased off."))
-        XCTAssertEqual(plan.weeks[1].day(D.date("2030-10-19"))?.sessions.first?.feedback, SessionFeedback(rpe: 5, feel: nil, note: nil))
+        // add-training-gates-and-load: the feedback also carries the pain
+        // during / after the session and the fuel log (GatesAndLoadTests
+        // reads those two).
+        XCTAssertEqual(tempo.feedback?.rpe, 7)
+        XCTAssertEqual(tempo.feedback?.feel, 3)
+        XCTAssertEqual(tempo.feedback?.note, "Calf tight on the last repeat, eased off.")
+        let longRun = try XCTUnwrap(plan.weeks[1].day(D.date("2030-10-19"))?.sessions.first?.feedback)
+        XCTAssertEqual(longRun.rpe, 5)
+        XCTAssertNil(longRun.feel)
+        XCTAssertNil(longRun.note)
         XCTAssertNil(wed.feedback)
         XCTAssertEqual(plan.weeks[3].day(D.date("2030-10-28"))?.sessions.first?.status, .known(.skipped))
         let ruled = try XCTUnwrap(plan.weeks[3].day(D.date("2030-10-30"))?.sessions.first)
@@ -239,15 +249,16 @@ final class ProjectionDecodingTests: XCTestCase {
         XCTAssertEqual(ruled.ruleNotes.count, 1)
         XCTAssertEqual(ruled.origin?["kind"]?.stringValue, "rule")
 
-        // The vault's 2026-10-01 contract (add-daily-checkin-and-pain-mode
-        // mirrors it; the app shows none of it yet). Done without a watch:
-        // `source` and `matchedBy` are values this build doesn't know, and
-        // there is no activity -- the session is still done.
+        // The vault's 2026-10-01 contract. Done without a watch: `source`
+        // and `matchedBy` are `manual` (known values since
+        // add-training-gates-and-load) and there is no activity -- the
+        // session is done.
         let gym = try XCTUnwrap(plan.weeks[2].day(D.date("2030-10-21"))?.sessions.first)
         XCTAssertEqual(gym.id, "2030-w43-mon-pm")
         XCTAssertEqual(gym.status, .known(.done))
-        XCTAssertEqual(gym.done?.source, .unknown("manual"))
-        XCTAssertEqual(gym.done?.matchedBy, .unknown("manual"))
+        XCTAssertEqual(gym.done?.source, .known(.manual))
+        XCTAssertEqual(gym.done?.matchedBy, .known(.manual))
+        XCTAssertEqual(gym.done?.isManual, true)
         XCTAssertNil(gym.done?.activity)
         XCTAssertNil(gym.done?.option)
         // An activity that wins over a manual record reads as before.

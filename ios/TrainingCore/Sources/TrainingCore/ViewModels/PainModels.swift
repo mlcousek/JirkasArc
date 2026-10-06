@@ -28,6 +28,13 @@
 // builders. The step no longer needs a plan: a day skeleton has `pains`
 // too.
 //
+// add-training-gates-and-load D6: in pain mode the step also says how each
+// site settled overnight -- "Achilles (left) — yesterday after the
+// session: 3/10 → today: 1/10" (`settledLines`) -- for a site that has an
+// "after" score in one of yesterday's sessions AND a morning score today.
+// Both numbers are shown as recorded; nothing is judged here (the vault
+// writes its `pain-not-settled` note when that applies).
+//
 // The phone never computes the pain flags: `pain-rising` / `pain-high`
 // come from the vault as week rule notes. Nothing here is about anyone in
 // particular: the defaults come from what was recorded.
@@ -197,6 +204,9 @@ public struct PainStepModel: Equatable, Sendable {
     public let scoreTexts: [String]
     /// VoiceOver values, "4.5 of 10", by half step.
     public let scoreAccessibilityValues: [String]
+    /// add-training-gates-and-load: one line per site that was scored after
+    /// a session yesterday and this morning; `[]` outside pain mode.
+    public var settledLines: [String] = []
 
     public func siteName(_ site: PainSite) -> String {
         siteNames[site] ?? site.rawValue
@@ -287,7 +297,7 @@ extension TodayTrainingBuilder {
             removes[site] = text.format(.painRemoveSite, name)
         }
         let steps = (0...20).map { Double($0) / 2 }
-        return PainStepModel(
+        var step = PainStepModel(
             date: date,
             light: light,
             sessionID: sessionID,
@@ -309,5 +319,35 @@ extension TodayTrainingBuilder {
             scoreTexts: steps.map(format.painScoreText),
             scoreAccessibilityValues: steps.map { text.format(.a11yPainValue, NumberText.decimal($0, format.language)) }
         )
+        if snapshot.painMode.isActive {
+            step.settledLines = settledLines(on: date, morning: recorded, snapshot: snapshot)
+        }
+        return step
+    }
+
+    /// add-training-gates-and-load D6: "<site> — yesterday after the
+    /// session: 3/10 → today: 1/10" for every site with an "after" score in
+    /// a session of the day before `date` (the highest of that day; the
+    /// phone's own answer for a session before the vault's) and a morning
+    /// score on `date`. Both must exist; nothing is compared or judged.
+    func settledLines(on date: LocalDate, morning: [PainEntry]?, snapshot: TrainingSnapshot) -> [String] {
+        guard let morning, !morning.isEmpty else { return [] }
+        var after: [PainSite: Double] = [:]
+        for session in snapshot.day(date.adding(days: -1))?.sessions ?? [] {
+            let pains = snapshot.checkIns.pains(session: session.id)?.value ?? session.feedback?.pains ?? []
+            for entry in pains {
+                guard let score = entry.after else { continue }
+                after[entry.site] = max(after[entry.site] ?? score, score)
+            }
+        }
+        guard !after.isEmpty else { return [] }
+        var thisMorning: [PainSite: Double] = [:]
+        for entry in morning {
+            thisMorning[entry.site] = max(thisMorning[entry.site] ?? entry.score, entry.score)
+        }
+        return PainDraft.siteOrder.compactMap { site -> String? in
+            guard let before = after[site], let now = thisMorning[site] else { return nil }
+            return format.text.format(.painSettledLine, format.painSiteName(site), format.painScoreText(before), format.painScoreText(now))
+        }
     }
 }

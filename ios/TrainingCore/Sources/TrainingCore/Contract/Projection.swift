@@ -36,6 +36,14 @@
 // carb-load day is `DayFuel.isCarbLoad` (`kind == "carb-load"`), never
 // "fuel is not nil".
 //
+// add-training-gates-and-load (the vault's training load and gates of
+// 2026-10-01 and its race results, fuel log and recovery window of
+// 2026-10-05, still v1): `athlete.gate` and `athlete.recovery`, seven
+// load fields on `WeekActual`, `flag` on an unplanned activity,
+// `done.manual`, `feedback.pains` and `feedback.fuel`, `result` on a
+// race and top-level `notices` -- their types are in LoadAndResults.swift
+// and Pain.swift. A missing number there is unknown, never 0.
+//
 // Depended on by: ProjectionDecoder, TrainingSnapshot and every builder.
 // Tests: ProjectionDecodingTests (both vault fixtures, the edge fixtures).
 
@@ -66,12 +74,15 @@ public struct Projection: Equatable, Sendable, Decodable {
     public var acks: [String: JSONValue]
     public var outcomes: [JSONValue]
     public var rejected: [JSONValue]
+    /// add-training-gates-and-load: data gaps the app explains (`[]` when
+    /// there is none, and in a file from before 2026-10-01).
+    public var notices: [ProjectionNotice]
     /// Not part of v1; tolerated if it ever appears (design D2).
     public var supersededBy: SupersededBy?
 
     enum CodingKeys: String, CodingKey {
         case schema, schemaVersion, generatedAt, generator, asOf, athlete, season, plan, days
-        case workouts, tests, habits, acks, outcomes, rejected, supersededBy
+        case workouts, tests, habits, acks, outcomes, rejected, notices, supersededBy
     }
 
     public init(from decoder: Decoder) throws {
@@ -102,6 +113,7 @@ public struct Projection: Equatable, Sendable, Decodable {
         acks = c.lenient([String: JSONValue].self, .acks) ?? [:]
         outcomes = c.lenient([JSONValue].self, .outcomes) ?? []
         rejected = c.lenient([JSONValue].self, .rejected) ?? []
+        notices = c.lossyList(ProjectionNotice.self, .notices)
         supersededBy = c.lenient(SupersededBy.self, .supersededBy)
     }
 }
@@ -133,17 +145,34 @@ public struct Athlete: Equatable, Sendable, Decodable {
     /// The vault's pain mode (add-daily-checkin-and-pain-mode); `nil` in a
     /// file without the key, which reads as "not in pain mode".
     public var painMode: PainMode?
+    /// add-training-gates-and-load: the last weekly gate test with the
+    /// vault's verdict; `nil` = never tested (or an older file).
+    public var gate: GateStatus?
+    /// add-training-gates-and-load: the recovery window after a race;
+    /// `nil` = none open.
+    public var recovery: RecoveryWindow?
 
-    public init(tz: String? = nil, dayBoundaryHour: Int = 0, hrMax: Int? = nil, weightKg: Double? = nil, hrZones: HRZones? = nil, painMode: PainMode? = nil) {
+    public init(
+        tz: String? = nil,
+        dayBoundaryHour: Int = 0,
+        hrMax: Int? = nil,
+        weightKg: Double? = nil,
+        hrZones: HRZones? = nil,
+        painMode: PainMode? = nil,
+        gate: GateStatus? = nil,
+        recovery: RecoveryWindow? = nil
+    ) {
         self.tz = tz
         self.dayBoundaryHour = dayBoundaryHour
         self.hrMax = hrMax
         self.weightKg = weightKg
         self.hrZones = hrZones
         self.painMode = painMode
+        self.gate = gate
+        self.recovery = recovery
     }
 
-    enum CodingKeys: String, CodingKey { case tz, dayBoundaryHour, hrMax, weightKg, hrZones, painMode }
+    enum CodingKeys: String, CodingKey { case tz, dayBoundaryHour, hrMax, weightKg, hrZones, painMode, gate, recovery }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -153,6 +182,8 @@ public struct Athlete: Equatable, Sendable, Decodable {
         weightKg = c.lenientDouble(.weightKg)
         hrZones = c.lenient(HRZones.self, .hrZones)
         painMode = c.lenient(PainMode.self, .painMode)
+        gate = c.lenient(GateStatus.self, .gate)
+        recovery = c.lenient(RecoveryWindow.self, .recovery)
     }
 
     /// `tz` if the system knows it, else `fallback` (design D6).
@@ -323,10 +354,13 @@ public struct Race: Equatable, Sendable, Decodable, ProjectionElement {
     public var goal: LocalizedText?
     public var prep: RacePrep?
     public var report: RaceReport?
+    /// add-training-gates-and-load: how the race ended; `nil` = no report
+    /// and no accepted result from the app.
+    public var result: RaceResult?
 
     enum CodingKeys: String, CodingKey {
         case id, name, date, dateApprox, priority, hero, phaseId, folder, category
-        case distanceLabel, distanceKm, elevationM, goal, prep, report
+        case distanceLabel, distanceKm, elevationM, goal, prep, report, result
     }
 
     public init(from decoder: Decoder) throws {
@@ -346,6 +380,7 @@ public struct Race: Equatable, Sendable, Decodable, ProjectionElement {
         goal = c.lenient(LocalizedText.self, .goal)
         prep = c.lenient(RacePrep.self, .prep)
         report = c.lenient(RaceReport.self, .report)
+        result = c.lenient(RaceResult.self, .result)
     }
 }
 
@@ -522,18 +557,52 @@ public struct WeekTargets: Equatable, Sendable, Decodable {
 }
 
 /// What the vault counted for the week so far; `nil` for a future week.
+///
+/// add-training-gates-and-load ("the plan is the ceiling"): the seven load
+/// fields below. Each may be `nil` -- a data gap (no target, no reference
+/// run, a run without a watch), never 0; `0` is a fact.
 public struct WeekActual: Equatable, Sendable, Decodable {
     public var runKm: Double?
     public var sessionsDone: Int?
     public var sessionsMissed: Int?
+    /// Run km of activities matched to a planned session.
+    public var plannedRunKm: Double?
+    /// Run km of activities no session took.
+    public var unplannedRunKm: Double?
+    /// How far the week is over its run target; `nil` without a target.
+    public var overPlanKm: Double?
+    public var longestRunKm: Double?
+    /// The vault's cap for the longest run; `nil` without a reference run.
+    public var longestRunCapKm: Double?
+    /// Elevation gain of the week's runs, metres as recorded.
+    public var hillM: Int?
+    /// Done sessions the vault classes as hard on the tendon.
+    public var highSessions: Int?
 
-    enum CodingKeys: String, CodingKey { case runKm, sessionsDone, sessionsMissed }
+    enum CodingKeys: String, CodingKey {
+        case runKm, sessionsDone, sessionsMissed
+        case plannedRunKm, unplannedRunKm, overPlanKm, longestRunKm, longestRunCapKm, hillM, highSessions
+    }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         runKm = c.lenientDouble(.runKm)
         sessionsDone = c.lenientInt(.sessionsDone)
         sessionsMissed = c.lenientInt(.sessionsMissed)
+        plannedRunKm = c.lenientDouble(.plannedRunKm)
+        unplannedRunKm = c.lenientDouble(.unplannedRunKm)
+        overPlanKm = c.lenientDouble(.overPlanKm)
+        longestRunKm = c.lenientDouble(.longestRunKm)
+        longestRunCapKm = c.lenientDouble(.longestRunCapKm)
+        hillM = c.lenientInt(.hillM)
+        highSessions = c.lenientInt(.highSessions)
+    }
+
+    /// Whether the file carries any of the load fields (an older file has
+    /// none, and the week keeps its plain "Run x of y km" line).
+    public var hasLoadFields: Bool {
+        plannedRunKm != nil || unplannedRunKm != nil || overPlanKm != nil || longestRunKm != nil
+            || longestRunCapKm != nil || hillM != nil || highSessions != nil
     }
 }
 
@@ -832,8 +901,11 @@ public struct ActivityRef: Equatable, Sendable, Decodable, ProjectionElement {
     public var start: ClockTime?
     public var km: Double?
     public var min: Int?
+    /// add-training-gates-and-load: `over-plan` on an unplanned run of a
+    /// week at or over its run target; `nil` otherwise.
+    public var flag: OpenEnum<ActivityFlag>?
 
-    enum CodingKeys: String, CodingKey { case note, sport, group, start, km, min }
+    enum CodingKeys: String, CodingKey { case note, sport, group, start, km, min, flag }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -843,7 +915,10 @@ public struct ActivityRef: Equatable, Sendable, Decodable, ProjectionElement {
         start = c.lenient(ClockTime.self, .start)
         km = c.lenientDouble(.km)
         min = c.lenientInt(.min)
+        flag = c.lenient(OpenEnum<ActivityFlag>.self, .flag)
     }
+
+    public var isOverPlan: Bool { flag?.known == .overPlan }
 }
 
 public struct Done: Equatable, Sendable, Decodable {
@@ -852,8 +927,26 @@ public struct Done: Equatable, Sendable, Decodable {
     public var source: OpenEnum<DoneSource>?
     public var matchedBy: OpenEnum<MatchedBy>?
     public var activity: ActivityRef?
+    /// add-training-gates-and-load: what was said when the session was
+    /// ticked done by hand. Also set beside an `activity` -- then the
+    /// activity won and this is only a note.
+    public var manual: ManualDone?
 
-    enum CodingKeys: String, CodingKey { case option, source, matchedBy, activity }
+    enum CodingKeys: String, CodingKey { case option, source, matchedBy, activity, manual }
+
+    public init(
+        option: OpenEnum<OptionCode>? = nil,
+        source: OpenEnum<DoneSource>? = nil,
+        matchedBy: OpenEnum<MatchedBy>? = nil,
+        activity: ActivityRef? = nil,
+        manual: ManualDone? = nil
+    ) {
+        self.option = option
+        self.source = source
+        self.matchedBy = matchedBy
+        self.activity = activity
+        self.manual = manual
+    }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -861,7 +954,11 @@ public struct Done: Equatable, Sendable, Decodable {
         source = c.lenient(OpenEnum<DoneSource>.self, .source)
         matchedBy = c.lenient(OpenEnum<MatchedBy>.self, .matchedBy)
         activity = c.lenient(ActivityRef.self, .activity)
+        manual = c.lenient(ManualDone.self, .manual)
     }
+
+    /// Done by hand and nothing else: no activity matched.
+    public var isManual: Bool { source?.known == .manual }
 }
 
 public struct SessionFuel: Equatable, Sendable, Decodable {
@@ -955,17 +1052,25 @@ public struct Session: Equatable, Sendable, Decodable, ProjectionElement {
 
 /// `session.feedback` `{ rpe, feel, note }` (add-hub-ingest): the latest
 /// RPE (1-10), feel (1-5) and note the vault folded from the app's events.
+///
+/// add-training-gates-and-load: `pains` (pain during / after the session;
+/// `nil` = never asked, `[]` = asked, nothing hurt) and `fuel` (the fuel
+/// log; it alone creates the object, with `rpe` `nil`).
 public struct SessionFeedback: Equatable, Sendable, Decodable {
     public var rpe: Int?
     public var feel: Int?
     public var note: String?
+    public var pains: [SessionPainEntry]?
+    public var fuel: FuelLog?
 
-    enum CodingKeys: String, CodingKey { case rpe, feel, note }
+    enum CodingKeys: String, CodingKey { case rpe, feel, note, pains, fuel }
 
-    public init(rpe: Int? = nil, feel: Int? = nil, note: String? = nil) {
+    public init(rpe: Int? = nil, feel: Int? = nil, note: String? = nil, pains: [SessionPainEntry]? = nil, fuel: FuelLog? = nil) {
         self.rpe = rpe
         self.feel = feel
         self.note = note
+        self.pains = pains
+        self.fuel = fuel
     }
 
     public init(from decoder: Decoder) throws {
@@ -973,6 +1078,8 @@ public struct SessionFeedback: Equatable, Sendable, Decodable {
         rpe = c.lenientInt(.rpe)
         feel = c.lenientInt(.feel)
         note = c.lenientString(.note)
+        pains = c.lenient(LossyArray<SessionPainEntry>.self, .pains)?.elements
+        fuel = c.lenient(FuelLog.self, .fuel)
     }
 }
 

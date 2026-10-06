@@ -55,6 +55,13 @@
         "PM-ACH-2",
         "PM-ACH-8"
       ]
+    },
+    "recovery": {
+      "raceId": "harvest-marathon-2030",
+      "day": 10,
+      "of": 14,
+      "rule": "PM-SEQ-1",
+      "until": "2030-10-27"
     }
   },
   "season": {
@@ -164,10 +171,53 @@
         "distanceLabel": "10 km",
         "distanceKm": 10,
         "elevationM": null,
-        "goal": null,
+        "goal": "Sub-45",
         "prep": null,
         "report": {
           "note": "Sport/Races/Running/ZZ/Lakeside 10K/Lakeside 10K 2030/Report.md"
+        },
+        "result": {
+          "status": "finished",
+          "reason": null,
+          "time": "0:46:03",
+          "officialTime": "0:45:41",
+          "distanceKm": 10,
+          "laps": null,
+          "goalReached": false,
+          "pr": true,
+          "reportPath": "Sport/Races/Running/ZZ/Lakeside 10K/Lakeside 10K 2030/Report.md",
+          "source": "report",
+          "note": null
+        }
+      },
+      {
+        "id": "harvest-marathon-2030",
+        "name": "Harvest Marathon",
+        "date": "2030-10-13",
+        "dateApprox": false,
+        "priority": "B",
+        "hero": false,
+        "phaseId": "test-prelude-2030",
+        "folder": "Sport/Races/Running/ZZ/Harvest Marathon/Harvest Marathon 2030",
+        "category": "🛣️ Marathon",
+        "distanceLabel": "42.2 km",
+        "distanceKm": 42.2,
+        "elevationM": null,
+        "goal": "Sub-3:30",
+        "prep": null,
+        "report": null,
+        "result": {
+          "status": "finished",
+          "reason": null,
+          "time": "3:24:10",
+          "officialTime": null,
+          "distanceKm": 42.2,
+          "laps": null,
+          "goalReached": true,
+          "pr": null,
+          "reportPath": null,
+          "source": "event",
+          "note": "Even pace, strong last 5 km"
         }
       },
       {
@@ -252,7 +302,8 @@
             }
           ]
         },
-        "report": null
+        "report": null,
+        "result": null
       },
       {
         "id": "ridge-ultra-2031",
@@ -269,7 +320,8 @@
         "elevationM": 4200,
         "goal": null,
         "prep": null,
-        "report": null
+        "report": null,
+        "result": null
       }
     ]
   },
@@ -1484,7 +1536,16 @@
                   "rpe": 5,
                   "feel": null,
                   "note": null,
-                  "pains": null
+                  "pains": null,
+                  "fuel": {
+                    "carbsG": 90,
+                    "fluidMl": 750,
+                    "durationMin": 118,
+                    "gPerH": 46,
+                    "planGPerH": 60,
+                    "vsPlan": "below",
+                    "note": "Two gels and a bar; the third gel stayed in the vest"
+                  }
                 }
               }
             ],
@@ -1763,7 +1824,8 @@
                       "during": null,
                       "after": 1
                     }
-                  ]
+                  ],
+                  "fuel": null
                 }
               },
               {
@@ -4228,8 +4290,8 @@
   },
   "acks": {
     "ios-0a1b2c3d": {
-      "seq": 31,
-      "maxSeq": 31
+      "seq": 33,
+      "maxSeq": 33
     },
     "ios-5e6f7a8b": {
       "seq": 3,
@@ -4399,7 +4461,7 @@
       "type": "plan.week.approved",
       "path": "Sport/Training/_hub/events/ios-5e6f7a8b/2030/10/20301020T040500Z-1.jsonl",
       "line": 3,
-      "reason": "$.type: unknown type \"plan.week.approved\" (this vault reads the 13 v1 types)"
+      "reason": "$.type: unknown type \"plan.week.approved\" (this vault reads the 15 v1 types)"
     },
     {
       "event": null,

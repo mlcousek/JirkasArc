@@ -23,6 +23,10 @@
 // Each carb-load day carries its date so the app can open that day's food
 // log (race week linked to the food side).
 //
+// add-training-gates-and-load: `result` is how the race ended and the
+// result sheet (RaceResultModels.swift) -- read from the vault, never
+// worked out here.
+//
 // Depended on by: the app's RaceDetailView. Tests: SeasonPhaseRaceTests.
 
 import Foundation
@@ -144,6 +148,9 @@ public struct RaceDetailModel: Equatable, Sendable {
     /// "Race report written" once the vault links one.
     public let reportText: String?
     public let notices: [TrainingNotice]
+    /// add-training-gates-and-load: how the race ended and the result
+    /// sheet (RaceResultModels.swift); `nil` when there is neither.
+    public var result: RaceResultModel? = nil
 }
 
 // MARK: - Builder
@@ -175,7 +182,7 @@ public extension PlanBuilder {
             return text.format(.raceCutoff, duration)
         }
 
-        return RaceDetailModel(
+        var model = RaceDetailModel(
             id: race.id,
             name: race.name.resolvedText(language) ?? race.id,
             date: race.date,
@@ -205,6 +212,8 @@ public extension PlanBuilder {
             reportText: race.report == nil ? nil : text(.raceReported),
             notices: format.notices(snapshot.freshness)
         )
+        model.result = raceResultModel(race, snapshot: snapshot)
+        return model
     }
 
     /// The race Plan -> Season highlights: the first on or after today,

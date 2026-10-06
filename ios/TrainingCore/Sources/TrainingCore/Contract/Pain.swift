@@ -19,6 +19,9 @@
 // add-daily-checkin-and-pain-mode: `PainMode` is `athlete.painMode`, the
 // vault's switch for every pain feature (below).
 //
+// add-training-gates-and-load: `SessionPainEntry` is the pain during and
+// after a session (`session.rpe.pains`, `session.feedback.pains`).
+//
 // Depended on by: HubEvent (MorningCheckInPayload.pains), Projection (Day),
 // CheckInOverlay, PainModels. Tests: PainTests, HubEventTests,
 // ProjectionDecodingTests.
@@ -110,6 +113,53 @@ extension PainEntry: Encodable {
             try c.encode(score, forKey: .score)
         }
         try c.encode(note, forKey: .note)
+    }
+}
+
+// MARK: - Pain during / after a session (add-training-gates-and-load)
+
+/// One site of `session.rpe.pains` and of the projection's
+/// `session.feedback.pains`: `{ site, during?, after? }`, each score 0-10
+/// in steps of 0.5 or `nil` (not asked). Same vocabulary and the same
+/// "unknown site is `other`" rule as the morning pain.
+public struct SessionPainEntry: Equatable, Sendable {
+    public var site: PainSite
+    public var during: Double?
+    public var after: Double?
+
+    public init(site: PainSite, during: Double? = nil, after: Double? = nil) {
+        self.site = site
+        self.during = during
+        self.after = after
+    }
+
+    public var isValid: Bool {
+        [during, after].allSatisfy { score in score.map(PainEntry.isValidScore) ?? true }
+    }
+}
+
+extension SessionPainEntry: Decodable {
+    enum CodingKeys: String, CodingKey { case site, during, after }
+
+    /// Tolerant: a missing, `null` or non-numeric score is "not asked"; an
+    /// unknown or missing site is `other`. Never throws on a value.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        site = PainSite(wire: c.lenientString(.site) ?? PainSite.other.rawValue)
+        during = c.lenientDouble(.during)
+        after = c.lenientDouble(.after)
+    }
+}
+
+extension SessionPainEntry: Encodable {
+    /// A score that was not asked is left out (the vault's own example
+    /// does so; absent and `null` mean the same); a whole score is written
+    /// as an integer (`WireNumber`, HubEvent.swift).
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(site.rawValue, forKey: .site)
+        try WireNumber.encodeIfPresent(during, steps: 2, into: &c, forKey: .during)
+        try WireNumber.encodeIfPresent(after, steps: 2, into: &c, forKey: .after)
     }
 }
 

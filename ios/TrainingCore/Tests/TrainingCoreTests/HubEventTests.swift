@@ -16,6 +16,12 @@
 // of the first golden file carries `"pains":null`, and a third golden file
 // (`checkin-pains.v1.app.jsonl`, accepted by the vault's `validateEvent`
 // on 2026-09-30) pins a list, an empty list and a note that needs escaping.
+// add-training-gates-and-load adds `test.gate`, `session.done`,
+// `session.fuel`, `race.result` and `pains` on `session.rpe`: a fourth
+// golden file (`gates.v1.app.jsonl`) that is the vault example's own six
+// lines (seq 25-28, 32, 33) as this app encodes them -- built in Swift,
+// re-encoded from the mirrored lines, and compared with them as JSON
+// objects -- plus the bounds of each new payload.
 
 import XCTest
 import VaultKit
@@ -36,6 +42,38 @@ enum EventFixtures {
 
     static func painGolden() throws -> Data {
         try Data(contentsOf: directory.appendingPathComponent("checkin-pains.v1.app.jsonl"))
+    }
+
+    static func gatesGolden() throws -> Data {
+        try Data(contentsOf: directory.appendingPathComponent("gates.v1.app.jsonl"))
+    }
+
+    /// The vault's own device in its example file.
+    static let vaultDevice = "ios-0a1b2c3d"
+    /// The `seq` of the vault example's lines the gates golden file holds.
+    static let gatesGoldenSeqs = [25, 26, 27, 28, 32, 33]
+
+    /// The gates golden file's events, built in Swift
+    /// (add-training-gates-and-load D1): the vault example's seq 25-28, 32
+    /// and 33, value for value.
+    static var gatesGoldenEvents: [HubEvent] {
+        [
+            HubEvent(id: "01beca78-0fc0-7119-a119-5eed00000019", deviceId: vaultDevice, seq: 25, at: "2030-10-23T04:18:00.000+02:00",
+                     payload: .testGate(GateTestPayload(date: D.date("2030-10-23"), walkPain: 1.5, hopPain: 4, site: .achillesLeft, note: "20 single-leg hops, sharp on landing"))),
+            HubEvent(id: "01beca79-e480-711a-a11a-5eed0000001a", deviceId: vaultDevice, seq: 26, at: "2030-10-23T04:20:00.000+02:00",
+                     payload: .sessionDone(SessionDonePayload(date: D.date("2030-10-21"), sessionId: "2030-w43-mon-pm", option: nil, min: 45, km: nil, note: "Gym A done, watch left at home"))),
+            HubEvent(id: "01beca7a-cee0-711b-a11b-5eed0000001b", deviceId: vaultDevice, seq: 27, at: "2030-10-23T04:21:00.000+02:00",
+                     payload: .sessionDone(SessionDonePayload(date: D.date("2030-10-22"), sessionId: "2030-w43-tue-am", option: nil, min: 55, km: 10, note: nil))),
+            HubEvent(id: "01beca7b-b940-711c-a11c-5eed0000001c", deviceId: vaultDevice, seq: 28, at: "2030-10-23T04:22:00.000+02:00",
+                     payload: .sessionRPE(SessionRPEPayload(date: D.date("2030-10-22"), sessionId: "2030-w43-tue-am", rpe: 7, feel: 3, pains: [
+                        SessionPainEntry(site: .achillesLeft, during: 4, after: 6),
+                        SessionPainEntry(site: .kneeRight, during: nil, after: 1)
+                     ]))),
+            HubEvent(id: "01beca80-4d20-7120-a120-5eed00000020", deviceId: vaultDevice, seq: 32, at: "2030-10-23T04:27:00.000+02:00",
+                     payload: .raceResult(RaceResultPayload(raceId: "harvest-marathon-2030", status: .finished, reason: nil, time: "3:24:10", officialTime: nil, distanceKm: 42.2, laps: nil, note: "Even pace, strong last 5 km"))),
+            HubEvent(id: "01beca81-3780-7121-a121-5eed00000021", deviceId: vaultDevice, seq: 33, at: "2030-10-23T04:28:00.000+02:00",
+                     payload: .sessionFuel(SessionFuelPayload(date: D.date("2030-10-19"), sessionId: "2030-w42-sat-am", carbsG: 90, fluidMl: 750, durationMin: nil, note: "Two gels and a bar; the third gel stayed in the vest")))
+        ]
     }
 
     /// The pain golden file's events, built in Swift (add-checkin-pain-score D1).
@@ -147,8 +185,8 @@ final class HubEventTests: XCTestCase {
     func testTheVaultsExampleDecodes() throws {
         let decoded = HubEventCodec.decode(try EventFixtures.vault("events.v1.example.jsonl"))
         XCTAssertEqual(decoded.invalidLines, [])
-        XCTAssertEqual(decoded.events.count, 31)
-        XCTAssertEqual(decoded.events.map(\.seq), Array(1...31))
+        XCTAssertEqual(decoded.events.count, 33)
+        XCTAssertEqual(decoded.events.map(\.seq), Array(1...33))
         XCTAssertTrue(decoded.events.allSatisfy { $0.deviceId == "ios-0a1b2c3d" && $0.v == 1 })
 
         let byType = Dictionary(grouping: decoded.events, by: { $0.type.rawValue }).mapValues(\.count)
@@ -163,13 +201,22 @@ final class HubEventTests: XCTestCase {
         XCTAssertEqual(byType["plan.rule.overridden"], 1)
         XCTAssertEqual(byType["event.retracted"], 1)
         let others = decoded.events.filter { if case .other = $0.type { return true } else { return false } }
-        // The vault's 2026-10-01 contract added `test.gate` (seq 25) and
-        // `session.done` (seq 26, 27): this build doesn't write them, so
-        // they read as `.other` -- never an invalid line.
-        XCTAssertEqual(Set(others.map(\.type.rawValue)), ["device.hello", "test.gate", "session.done"])
-        XCTAssertEqual(others.map(\.seq), [1, 25, 26, 27])
-        XCTAssertEqual(decoded.events[24].payload, .other(type: "test.gate", date: D.date("2030-10-23")))
-        XCTAssertEqual(decoded.events[25].payload, .other(type: "session.done", date: D.date("2030-10-21")))
+        // add-training-gates-and-load: `test.gate` (seq 25), `session.done`
+        // (seq 26, 27), `race.result` (seq 32, no `date`) and `session.fuel`
+        // (seq 33) are types this app writes now; only `device.hello` is
+        // still read as `.other`.
+        XCTAssertEqual(byType["test.gate"], 1)
+        XCTAssertEqual(byType["session.done"], 2)
+        XCTAssertEqual(byType["race.result"], 1)
+        XCTAssertEqual(byType["session.fuel"], 1)
+        XCTAssertEqual(others.map(\.type.rawValue), ["device.hello"])
+        XCTAssertEqual(others.map(\.seq), [1])
+        let facts = decoded.events.filter { EventFixtures.gatesGoldenSeqs.contains($0.seq) }
+        XCTAssertEqual(facts, EventFixtures.gatesGoldenEvents)
+        XCTAssertNil(decoded.events[31].payload.date, "a race result names its race, not a day")
+        XCTAssertEqual(decoded.events[32].payload.date, D.date("2030-10-19"))
+        XCTAssertEqual(decoded.events[24].payload.date, D.date("2030-10-23"))
+        XCTAssertEqual(decoded.events[25].payload.date, D.date("2030-10-21"))
 
         XCTAssertEqual(decoded.events[1].payload, .morningCheckIn(MorningCheckInPayload(date: D.date("2030-10-14"), light: .redLight, sessionId: nil, option: nil)))
         XCTAssertEqual(decoded.events[2].payload, .morningCheckIn(MorningCheckInPayload(date: D.date("2030-10-16"), light: .greenLight, sessionId: "2030-w42-wed-am", option: .g)))
@@ -190,9 +237,15 @@ final class HubEventTests: XCTestCase {
             return nil
         }
         XCTAssertEqual(otherPains, [], "no other check-in carries pains")
-        // seq 28 (2026-10-01): an RPE with `pains` during/after the session.
-        // The key is not read yet (unknown keys are ignored): the RPE is.
-        XCTAssertEqual(decoded.events[27].payload, .sessionRPE(SessionRPEPayload(date: D.date("2030-10-22"), sessionId: "2030-w43-tue-am", rpe: 7, feel: 3)))
+        // seq 28 (2026-10-01): an RPE with `pains` during/after the session;
+        // a score the line leaves out reads as not asked. The RPE of seq 9
+        // has no `pains` key: not asked.
+        XCTAssertEqual(decoded.events[27].payload, .sessionRPE(SessionRPEPayload(date: D.date("2030-10-22"), sessionId: "2030-w43-tue-am", rpe: 7, feel: 3, pains: [
+            SessionPainEntry(site: .achillesLeft, during: 4, after: 6),
+            SessionPainEntry(site: .kneeRight, during: nil, after: 1)
+        ])))
+        guard case .sessionRPE(let plainRPE) = decoded.events[8].payload else { return XCTFail("seq 9 is an RPE") }
+        XCTAssertNil(plainRPE.pains)
         // seq 29-31: a back-filled tick, and two the vault refuses (too old,
         // in the future) -- all three are ordinary ticks on the wire.
         XCTAssertEqual(decoded.events[28...30].map(\.payload.date), [D.date("2030-10-21"), D.date("2030-10-01"), D.date("2030-10-25")])
@@ -224,6 +277,15 @@ final class HubEventTests: XCTestCase {
         XCTAssertEqual(overlay.note(session: "2030-w43-tue-am")?.value, "Calf tight on the last repeat, eased off.")
         XCTAssertEqual(overlay.pains(on: D.date("2030-10-23"))?.value.map(\.site), [.achillesLeft, .kneeRight])
         XCTAssertNil(overlay.pains(on: D.date("2030-10-22")), "not asked")
+        // add-training-gates-and-load: the new facts fold too.
+        XCTAssertEqual(overlay.gateTest(on: D.date("2030-10-23"))?.value.hopPain, 4)
+        XCTAssertEqual(overlay.latestGateTest?.value.walkPain, 1.5)
+        XCTAssertEqual(overlay.doneByHand(session: "2030-w43-mon-pm")?.value.min, 45)
+        XCTAssertEqual(overlay.doneByHand(session: "2030-w43-tue-am")?.value.km, 10)
+        XCTAssertEqual(overlay.pains(session: "2030-w43-tue-am")?.value.map(\.site), [.achillesLeft, .kneeRight], "the later RPE's pains; the RPE of seq 9 carried none")
+        XCTAssertEqual(overlay.fuelLog(session: "2030-w42-sat-am")?.value.carbsG, 90)
+        XCTAssertEqual(overlay.raceResult(race: "harvest-marathon-2030")?.payload.time, "3:24:10")
+        XCTAssertEqual(overlay.raceResult(race: "harvest-marathon-2030")?.isRefused, false)
     }
 
     // MARK: Pain (add-checkin-pain-score)
@@ -279,6 +341,169 @@ final class HubEventTests: XCTestCase {
             return XCTFail("not a check-in")
         }
         XCTAssertNil(payload.pains, "null = not asked")
+    }
+
+    // MARK: Gate test, done by hand, fuel, race result (add-training-gates-and-load)
+
+    func testGateFactsReproduceTheirGoldenFileByteForByte() throws {
+        let encoded = try HubEventCodec.jsonl(EventFixtures.gatesGoldenEvents)
+        let golden = try EventFixtures.gatesGolden()
+        XCTAssertEqual(String(decoding: encoded, as: UTF8.self), String(decoding: golden, as: UTF8.self))
+        XCTAssertEqual(encoded, golden)
+
+        let decoded = HubEventCodec.decode(golden)
+        XCTAssertEqual(decoded.invalidLines, [])
+        XCTAssertEqual(decoded.events, EventFixtures.gatesGoldenEvents)
+        XCTAssertEqual(decoded.events.map(\.type.rawValue), [
+            "test.gate", "session.done", "session.done", "session.rpe", "race.result", "session.fuel"
+        ])
+        for event in decoded.events {
+            XCTAssertNoThrow(try event.payload.validate(), event.type.rawValue)
+        }
+        // Whole numbers have no fraction; the others are exact decimals.
+        let text = String(decoding: golden, as: UTF8.self)
+        XCTAssertTrue(text.contains("\"hopPain\":4,"))
+        XCTAssertTrue(text.contains("\"walkPain\":1.5}"))
+        XCTAssertTrue(text.contains("\"km\":10,"))
+        XCTAssertTrue(text.contains("\"distanceKm\":42.2,"))
+        XCTAssertTrue(text.contains("\"carbsG\":90,"))
+        XCTAssertFalse(text.contains(".0,"), "never 4.0 or 10.0")
+        XCTAssertFalse(text.contains(".0}"))
+    }
+
+    func testTheVaultsExampleFactsReencodeToTheGoldenLinesAndTheSameObjects() throws {
+        let mirrored = String(decoding: try EventFixtures.vault("events.v1.example.jsonl"), as: UTF8.self)
+            .split(separator: "\n").map(String.init)
+        let golden = String(decoding: try EventFixtures.gatesGolden(), as: UTF8.self)
+            .split(separator: "\n").map(String.init)
+        XCTAssertEqual(golden.count, EventFixtures.gatesGoldenSeqs.count)
+        var compared = 0
+        for line in mirrored {
+            let event = try XCTUnwrap(HubEventCodec.decode(Data(line.utf8)).events.first)
+            guard let index = EventFixtures.gatesGoldenSeqs.firstIndex(of: event.seq) else { continue }
+            if case .other = event.payload { XCTFail("seq \(event.seq) read as an unknown type") }
+            // The mirrored line, decoded and encoded again, is the golden
+            // line byte for byte ...
+            let ours = try HubEventCodec.line(event)
+            XCTAssertEqual(String(decoding: ours, as: UTF8.self), golden[index], "seq \(event.seq)")
+            // ... and the same JSON object as the vault wrote: no key
+            // added, none dropped (the vault's lines are not key-sorted).
+            let oursObject = try XCTUnwrap(JSONSerialization.jsonObject(with: ours) as? NSDictionary)
+            let theirs = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(line.utf8)) as? NSDictionary)
+            XCTAssertEqual(oursObject, theirs, "seq \(event.seq)")
+            compared += 1
+        }
+        XCTAssertEqual(compared, 6)
+    }
+
+    func testOptionalKeysOfTheNewFacts() throws {
+        func line(_ payload: HubEventPayload) throws -> String {
+            String(decoding: try HubEventCodec.line(HubEvent(id: "x", deviceId: EventFixtures.device, seq: 1, at: "t", payload: payload)), as: UTF8.self)
+        }
+        let date = D.date("2030-10-23")
+        // Written as null when unknown ...
+        let gate = try line(.testGate(GateTestPayload(date: date, walkPain: 0, hopPain: 0)))
+        XCTAssertTrue(gate.contains("\"payload\":{\"date\":\"2030-10-23\",\"hopPain\":0,\"note\":null,\"site\":null,\"walkPain\":0}"), gate)
+        let done = try line(.sessionDone(SessionDonePayload(date: date, sessionId: "s")))
+        XCTAssertTrue(done.contains("\"payload\":{\"date\":\"2030-10-23\",\"km\":null,\"min\":null,\"note\":null,\"option\":null,\"sessionId\":\"s\"}"), done)
+        let fuel = try line(.sessionFuel(SessionFuelPayload(date: date, sessionId: "s", carbsG: 0)))
+        XCTAssertTrue(fuel.contains("\"payload\":{\"carbsG\":0,\"date\":\"2030-10-23\",\"durationMin\":null,\"fluidMl\":null,\"note\":null,\"sessionId\":\"s\"}"), fuel)
+        let dns = try line(.raceResult(RaceResultPayload(raceId: "r", status: .dns, reason: .stopRule)))
+        XCTAssertTrue(dns.contains("\"payload\":{\"distanceKm\":null,\"laps\":null,\"note\":null,\"raceId\":\"r\",\"reason\":\"stop-rule\",\"status\":\"dns\",\"time\":null}"), dns)
+        // ... except the three the vault's own lines leave out.
+        XCTAssertFalse(dns.contains("officialTime"), "a race with one time has no officialTime key")
+        let twoTimes = try line(.raceResult(RaceResultPayload(raceId: "r", status: .finished, time: "21:31:23", officialTime: "19:57:19", laps: 9)))
+        XCTAssertTrue(twoTimes.contains("\"laps\":9,"))
+        XCTAssertTrue(twoTimes.contains("\"officialTime\":\"19:57:19\""))
+        XCTAssertTrue(twoTimes.contains("\"time\":\"21:31:23\""))
+        let rpe = try line(.sessionRPE(SessionRPEPayload(date: date, sessionId: "s", rpe: 6)))
+        XCTAssertFalse(rpe.contains("pains"), "pain not asked: the key is left out and the vault keeps the earlier answer")
+        let nothingHurt = try line(.sessionRPE(SessionRPEPayload(date: date, sessionId: "s", rpe: 6, pains: [])))
+        XCTAssertTrue(nothingHurt.contains("\"pains\":[]"), "asked, nothing hurt")
+        let half = try line(.sessionRPE(SessionRPEPayload(date: date, sessionId: "s", rpe: 6, pains: [SessionPainEntry(site: .kneeLeft, during: 2.5)])))
+        XCTAssertTrue(half.contains("\"pains\":[{\"during\":2.5,\"site\":\"knee-left\"}]"), half)
+        // A fractional distance keeps its digits exactly; a longer one is
+        // put on the 0.01 km grid.
+        let km = try line(.sessionDone(SessionDonePayload(date: date, sessionId: "s", km: 10.1)))
+        XCTAssertTrue(km.contains("\"km\":10.1,"), km)
+        let fine = try line(.sessionDone(SessionDonePayload(date: date, sessionId: "s", km: 21.0975)))
+        XCTAssertTrue(fine.contains("\"km\":21.1,"), fine)
+    }
+
+    func testBoundsOfTheNewFacts() {
+        let date = D.date("2030-10-23")
+        func gate(_ walk: Double, _ hop: Double, note: String? = nil) -> HubEventPayload {
+            .testGate(GateTestPayload(date: date, walkPain: walk, hopPain: hop, site: .achillesLeft, note: note))
+        }
+        XCTAssertNoThrow(try gate(0, 10).validate())
+        XCTAssertNoThrow(try gate(4.5, 0.5, note: "ok").validate())
+        for score in [4.3, -0.5, 10.5, Double.nan] {
+            XCTAssertThrowsError(try gate(score, 1).validate(), "\(score)")
+            XCTAssertThrowsError(try gate(1, score).validate(), "\(score)")
+        }
+        XCTAssertThrowsError(try gate(1, 1, note: "  ").validate(), "a blank note")
+        XCTAssertThrowsError(try gate(1, 1, note: String(repeating: "a", count: 201)).validate())
+
+        func done(min: Int? = nil, km: Double? = nil, note: String? = nil, id: String = "s") -> HubEventPayload {
+            .sessionDone(SessionDonePayload(date: date, sessionId: id, min: min, km: km, note: note))
+        }
+        XCTAssertNoThrow(try done().validate(), "only the date and the session are required")
+        XCTAssertNoThrow(try done(min: 1, km: 0.1).validate())
+        XCTAssertNoThrow(try done(min: 6000, km: 1000).validate())
+        XCTAssertThrowsError(try done(min: 0).validate())
+        XCTAssertThrowsError(try done(min: 6001).validate())
+        XCTAssertThrowsError(try done(km: 0).validate())
+        XCTAssertThrowsError(try done(km: -1).validate())
+        XCTAssertThrowsError(try done(km: 1000.5).validate())
+        XCTAssertThrowsError(try done(note: "").validate())
+        XCTAssertThrowsError(try done(id: "").validate())
+
+        func fuel(_ carbs: Double, fluid: Int? = nil, minutes: Int? = nil) -> HubEventPayload {
+            .sessionFuel(SessionFuelPayload(date: date, sessionId: "s", carbsG: carbs, fluidMl: fluid, durationMin: minutes))
+        }
+        XCTAssertNoThrow(try fuel(0).validate(), "0 g is an answer")
+        XCTAssertNoThrow(try fuel(2000, fluid: 0, minutes: 1).validate())
+        XCTAssertThrowsError(try fuel(-1).validate())
+        XCTAssertThrowsError(try fuel(2000.5).validate())
+        XCTAssertThrowsError(try fuel(60, fluid: -1).validate())
+        XCTAssertThrowsError(try fuel(60, minutes: 0).validate())
+
+        func race(time: String? = nil, official: String? = nil, km: Double? = nil, laps: Int? = nil, id: String = "r") -> HubEventPayload {
+            .raceResult(RaceResultPayload(raceId: id, status: .finished, time: time, officialTime: official, distanceKm: km, laps: laps))
+        }
+        XCTAssertNoThrow(try race().validate(), "only the race and the status are required")
+        XCTAssertNoThrow(try race(time: "0:46:03", official: "0:45:41", km: 10, laps: 0).validate())
+        XCTAssertNoThrow(try race(time: "21:31:23").validate())
+        XCTAssertNoThrow(try race(time: "100:00:00").validate())
+        for bad in ["3h24", "3:24", "03:24:10", "3:60:00", "3:24:60", "3:4:10", ":24:10", "3:24:10 ", ""] {
+            XCTAssertThrowsError(try race(time: bad).validate(), bad)
+            XCTAssertFalse(RaceResultPayload.isValidTime(bad), bad)
+        }
+        XCTAssertThrowsError(try race(time: "3:24:10", official: "3:24:10").validate(), "never a copy of the elapsed time")
+        XCTAssertThrowsError(try race(km: 0).validate())
+        XCTAssertThrowsError(try race(laps: -1).validate())
+        XCTAssertThrowsError(try race(id: "").validate())
+
+        func rating(_ pains: [SessionPainEntry]) -> HubEventPayload {
+            .sessionRPE(SessionRPEPayload(date: date, sessionId: "s", rpe: 5, pains: pains))
+        }
+        XCTAssertNoThrow(try rating([]).validate())
+        XCTAssertNoThrow(try rating([SessionPainEntry(site: .achillesLeft)]).validate(), "both scores may be not asked")
+        XCTAssertNoThrow(try rating([SessionPainEntry(site: .achillesLeft, during: 0, after: 10)]).validate())
+        XCTAssertThrowsError(try rating([SessionPainEntry(site: .achillesLeft, during: 4.3)]).validate())
+        XCTAssertThrowsError(try rating([SessionPainEntry(site: .achillesLeft, after: 10.5)]).validate())
+    }
+
+    func testUnknownRaceStatusIsAnInvalidLineAndAnUnknownReasonIsOther() {
+        let unknownStatus = #"{"v":1,"id":"a","deviceId":"ios-0a1b2c3d","seq":40,"at":"2030-10-23T04:27:00.000+02:00","type":"race.result","payload":{"raceId":"r","status":"walked-off"}}"#
+        XCTAssertEqual(HubEventCodec.decode(Data(unknownStatus.utf8)).invalidLines, [1])
+        let unknownReason = #"{"v":1,"id":"b","deviceId":"ios-0a1b2c3d","seq":41,"at":"2030-10-23T04:27:00.000+02:00","type":"race.result","payload":{"raceId":"r","status":"dnf","reason":"weather","officialTime":"1:00:00","time":"1:10:00"}}"#
+        let decoded = HubEventCodec.decode(Data(unknownReason.utf8))
+        XCTAssertEqual(decoded.invalidLines, [])
+        XCTAssertEqual(decoded.events.first?.payload, .raceResult(RaceResultPayload(raceId: "r", status: .dnf, reason: .other, time: "1:10:00", officialTime: "1:00:00")))
+        // An unknown gate site reads as `other`, like the morning pain's.
+        let gate = #"{"v":1,"id":"c","deviceId":"ios-0a1b2c3d","seq":42,"at":"2030-10-23T04:27:00.000+02:00","type":"test.gate","payload":{"date":"2030-10-23","walkPain":0,"hopPain":2.5,"site":"hip-left"}}"#
+        XCTAssertEqual(HubEventCodec.decode(Data(gate.utf8)).events.first?.payload, .testGate(GateTestPayload(date: D.date("2030-10-23"), walkPain: 0, hopPain: 2.5, site: .other)))
     }
 
     // MARK: Plan commands (add-plan-editing)

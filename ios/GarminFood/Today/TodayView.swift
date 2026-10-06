@@ -318,6 +318,11 @@ struct TodayView: View {
                 // (replaces the day's answer); local, never waits.
                 onSavePain: { payload in
                     Task { await environment.training.recordPain(payload) }
+                },
+                // add-training-gates-and-load: the weekly gate test, a
+                // local event like the check-in; the vault judges it.
+                onSaveGate: { payload in
+                    Task { await environment.training.recordGateTest(payload) }
                 }
             )
 

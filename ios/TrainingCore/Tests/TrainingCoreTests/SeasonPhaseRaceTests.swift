@@ -91,10 +91,20 @@ final class SeasonPhaseRaceTests: XCTestCase {
 
     func testSeasonRaces() throws {
         let season = try builder().seasonTimeline()
-        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "valley-30k-2030", "ridge-ultra-2031"])
-        let lakeside = season.races[0]
-        let valley = season.races[1]
-        let ridge = season.races[2]
+        // The vault's 2026-10-05 fixture added the marathon at index 1:
+        // races are looked up by id, never by position.
+        XCTAssertEqual(season.races.map(\.id), ["lakeside-10k-2030", "harvest-marathon-2030", "valley-30k-2030", "ridge-ultra-2031"])
+        func marker(_ id: String, in model: SeasonTimelineModel) throws -> RaceMarkerModel {
+            try XCTUnwrap(model.races.first { $0.id == id })
+        }
+        let lakeside = try marker("lakeside-10k-2030", in: season)
+        let marathon = try marker("harvest-marathon-2030", in: season)
+        let valley = try marker("valley-30k-2030", in: season)
+        let ridge = try marker("ridge-ultra-2031", in: season)
+
+        XCTAssertTrue(marathon.isPast)
+        XCTAssertEqual(marathon.countdown, "10 days ago")
+        XCTAssertEqual(marathon.priorityText, "B race")
 
         XCTAssertTrue(lakeside.isPast)
         XCTAssertEqual(lakeside.countdown, "32 days ago")
@@ -115,16 +125,17 @@ final class SeasonPhaseRaceTests: XCTestCase {
         XCTAssertEqual(ridge.unanchoredText, "No phase covers this race yet")
         XCTAssertEqual(ridge.fraction, 292 / 363.0, accuracy: 1e-9)
 
-        // Lakeside and Valley would overlap: two lanes, nothing dropped.
-        XCTAssertEqual(season.races.map(\.lane), [0, 1, 0])
-        XCTAssertEqual(season.lanes, 2)
+        // Lakeside, the marathon and Valley would overlap: three lanes,
+        // nothing dropped.
+        XCTAssertEqual(season.races.map(\.lane), [0, 1, 2, 0])
+        XCTAssertEqual(season.lanes, 3)
         XCTAssertEqual(season.nextRace?.id, "valley-30k-2030")
 
         let czech = try builder(.czech).seasonTimeline()
         XCTAssertEqual(czech.title, "Sezóna 2030/31")
-        XCTAssertEqual(czech.races[0].countdown, "před 32 dny")
-        XCTAssertEqual(czech.races[1].countdown, "za 11 dní")
-        XCTAssertEqual(czech.races[2].priorityText, "Hlavní závod")
+        XCTAssertEqual(try marker("lakeside-10k-2030", in: czech).countdown, "před 32 dny")
+        XCTAssertEqual(try marker("valley-30k-2030", in: czech).countdown, "za 11 dní")
+        XCTAssertEqual(try marker("ridge-ultra-2031", in: czech).priorityText, "Hlavní závod")
         XCTAssertEqual(czech.gaps.first?.label, "Žádná fáze v plánu")
     }
 
@@ -154,8 +165,8 @@ final class SeasonPhaseRaceTests: XCTestCase {
         XCTAssertEqual(season.gaps.first?.start, 0)
         XCTAssertEqual(season.gaps.first?.label, "No phase planned")
         // Both B races are on the axis, in date order, none dropped.
-        XCTAssertEqual(season.races.map(\.id), ["relay-2030", "trail-2030", "lakeside-10k-2030", "valley-30k-2030", "ridge-ultra-2031"])
-        let relay = season.races[0]
+        XCTAssertEqual(season.races.map(\.id), ["relay-2030", "trail-2030", "lakeside-10k-2030", "harvest-marathon-2030", "valley-30k-2030", "ridge-ultra-2031"])
+        let relay = try XCTUnwrap(season.races.first { $0.id == "relay-2030" })
         XCTAssertEqual(relay.priority, .b)
         XCTAssertEqual(relay.priorityCode, "B")
         XCTAssertEqual(relay.priorityText, "B race")
@@ -203,7 +214,7 @@ final class SeasonPhaseRaceTests: XCTestCase {
         let data = try Fixtures.mutatedExample { object in
             var season = try XCTUnwrap(object["season"] as? [String: Any])
             var races = try XCTUnwrap(season["races"] as? [[String: Any]])
-            races[0]["date"] = "2030-08-01"
+            races[try Fixtures.raceIndex(races, id: "lakeside-10k-2030")]["date"] = "2030-08-01"
             season["races"] = races
             object["season"] = season
         }
@@ -280,7 +291,11 @@ final class SeasonPhaseRaceTests: XCTestCase {
         XCTAssertEqual(recap.withinLine, "0 of 1 weeks within 10 % of target")
         XCTAssertEqual(recap.biggestLine, "Biggest week: 22.6 km (W41)")
         XCTAssertEqual(recap.testLines, [])
-        XCTAssertEqual(recap.raceLines, ["Lakeside 10K · \(DateText(.english).dayMonthYear(D.date("2030-09-21")))"])
+        // Both races of the phase (the marathon since the 2026-10-05 fixture).
+        XCTAssertEqual(recap.raceLines, [
+            "Lakeside 10K · \(DateText(.english).dayMonthYear(D.date("2030-09-21")))",
+            "Harvest Marathon · \(DateText(.english).dayMonthYear(D.date("2030-10-13")))"
+        ])
 
         XCTAssertNil(try builder().phaseDetail(id: "no-such-phase"))
         XCTAssertEqual(try builder().defaultPhaseID(), "test-base-2030")
@@ -457,11 +472,12 @@ final class SeasonPhaseRaceTests: XCTestCase {
         let data = try Fixtures.mutatedExample { object in
             var season = try XCTUnwrap(object["season"] as? [String: Any])
             var races = try XCTUnwrap(season["races"] as? [[String: Any]])
-            var prep = try XCTUnwrap(races[1]["prep"] as? [String: Any])
+            let valley = try Fixtures.raceIndex(races, id: "valley-30k-2030")
+            var prep = try XCTUnwrap(races[valley]["prep"] as? [String: Any])
             var checkpoints = try XCTUnwrap(prep["checkpoints"] as? [[String: Any]])
             checkpoints[2]["targetMin"] = NSNull()
             prep["checkpoints"] = checkpoints
-            races[1]["prep"] = prep
+            races[valley]["prep"] = prep
             season["races"] = races
             object["season"] = season
         }

@@ -9,10 +9,16 @@
 //   - per week `actual.unplannedRunKm` / `actual.overPlanKm` -- "the plan is
 //     the ceiling" (same addition);
 //   - `outcomes[]` -- the ids of plan commands the vault applied or absorbed;
-//   - per race `result` -- NOT published by the vault yet (an open question
-//     of this change): `{ outcome: "finished" | "dnf" | "dns", goalReached,
-//     pr, stopRule, fuelPlanFollowed }`. Until it is, every race reads as
-//     "no result" and the rewards that need it stay dormant.
+//   - per race `result` -- published by the vault since 2026-10-05 and
+//     aligned to its real shape by add-training-gates-and-load: `status`
+//     ("finished" | "dnf" | "dns") is the outcome, `reason: "stop-rule"`
+//     is "a stop rule ended it", `goalReached` and `pr` are three-state
+//     Booleans (`null` is "not known", never "no"; `pr` arrives only with
+//     the race report). The vault publishes no "fuel plan followed": that
+//     reward reads the race session's fuel log instead (TrainingPlanFacts).
+//     The draft's key names (`outcome`, `stopRule`, `fuelPlanFollowed`)
+//     are still read when the real ones are absent, so nothing that was
+//     tested against them changes.
 //
 // WHY A SIDECAR AND NOT FIELDS ON `Projection`: two other changes are
 // extending `Projection.swift` at the same time (the daily check-in with
@@ -52,7 +58,9 @@ public struct ProjectionRewardExtras: Equatable, Sendable {
         }
     }
 
-    /// A race's machine-readable result (not published yet).
+    /// A race's machine-readable result, as the rewards read it (the
+    /// vault's `season.races[].result` since 2026-10-05; the full record
+    /// the Race screen shows is the top-level `RaceResult`).
     public struct RaceResult: Equatable, Sendable {
         public var outcome: OpenEnum<RaceOutcome>?
         public var goalReached: Bool?
@@ -127,11 +135,18 @@ public struct ProjectionRewardExtras: Equatable, Sendable {
         if let season = root["season"] as? [String: Any], let races = season["races"] as? [Any] {
             for case let race as [String: Any] in races {
                 guard let id = race["id"] as? String, let result = race["result"] as? [String: Any] else { continue }
+                // The contract's `status` and `reason`; the draft's names
+                // only when those are absent.
+                let status = (result["status"] as? String) ?? (result["outcome"] as? String)
+                var stopRule = bool(result["stopRule"])
+                if let reason = result["reason"] as? String {
+                    stopRule = reason == RaceResultReason.stopRule.rawValue
+                }
                 extras.raceResults[id] = RaceResult(
-                    outcome: (result["outcome"] as? String).map { OpenEnum<RaceOutcome>(rawValue: $0) },
+                    outcome: status.map { OpenEnum<RaceOutcome>(rawValue: $0) },
                     goalReached: bool(result["goalReached"]),
                     pr: bool(result["pr"]),
-                    stopRule: bool(result["stopRule"]),
+                    stopRule: stopRule,
                     fuelPlanFollowed: bool(result["fuelPlanFollowed"])
                 )
             }

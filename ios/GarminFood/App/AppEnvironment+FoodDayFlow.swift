@@ -5,7 +5,8 @@
 // pieces, so they sit here and not in a view or in FoodDayCloseController:
 //
 //   - `closeFoodDay()` / `reopenFoodDay()`: the Today card's two actions on
-//     the day being shown. Local and immediate; a failed write is shown.
+//     the day being shown. Local and immediate; they answer `false` when the
+//     record could not be written, and the screen says so.
 //   - the `food-log` habit: in the training experience only, and only when
 //     TrainingCore's `FoodLogHabit.tick` says so (the ladder has that id,
 //     the plan expects it that day, the vault still accepts the day, the
@@ -58,33 +59,42 @@ extension AppEnvironment {
         return count
     }
 
-    /// "That's everything today" on the day being shown.
-    func closeFoodDay() async {
+    /// "That's everything today" on the day being shown. `false` when the
+    /// record could not be written (the day is then not closed).
+    @discardableResult
+    func closeFoodDay() async -> Bool {
         let day = dayLog.dateString
+        let closedNow: Bool
         do {
-            guard try await foodDayClose.close(day: day, entryCount: foodDayEntryCount) else { return }
+            closedNow = try await foodDayClose.close(day: day, entryCount: foodDayEntryCount)
         } catch {
-            foodDayClose.errorMessage = String(localized: "Couldn't save that on the phone. Try again.")
             Haptics.warning()
-            return
+            return false
         }
+        // A day that was already closed: nothing new to tick or re-plan.
+        guard closedNow else { return true }
         Haptics.success()
         await recordFoodLogHabit(closed: true, day: day)
         await syncNotifications()
+        return true
     }
 
-    /// Undo of the close on the day being shown.
-    func reopenFoodDay() async {
+    /// Undo of the close on the day being shown. `false` when the record
+    /// could not be removed (the day then stays closed).
+    @discardableResult
+    func reopenFoodDay() async -> Bool {
         let day = dayLog.dateString
+        let reopened: Bool
         do {
-            guard try await foodDayClose.reopen(day: day) else { return }
+            reopened = try await foodDayClose.reopen(day: day)
         } catch {
-            foodDayClose.errorMessage = String(localized: "Couldn't save that on the phone. Try again.")
             Haptics.warning()
-            return
+            return false
         }
+        guard reopened else { return true }
         await recordFoodLogHabit(closed: false, day: day)
         await syncNotifications()
+        return true
     }
 
     /// An entry of `day` was added, changed or removed through the app.

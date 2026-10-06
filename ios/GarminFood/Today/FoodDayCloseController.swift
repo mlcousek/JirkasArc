@@ -28,8 +28,6 @@ final class FoodDayCloseController {
 
     /// Every closed day, by its `yyyy-MM-dd` key.
     private(set) var closes: [String: FoodDayClose] = [:]
-    /// A close or an undo that could not be saved, for an alert.
-    var errorMessage: String?
 
     init(store: FoodDayCloseStore) {
         self.store = store

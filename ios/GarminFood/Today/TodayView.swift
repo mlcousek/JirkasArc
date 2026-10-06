@@ -187,18 +187,6 @@ struct TodayView: View {
         } message: {
             Text(hydrationActionError ?? "")
         }
-        // improve-food-day-flow: closing a day (or its undo) couldn't be saved.
-        .alert(
-            "Couldn't complete that action",
-            isPresented: Binding(
-                get: { environment.foodDayClose.errorMessage != nil },
-                set: { if !$0 { environment.foodDayClose.errorMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(verbatim: environment.foodDayClose.errorMessage ?? "")
-        }
         .refreshable {
             await environment.refreshOnForeground(userInitiated: true)
             await loadQuickPicks()
@@ -413,8 +401,8 @@ struct TodayView: View {
                     state: environment.foodDayClose.state(day: dayLog.dateString, entryCount: environment.foodDayEntryCount),
                     isToday: dayLog.isToday,
                     streak: environment.foodDayClose.streak(),
-                    onClose: { Task { await environment.closeFoodDay() } },
-                    onUndo: { Task { await environment.reopenFoodDay() } }
+                    onClose: { Task { await closeFoodDay() } },
+                    onUndo: { Task { await reopenFoodDay() } }
                 )
             }
 
@@ -569,6 +557,24 @@ struct TodayView: View {
 
     private func loadMealPresets() async {
         mealPresets = await environment.mealPresetStore.all()
+    }
+
+    /// improve-food-day-flow (A2): "That's everything today". A close that
+    /// couldn't be saved is said with the screen's one generic alert (the
+    /// one the water card uses), rather than with a third alert on `body`.
+    private func closeFoodDay() async {
+        let saved = await environment.closeFoodDay()
+        if !saved {
+            hydrationActionError = String(localized: "Couldn't save that on the phone. Try again.")
+        }
+    }
+
+    /// improve-food-day-flow (A2): Undo of the close.
+    private func reopenFoodDay() async {
+        let saved = await environment.reopenFoodDay()
+        if !saved {
+            hydrationActionError = String(localized: "Couldn't save that on the phone. Try again.")
+        }
     }
 
     /// Mirrors `HydrationView.quickAdd(_:)` exactly (same coordinator call,

@@ -262,6 +262,27 @@ final class LogEntryEditingTests: XCTestCase {
         XCTAssertEqual(shot.calories, 10)
     }
 
+    // Review finding (2026-10-06): an entry that is being deleted is not
+    // offered for copying.
+    func testAnEntryWhoseDeleteIsQueuedIsNotOfferedForCopying() throws {
+        let log = try sourceDay()
+        let deletions = [
+            FoodLogDeletion(date: "2026-09-15", logId: "b1"),
+            // One that gave up is shown and counted again: still copyable.
+            FoodLogDeletion(date: "2026-09-15", logId: "b2", state: .failed)
+        ]
+        let removed = MealDashboard.removedLogIds(in: deletions, date: "2026-09-15")
+
+        let plan = CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: removed)
+
+        XCTAssertEqual(plan.copyable.map(\.id), ["b2"])
+        XCTAssertEqual(plan.notCopyable.map(\.id), ["b3"], "quick adds are listed as before")
+        let confirmed = MealDashboard.removedLogIds(in: [FoodLogDeletion(date: "2026-09-15", logId: "b2", state: .sent)], date: "2026-09-15")
+        XCTAssertEqual(CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: confirmed).copyable.map(\.id), ["b1"],
+                       "a delete Garmin confirmed, on a copy of the day from before")
+        XCTAssertEqual(CopyMealPlanner.plan(log: log, mealType: .breakfast, excludingLogIds: []).copyable.map(\.id), ["b1", "b2"])
+    }
+
     func testANilLogIsAnEmptyPlan() {
         XCTAssertTrue(CopyMealPlanner.plan(log: nil, mealType: .dinner).isEmpty)
     }

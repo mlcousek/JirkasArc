@@ -117,6 +117,31 @@ again.
 - **WHEN** the delete has given up
 - **THEN** the entry is marked "Couldn't delete" and the day shows 500 kcal
 
+### Requirement: An entry being deleted counts nowhere
+
+While a delete is waiting, and after Garmin has confirmed it, its entry
+SHALL NOT be offered by "Copy from…" and SHALL NOT count toward the day's
+goal status, also while Garmin's copy of the day still lists it. A delete
+that gave up SHALL be offered for copying and SHALL count again. When a
+delete is confirmed, gives up, is retried or is dropped with "Keep entry",
+the goal status of that entry's own day SHALL be judged again, whichever
+day is on screen.
+
+#### Scenario: Copying from a day with a waiting delete
+
+- **WHEN** yesterday's breakfast has two foods and one of them has a delete waiting
+- **THEN** "Copy from…" offers only the other one
+
+#### Scenario: Goal status while a delete is waiting
+
+- **WHEN** a day reaches its calorie target only with an entry whose delete is waiting
+- **THEN** the day is not recorded as having met its calorie goal
+
+#### Scenario: A delete that gave up
+
+- **WHEN** that delete has given up
+- **THEN** the entry is offered for copying and the day is judged with it
+
 ### Requirement: A confirmed delete is checked against the day
 
 After Garmin has answered a delete as done, the next read of that day SHALL

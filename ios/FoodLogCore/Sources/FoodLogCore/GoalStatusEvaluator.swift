@@ -81,6 +81,57 @@ public enum GoalStatusEvaluator {
         )
     }
 
+    /// The judgement with some entries of the day LEFT OUT of what was
+    /// eaten (improve-food-day-flow, review 2026-10-06): `excludingLogIds`
+    /// are entries the owner deleted that Garmin's day still lists -- a
+    /// delete waiting to be sent, or one Garmin confirmed that this read
+    /// does not reflect yet (`MealDashboard.removedLogIds`). Garmin's own
+    /// totals still contain them, so judging those totals would record a
+    /// day as "goal met" on the strength of an entry that is being deleted.
+    /// Their calories and macronutrients (per serving x quantity, as the
+    /// dashboard counts them) come off first; a total never goes below 0.
+    ///
+    /// With nothing to leave out -- no ids, or none of them listed in this
+    /// log -- it is exactly `evaluate(_:fuel:)`.
+    public static func evaluate(_ log: DailyFoodLog, fuel: FuelDayTarget?, excludingLogIds: Set<String>) -> DayGoalJudgement? {
+        let removed = MealDashboard.syncedEntries(MealDashboard.loggedFoods(in: log, withLogIds: excludingLogIds))
+        guard !removed.isEmpty, let content = log.dailyNutritionContent else {
+            return evaluate(log, fuel: fuel)
+        }
+        let calories = remaining(content.calories, minus: MealDashboard.sum(removed, \.calories))
+        let protein = remaining(content.protein, minus: MealDashboard.sum(removed, \.protein))
+        let carbs = remaining(content.carbs, minus: MealDashboard.sum(removed, \.carbs))
+        let fat = remaining(content.fat, minus: MealDashboard.sum(removed, \.fat))
+        let goals = log.dailyNutritionGoals
+
+        if let fuel {
+            guard goals != nil || fuel.carbBand != nil else { return nil }
+            return FuelDayEvaluator.judge(
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                calorieGoal: goals.flatMap { $0.calories ?? $0.adjustedCalories },
+                proteinGoal: goals.flatMap { $0.protein ?? $0.adjustedProtein },
+                carbGoal: goals.flatMap { $0.carbs ?? $0.adjustedCarbs },
+                fatGoal: goals.flatMap { $0.fat ?? $0.adjustedFat },
+                target: fuel
+            )
+        }
+        guard let goals else { return nil }
+        return DayGoalJudgement(
+            metCalorieGoal: CalorieBand.isGoalMet(consumed: calories, goal: goals.calories ?? goals.adjustedCalories),
+            metProteinGoal: metAtLeast(actual: protein, goal: goals.protein ?? goals.adjustedProtein),
+            metCarbGoal: metAtLeast(actual: carbs, goal: goals.carbs ?? goals.adjustedCarbs),
+            metFatGoal: metAtLeast(actual: fat, goal: goals.fat ?? goals.adjustedFat)
+        )
+    }
+
+    /// `total` less `part`, never below 0; an unknown total stays unknown.
+    static func remaining(_ total: Double?, minus part: Double) -> Double? {
+        total.map { max(0, $0 - part) }
+    }
+
     public static func metAtLeast(actual: Double?, goal: Double?) -> Bool {
         guard let actual, let goal, goal > 0 else { return false }
         return actual >= goal

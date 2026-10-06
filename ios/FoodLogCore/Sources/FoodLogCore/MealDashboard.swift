@@ -769,6 +769,42 @@ public enum MealDashboard {
         return ids
     }
 
+    /// The `logId`s a queued delete has taken out of `date`: one that is
+    /// waiting (`pending`) or that Garmin confirmed (`sent`). One that gave
+    /// up is NOT among them -- its entry is shown and counted again.
+    ///
+    /// For everything that reads Garmin's RAW day instead of a built
+    /// dashboard (review finding, 2026-10-06): the "Copy from…" plan and
+    /// the goal judgement must leave these entries out too, or an entry
+    /// the phone shows as "Deleting…" is still offered for copying and
+    /// still counted toward "goal met".
+    public static func removedLogIds(in deletions: [FoodLogDeletion], date: String) -> Set<String> {
+        var ids = Set<String>()
+        for deletion in deletions where deletion.date == date {
+            switch deletion.state {
+            case .pending, .sent:
+                ids.insert(deletion.logId)
+            case .failed:
+                break
+            }
+        }
+        return ids
+    }
+
+    /// The read-back entries of `log` whose `logId` is in `logIds`.
+    static func loggedFoods(in log: DailyFoodLog?, withLogIds logIds: Set<String>) -> [LoggedFood] {
+        guard !logIds.isEmpty else { return [] }
+        var foods: [LoggedFood] = []
+        for detail in log?.mealDetails ?? [] {
+            for food in detail.loggedFoods ?? [] {
+                if let logId = food.logId, logIds.contains(logId) {
+                    foods.append(food)
+                }
+            }
+        }
+        return foods
+    }
+
     /// The name of the entry `logId` in a day's log, for the sync queue's
     /// "delete" rows; `nil` when that day isn't loaded or no longer lists it.
     public static func foodName(logId: String, in log: DailyFoodLog?) -> String? {

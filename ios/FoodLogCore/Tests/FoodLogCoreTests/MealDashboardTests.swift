@@ -442,6 +442,23 @@ final class MealDashboardTests: XCTestCase {
         XCTAssertEqual(reason, "Garmin answered the delete as done, but the day still lists the entry")
     }
 
+    // Review finding (2026-10-06): what reads Garmin's raw day leaves the
+    // same entries out as the dashboard does.
+
+    func testWaitingAndConfirmedDeletesAreRemovedFromADayButNotOnesThatGaveUp() {
+        let deletions = [
+            FoodLogDeletion(date: day, logId: "waiting"),
+            FoodLogDeletion(date: day, logId: "confirmed", state: .sent),
+            FoodLogDeletion(date: day, logId: "gave-up", state: .failed),
+            FoodLogDeletion(date: "2026-09-15", logId: "another-day")
+        ]
+
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: day), ["waiting", "confirmed"])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: "2026-09-15"), ["another-day"])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: [], date: day), [])
+        XCTAssertEqual(MealDashboard.removedLogIds(in: deletions, date: "2026-09-14"), [])
+    }
+
     func testTheLogIdsAndNamesOfADayAreFoundForTheDeleteQueue() throws {
         let log = try twoEntryDay()
 

@@ -352,8 +352,18 @@ final class AppEnvironment {
         // improve-food-day-flow: a re-read of a day found an entry Garmin
         // had answered as deleted. Its delete is "Couldn't delete" again:
         // list it in the sync queue (and the failure banner) at once.
-        dayLog.onDeletionNotApplied = { [weak self] _ in
+        dayLog.onDeletionNotApplied = { [weak self] day in
             await self?.refreshQueueState()
+            // ...and the entry counts again, so that day is judged again.
+            await self?.rejudgeGoals(days: [day])
+        }
+        // improve-food-day-flow: the goal judgement reads Garmin's raw day,
+        // which still lists an entry whose delete is queued or only just
+        // confirmed. Leave those entries out of it.
+        let deletionOutbox = services.outbox
+        gamificationEngine.removedLogIdsProvider = { day in
+            let deletions = await deletionOutbox.allDeletions()
+            return MealDashboard.removedLogIds(in: deletions, date: day)
         }
         // add-winter-arc-nutrition-and-rewards: the plan's food targets,
         // reward facts and paused fasting days, in the training experience
@@ -783,8 +793,11 @@ final class AppEnvironment {
         let deletionResult = await outbox.drainDeletions(using: garminClient)
         if !deletionResult.delivered.isEmpty {
             await dayLog.refresh()
-            await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
         }
+        // Each delete's OWN day is judged again, not just the day on
+        // screen: a confirmed delete took its entry out of that day, and one
+        // that gave up put it back.
+        await rejudgeGoals(days: Set((deletionResult.delivered + deletionResult.failed).map(\.date)))
 
         // The weight/hydration drains above can ALSO hit an auth failure
         // (WeightOutbox/HydrationOutbox.drain detect it exactly like the
@@ -836,10 +849,31 @@ final class AppEnvironment {
 
     /// "Retry" on a delete that gave up (the row or the sync queue).
     func retryFoodDeletion(id: UUID) async throws {
+        let day = await foodDeletionDay(id)
         try await outbox.retryDeletion(id: id)
         await refreshQueueState()
         await dayLog.rebuild()
+        // Waiting again: its entry no longer counts on its own day.
+        if let day {
+            await rejudgeGoals(days: [day])
+        }
         await drainAndReconcile()
+    }
+
+    /// The day (`yyyy-MM-dd`) a queued delete belongs to -- which is not
+    /// always the day on screen (the sync queue lists every day's).
+    private func foodDeletionDay(_ id: UUID) async -> String? {
+        await outbox.allDeletions().first { $0.id == id }?.date
+    }
+
+    /// Judges the goal status of each `yyyy-MM-dd` day again (one read of
+    /// that day each; the judgement leaves queued deletes out --
+    /// `GamificationEngine.removedLogIdsProvider`).
+    private func rejudgeGoals(days: Set<String>) async {
+        for day in days.sorted() {
+            guard let date = NutritionDate.noon(ofDayString: day) else { continue }
+            await gamificationEngine.refreshGoalStatus(for: date)
+        }
     }
 
     /// Why "Keep entry" was refused, in words.
@@ -857,6 +891,7 @@ final class AppEnvironment {
     /// already confirmed (or that is gone) has nothing left to keep, so the
     /// day is simply shown as it is now.
     func keepEntry(deletionId: UUID) async throws {
+        let day = await foodDeletionDay(deletionId)
         do {
             try await outbox.cancelDeletion(id: deletionId)
         } catch OutboxEditError.entryInFlight {
@@ -868,7 +903,9 @@ final class AppEnvironment {
         }
         await refreshQueueState()
         await dayLog.rebuild()
-        await gamificationEngine.refreshGoalStatus(for: dayLog.selectedDate)
+        // The entry counts again on ITS day (the sync queue may be showing
+        // another day's delete than the one on screen).
+        await rejudgeGoals(days: [day ?? dayLog.dateString])
     }
 
     /// 2026-09-21 bug fix: this used to swallow a write failure with `try?`
@@ -954,7 +991,12 @@ final class AppEnvironment {
         } else {
             log = try await nutritionReader.dailyFoodLog(date: dateString)
         }
-        return CopyMealPlanner.plan(log: log, mealType: mealType)
+        // improve-food-day-flow: Garmin's copy of that day still lists an
+        // entry whose delete is waiting or was only just confirmed; it is
+        // not on the day as the phone shows it, so it isn't offered.
+        let deletions = await outbox.allDeletions()
+        let removed = MealDashboard.removedLogIds(in: deletions, date: dateString)
+        return CopyMealPlanner.plan(log: log, mealType: mealType, excludingLogIds: removed)
     }
 
     /// Logs the checked items into `mealType` on the day being viewed, each

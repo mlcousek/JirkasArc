@@ -141,10 +141,19 @@ public enum CopyMealPlanner {
     /// The items of `mealType` in `log`, split into what can be logged
     /// again and what can't, in the order Garmin listed them. `nil` log
     /// (nothing logged that day, or it couldn't be read) is an empty plan.
-    public static func plan(log: DailyFoodLog?, mealType: MealType) -> CopyMealPlan {
+    ///
+    /// `excludingLogIds` (improve-food-day-flow, review 2026-10-06): entries
+    /// the owner has deleted but Garmin's copy of the day still lists --
+    /// `MealDashboard.removedLogIds`. They are not on the day any more as
+    /// the phone shows it, so they are not offered for copying.
+    public static func plan(log: DailyFoodLog?, mealType: MealType, excludingLogIds: Set<String> = []) -> CopyMealPlan {
         let foods = (log?.mealDetails ?? [])
             .filter { $0.meal?.mealName == mealType.rawValue }
             .flatMap { $0.loggedFoods ?? [] }
+            .filter { food in
+                guard let logId = food.logId else { return true }
+                return !excludingLogIds.contains(logId)
+            }
 
         var copyable: [CopyableMealItem] = []
         var notCopyable: [NonCopyableMealItem] = []

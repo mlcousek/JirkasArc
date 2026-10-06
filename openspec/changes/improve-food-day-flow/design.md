@@ -130,6 +130,19 @@ A row that is being deleted cannot be edited, moved or duplicated
 (`canRelog` is false). `MealEntry.Status` keeps its three cases, so no
 existing `switch` changes.
 
+Two places read Garmin's raw day instead of the built dashboard, and get
+the same answer through `MealDashboard.removedLogIds` (waiting and
+confirmed deletes; not ones that gave up) -- review, 2026-10-06:
+
+- **"Copy from…"** (`CopyMealPlanner.plan(excludingLogIds:)`): an entry
+  that is being deleted is not offered for copying.
+- **the goal judgement** (`GoalStatusEvaluator.evaluate(_:fuel:
+  excludingLogIds:)`): the entry's calories and macros come off Garmin's
+  totals before the day is judged, so a day is not recorded as "goal met"
+  on the strength of an entry being deleted. After a drain each delete's
+  own day is judged again (confirmed: gone; gave up: back), not just the
+  day on screen; so are "Retry" and "Keep entry" from the sync queue.
+
 ### D4. Standalone mode is unchanged; a queued edit's original is queued too
 
 `ModeRoutingFoodLogging.deleteCommitted` still goes to the local food log

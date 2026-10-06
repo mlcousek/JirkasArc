@@ -49,6 +49,11 @@ final class GamificationEngine {
     /// for a nutrition day (`yyyy-MM-dd`), set by AppEnvironment. Read only
     /// in the training experience.
     @ObservationIgnored var fuelTargetProvider: @MainActor (String) -> FuelDayTarget? = { _ in nil }
+    /// improve-food-day-flow: the entries of a nutrition day (`yyyy-MM-dd`)
+    /// the owner has deleted that Garmin's day may still list (a delete
+    /// waiting to be sent, or just confirmed) -- left out of the goal
+    /// judgement. Set by AppEnvironment from the delete queue.
+    @ObservationIgnored var removedLogIdsProvider: @MainActor (String) async -> Set<String> = { _ in [] }
     /// add-gamification-signals D7: runs the registered gamification
     /// features and builds the day signals they (and the signal-based
     /// challenges) read. `nil` only where no app stores exist (previews).
@@ -301,7 +306,10 @@ final class GamificationEngine {
         // add-winter-arc-nutrition-and-rewards: judged by the plan day's
         // carb band in the training experience.
         let fuel = isTrainingExperience ? fuelTargetProvider(dateString) : nil
-        guard let judgement = GoalStatusEvaluator.evaluate(log, fuel: fuel) else { return }
+        // improve-food-day-flow: Garmin's totals still contain an entry
+        // whose delete is queued; it must not make the day "met".
+        let removedLogIds = await removedLogIdsProvider(dateString)
+        guard let judgement = GoalStatusEvaluator.evaluate(log, fuel: fuel, excludingLogIds: removedLogIds) else { return }
         let status = DailyGoalStatus(
             date: dateString,
             metCalorieGoal: judgement.metCalorieGoal,

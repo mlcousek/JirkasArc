@@ -182,6 +182,12 @@ final class AppEnvironment {
     @ObservationIgnored private var isRefreshingGarminHealth = false
     @ObservationIgnored private var isBackfillingUsageMeals = false
     @ObservationIgnored private var garminHealthRefreshQueued = false
+    /// improve-food-day-flow (review 2026-10-06): `drainAndReconcile()` was
+    /// asked for while a drain was already running. That drain may be past
+    /// the step the new work needs (a delete queued after `drainDeletions`
+    /// ran would sit at "Deleting…" until the next foreground), so one more
+    /// pass follows it.
+    @ObservationIgnored private var drainRequestedWhileDraining = false
     @ObservationIgnored private var garminHealthRefreshQueuedForce = false
 
     init() {
@@ -727,10 +733,28 @@ final class AppEnvironment {
             await dayLog.rebuild()
             return
         }
-        guard !isDraining else { return }
+        guard !isDraining else {
+            drainRequestedWhileDraining = true
+            return
+        }
         isDraining = true
         defer { isDraining = false }
 
+        drainRequestedWhileDraining = false
+        await drainAndReconcilePass()
+        // Something was queued while that pass ran: one more pass, and only
+        // one -- whatever is asked for during it waits for the next trigger,
+        // so a phone that is offline or rate-limited never loops here.
+        if drainRequestedWhileDraining {
+            drainRequestedWhileDraining = false
+            await drainAndReconcilePass()
+        }
+        drainRequestedWhileDraining = false
+    }
+
+    /// One pass of `drainAndReconcile()`: every outbox once, the re-reads
+    /// that follow a delivery, the auth outcome and the queue's state.
+    private func drainAndReconcilePass() async {
         // Weight has its own outbox (WeightSync.swift's header explains
         // why) but shares this same foreground/post-confirm drain trigger.
         // No food-style reconciliation step follows it: since

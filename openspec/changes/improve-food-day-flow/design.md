@@ -115,6 +115,12 @@ then send deletes. A delete sent before an accepted create was confirmed
 could make that create look "missing" to Reconciliation, which would send
 it again.
 
+A drain asked for while one is already running is not dropped: the running
+drain may be past the delete step, and the delete just queued would sit at
+"Deleting…" until the next foreground. The app remembers the request and runs
+one more pass when the current one ends. One pass only, so an offline or
+rate-limited phone never loops (review 2026-10-06).
+
 ### D3. What the day shows
 
 `MealDashboard.build` takes the queued deletes of the day:

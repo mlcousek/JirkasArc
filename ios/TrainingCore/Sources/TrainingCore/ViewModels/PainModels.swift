@@ -341,12 +341,12 @@ extension TodayTrainingBuilder {
             }
         }
         guard !after.isEmpty else { return [] }
-        var today: [PainSite: Double] = [:]
+        var thisMorning: [PainSite: Double] = [:]
         for entry in morning {
-            today[entry.site] = max(today[entry.site] ?? entry.score, entry.score)
+            thisMorning[entry.site] = max(thisMorning[entry.site] ?? entry.score, entry.score)
         }
         return PainDraft.siteOrder.compactMap { site -> String? in
-            guard let before = after[site], let now = today[site] else { return nil }
+            guard let before = after[site], let now = thisMorning[site] else { return nil }
             return format.text.format(.painSettledLine, format.painSiteName(site), format.painScoreText(before), format.painScoreText(now))
         }
     }

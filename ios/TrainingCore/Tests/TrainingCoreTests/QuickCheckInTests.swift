@@ -167,4 +167,24 @@ final class QuickCheckInTests: XCTestCase {
             "no note is sent: a shortcut has none to give"
         )
     }
+
+    // MARK: A site needs a score
+
+    func testASiteWithoutAScoreIsRefusedNotDropped() throws {
+        XCTAssertNil(try QuickPainAnswer.given(score: nil, site: nil), "nothing said about pain")
+        XCTAssertEqual(try QuickPainAnswer.given(score: 2, site: nil), QuickPainAnswer(score: 2))
+        XCTAssertEqual(try QuickPainAnswer.given(score: 2, site: .kneeLeft), QuickPainAnswer(score: 2, site: .kneeLeft))
+        XCTAssertThrowsError(try QuickPainAnswer.given(score: nil, site: .kneeLeft)) { error in
+            XCTAssertEqual(error as? QuickCheckInError, .painSiteWithoutScore)
+        }
+    }
+
+    func testAScoreOutOfRangeIsStillTheScoresOwnRefusal() throws {
+        // `given` only pairs the two; the range is checked when the
+        // check-in is built.
+        let answer = try QuickPainAnswer.given(score: 12, site: .kneeLeft)
+        XCTAssertThrowsError(try checkIn(.amberLight, pain: answer, projection: nil)) { error in
+            XCTAssertEqual(error as? QuickCheckInError, .painScoreOutOfRange)
+        }
+    }
 }

@@ -16699,6 +16699,18 @@
         }
       }
     },
+    "Nothing recorded: a pain site needs a pain score. Add the score, or leave the site empty.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the check-in shortcut: a pain site was given without a pain score. Nothing was recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nezaznamenalo: k místu bolesti chybí skóre bolesti. Přidej skóre, nebo nech místo prázdné."
+          }
+        }
+      }
+    },
     "Nothing planned for this day.": {
       "comment": "Supplements screen: the selected day has no planned items.",
       "extractionState": "manual",

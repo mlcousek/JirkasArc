@@ -39,6 +39,9 @@
 //     only when given (TrainingCore's QuickCheckIn.swift has the rules: 0
 //     to 10 or refused, half steps, the default site); without one the
 //     check-in carries no pain answer and the day's earlier one is kept.
+//     A site WITHOUT a score is refused (`painSiteNeedsScore`), not
+//     ignored: the answer must never say "recorded" about something that
+//     was dropped.
 //
 // The confirmation names what was RECORDED (the receipt), not what was
 // asked. A failure throws a localized error, so the Control shows it
@@ -146,6 +149,9 @@ enum MorningCheckInControlAction {
         case notTested
         case notAvailable
         case painScoreOutOfRange
+        /// A pain site was given without a pain score: refused, so the
+        /// site is never dropped behind a "recorded".
+        case painSiteNeedsScore
 
         var localizedStringResource: LocalizedStringResource {
             switch self {
@@ -157,6 +163,8 @@ enum MorningCheckInControlAction {
                 return "Nothing recorded: open Jirka's Arc once, then try again."
             case .painScoreOutOfRange:
                 return "Nothing recorded: the pain score must be between 0 and 10."
+            case .painSiteNeedsScore:
+                return "Nothing recorded: a pain site needs a pain score. Add the score, or leave the site empty."
             }
         }
     }

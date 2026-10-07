@@ -25,7 +25,10 @@
 //     check-in with `pains` REPLACES the day's answer (CheckInOverlay), so
 //     a two-site answer becomes this one site;
 //   - without a score `pains` stays `nil`: not asked, the earlier answer
-//     is kept.
+//     is kept;
+//   - a site WITHOUT a score is refused whole
+//     (`QuickCheckInError.painSiteWithoutScore`), like a score out of
+//     range: ignoring it would answer "recorded" to something that wasn't.
 //
 // Nothing here is about anyone in particular: the default comes from what
 // was recorded. Tests: QuickCheckInTests.
@@ -43,11 +46,25 @@ public struct QuickPainAnswer: Equatable, Sendable {
         self.score = score
         self.site = site
     }
+
+    /// What a shortcut said about pain: `nil` when it said nothing. A site
+    /// WITHOUT a score is refused (`painSiteWithoutScore`): dropping it
+    /// silently would look like a recorded answer, and a site alone can't
+    /// be one (the contract's entry is a site with its score).
+    public static func given(score: Double?, site: PainSite?) throws -> QuickPainAnswer? {
+        guard let score else {
+            if site != nil { throw QuickCheckInError.painSiteWithoutScore }
+            return nil
+        }
+        return QuickPainAnswer(score: score, site: site)
+    }
 }
 
 public enum QuickCheckInError: Error, Equatable, Sendable {
     /// Not a finite number within 0...10. Nothing is recorded.
     case painScoreOutOfRange
+    /// A pain site was given without a pain score. Nothing is recorded.
+    case painSiteWithoutScore
 }
 
 public extension CheckInPlanning {

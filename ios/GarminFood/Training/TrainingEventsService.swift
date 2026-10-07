@@ -143,8 +143,15 @@ final class TrainingEventsService {
             throw MorningCheckInControlAction.ActionError.vaultOff
         }
         let cached = await services.projectionStore.loadCached()
-        let pain = request.painScore.map { score in
-            QuickPainAnswer(score: score, site: request.painSite.map(PainSite.init(wire:)))
+        // A site without a score is refused, never dropped (QuickCheckIn.swift).
+        let pain: QuickPainAnswer?
+        do {
+            pain = try QuickPainAnswer.given(
+                score: request.painScore,
+                site: request.painSite.map(PainSite.init(wire:))
+            )
+        } catch {
+            throw MorningCheckInControlAction.ActionError.painSiteNeedsScore
         }
         // The phone's own earlier answers matter for the default site only
         // (the same overlay TrainingModel lays over the plan).

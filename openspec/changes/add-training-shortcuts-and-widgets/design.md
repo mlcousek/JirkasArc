@@ -128,6 +128,11 @@ Pure, in TrainingCore, tested there:
   than one site.
 - Without a score `pains` is not sent (`null`), which keeps the day's
   earlier answer: the Controls' rule (`add-checkin-pain-score` D7).
+- A site WITHOUT a score is refused whole (`QuickPainAnswer.given`,
+  `painSiteWithoutScore`; the answer is "Nothing recorded: a pain site
+  needs a pain score. ..."). The first build dropped the site and
+  answered "recorded" (review of 2026-10-06): a confirmation must never
+  cover something that was ignored.
 - A score is recorded whenever it is given, in or out of pain mode. Like
   "Something hurts?", a score above 0 turns the phone's half of pain mode
   on by itself (`PainModeState`, derived from the event log).

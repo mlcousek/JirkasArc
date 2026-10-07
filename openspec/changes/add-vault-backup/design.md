@@ -165,8 +165,13 @@ would keep a megabyte of base64 on disk, show a failed backup as "N events"
 under "Not uploaded", and send week-old bytes when a retry finally works.
 The archive is built fresh for every attempt instead.
 
-409 (two commits racing on the branch) is avoided rather than handled: the
-foreground runs the backup after the event delivery, in the same task.
+409 (two commits racing on the branch) is made unlikely and then
+tolerated. The foreground runs the backup after its event drain, in the
+same task. That does not exclude a race: `drainNow` returns at once when
+another drain is running, the delayed drain two minutes after an action
+can start mid-backup, and the background refresh runs the backup without a
+drain. So a 409 is ordinary: it is not counted as an attempt, and the next
+try is an hour later (D4).
 
 ### D4 -- When it runs, and the retry bounds
 
@@ -196,12 +201,15 @@ Then the pure rule `VaultBackupSchedule.isDue(state, now)`:
 3. the last attempt was at least `retryInterval` (1 hour) ago.
 
 What counts as an attempt (`VaultBackupFailure.spendsAttempt`): a server
-error, a conflict, an unexpected answer, a transport error other than "no
-connection", a refusal by the path policy, an archive that could not be
-built, an archive over the cap. What does **not** count: offline, a
-rejected token, a rate limit, "not configured", an empty data set. Those
-are not the upload's fault (the house rule of `DurableQueue`); the one-hour
-interval alone keeps them from looping.
+error, an unexpected answer, a transport error other than "no connection"
+and "cancelled", a refusal by the path policy, an archive that could not
+be built, an archive over the cap. What does **not** count: offline, a
+rejected token, a rate limit, "not configured", an empty data set, a 409
+conflict (D3) and a cancelled request -- iOS ending the background refresh
+mid-upload, which reaches the uploader as a transport error with
+`URLError.cancelled`'s code (-999), not as "offline". Those are not the
+upload's fault (the house rule of `DurableQueue`); the one-hour interval
+alone keeps them from looping.
 
 A week that ends without a success is skipped: the counter belongs to its
 week and the next week starts at zero.

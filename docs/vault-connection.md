@@ -143,8 +143,10 @@ will not launch does not lose what was logged.
   on the Garmin-connected install.
 - **When it fails**: quietly. Settings → Vault → Backup shows the last
   problem; the next attempt is an hour later at the earliest, and after
-  five failed attempts in a week (being offline does not count) the week is
-  skipped. The next week's file holds everything anyway. When no backup
+  five failed attempts in a week the week is skipped. Being offline, a
+  rejected token, a rate limit, a conflict with another commit made at the
+  same moment (GitHub's 409 -- the phone's own event upload can cause it)
+  and an upload iOS cut off do not count. The next week's file holds everything anyway. When no backup
   has reached the vault for 14 days, Today's "Keep a copy of your data"
   banner is back.
 - **How large**: a few hundred kilobytes. A backup above 3 MiB is not

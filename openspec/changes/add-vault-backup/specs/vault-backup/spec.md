@@ -89,8 +89,10 @@ equal the one it tried to upload.
 After a failed automatic attempt the system SHALL NOT try again sooner
 than one hour later, and SHALL stop for the rest of the ISO week after
 five failures that count. Being offline, a rejected token, a rate limit, a
-connection that is not configured and an empty data set SHALL NOT count,
-but SHALL still be held to the one-hour interval. A week that ends without
+connection that is not configured, an empty data set, a conflict with
+another commit made at the same moment (409) and a request the system
+cancelled SHALL NOT count, but SHALL still be held to the one-hour
+interval. A week that ends without
 a success SHALL be skipped: the next week starts with no failures counted.
 A rate limit SHALL pause all vault requests until its reset time, as for
 every vault request.
@@ -99,6 +101,16 @@ every vault request.
 
 - **WHEN** the app comes to the foreground ten times in one day without a network
 - **THEN** at most one backup attempt per hour is made and none of them counts towards the week's five
+
+#### Scenario: The event upload commits at the same moment
+
+- **WHEN** six backup attempts in one week are each answered 409 because the phone's own event upload moved the branch
+- **THEN** none of them counts, and a seventh attempt is made an hour after the sixth
+
+#### Scenario: The background refresh is ended mid-upload
+
+- **WHEN** iOS ends the background refresh while the backup is being uploaded
+- **THEN** the attempt does not count towards the week's five and the next one is made an hour later at the earliest
 
 #### Scenario: The server keeps failing
 

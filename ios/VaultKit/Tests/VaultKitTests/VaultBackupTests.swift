@@ -173,9 +173,11 @@ final class VaultBackupTests: XCTestCase {
             .tooLarge(byteCount: 4_000_000, limit: 3_145_728),
             .archiveFailed,
             .vault(.serverError(status: 502)),
-            .vault(.conflict),
             .vault(.unexpected(status: 418)),
-            .vault(.transportError(code: -1001)),
+            // A transport error that is not a cancellation: TLS, a bad
+            // response, "not an HTTP response" (code 0).
+            .vault(.transportError(code: -1200)),
+            .vault(.transportError(code: 0)),
             .vault(.refusedByPolicy),
             .vault(.redirectRefused)
         ]
@@ -185,7 +187,12 @@ final class VaultBackupTests: XCTestCase {
             .vault(.authFailed(.tokenRejected)),
             .vault(.authFailed(.forbidden)),
             .vault(.rateLimited(until: now.addingTimeInterval(60))),
-            .vault(.notConfigured)
+            .vault(.notConfigured),
+            // Ordinary, not the upload's fault: the event upload committed
+            // at the same moment (409), or iOS ended the background task.
+            .vault(.conflict),
+            .vault(.transportError(code: URLError.Code.cancelled.rawValue)),
+            .vault(.transportError(code: -999))
         ]
         for failure in counted {
             XCTAssertTrue(failure.spendsAttempt, failure.logLabel)
@@ -265,9 +272,36 @@ final class VaultBackupTests: XCTestCase {
         let nextMonday = date("2030-10-21T06:00:00Z")
         XCTAssertTrue(VaultBackupSchedule.isDue(state, now: nextMonday))
         XCTAssertEqual(state.attempts(in: VaultBackupWeek(containing: nextMonday)), 0)
-        state.recordFailure(.vault(.conflict), week: VaultBackupWeek(containing: nextMonday), at: nextMonday)
+        state.recordFailure(.vault(.serverError(status: 500)), week: VaultBackupWeek(containing: nextMonday), at: nextMonday)
         XCTAssertEqual(state.attemptWeek, "2030-W43")
         XCTAssertEqual(state.attemptCount, 1)
+    }
+
+    /// Review of add-vault-backup: a 409 (the phone's own event upload
+    /// committed at the same moment) and a cancelled request (iOS ended the
+    /// background refresh) are ordinary. They must not use up the week --
+    /// and the hour between attempts still keeps them from looping.
+    func testConflictsAndCancellationsNeverUseUpTheWeekButKeepTheInterval() {
+        let monday = date("2030-10-14T06:00:00Z")
+        let week = VaultBackupWeek(containing: monday)
+        var state = VaultBackupState()
+        var now = monday
+        let ordinary: [VaultBackupFailure] = [
+            .vault(.conflict),
+            .vault(.transportError(code: VaultBackupFailure.cancelledTransportCode))
+        ]
+
+        for round in 0..<12 {
+            let failure = ordinary[round % ordinary.count]
+            XCTAssertTrue(VaultBackupSchedule.isDue(state, now: now), "round \(round)")
+            state.recordFailure(failure, week: week, at: now)
+            XCTAssertEqual(state.attemptCount, 0, failure.logLabel)
+            XCTAssertEqual(state.lastFailure, failure)
+            XCTAssertFalse(VaultBackupSchedule.isDue(state, now: now.addingTimeInterval(30 * 60)), "no loop")
+            now = now.addingTimeInterval(hour)
+        }
+        XCTAssertTrue(VaultBackupSchedule.isDue(state, now: now), "the week is still open after twelve of them")
+        XCTAssertEqual(VaultBackupFailure.cancelledTransportCode, -999)
     }
 
     func testOfflineNeverUsesUpTheWeekButKeepsTheInterval() {

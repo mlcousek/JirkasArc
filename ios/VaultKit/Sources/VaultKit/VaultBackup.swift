@@ -19,10 +19,11 @@
 //   due      no success recorded for the current week, fewer than
 //            `maxAttemptsPerWeek` counted failures in it, and the last
 //            attempt at least `retryInterval` ago. Offline, a rejected
-//            token and a rate limit are not counted (DurableQueue's house
-//            rule: not the upload's fault); the interval alone keeps them
-//            from looping. A week that ends without a success is skipped:
-//            the counter belongs to its week.
+//            token, a rate limit, a 409 conflict and a cancelled request
+//            are not counted (DurableQueue's house rule: not the upload's
+//            fault); the interval alone keeps them from looping. A week
+//            that ends without a success is skipped: the counter belongs
+//            to its week.
 //
 // The week is computed with integer arithmetic on days since 1970-01-01
 // (the algorithm TrainingCore's `ISOWeek` uses), not with `Calendar`, so it
@@ -143,8 +144,20 @@ public enum VaultBackupFailure: Codable, Equatable, Sendable {
     /// The request failed.
     case vault(VaultOutcome)
 
+    /// `URLError.cancelled` as `VaultOutcome.classify(error:)` reports it:
+    /// `.transportError(code: -999)`. Not a connectivity failure there, so
+    /// it does not arrive as `.offline`.
+    public static let cancelledTransportCode = URLError.Code.cancelled.rawValue
+
     /// Whether this failure counts towards the week's attempts. What is
     /// not the upload's fault does not (see this file's header).
+    ///
+    /// Two of those are ordinary rather than rare (review of
+    /// add-vault-backup): a 409 `.conflict` -- another commit moved the
+    /// branch while this one was being made, which the phone's own event
+    /// upload does whenever its delayed drain or the background refresh
+    /// overlaps a backup -- and a CANCELLED request, which is iOS ending the
+    /// background refresh (or the task) mid-upload.
     public var spendsAttempt: Bool {
         switch self {
         case .tooLarge, .archiveFailed:
@@ -153,9 +166,11 @@ public enum VaultBackupFailure: Codable, Equatable, Sendable {
             return false
         case .vault(let outcome):
             switch outcome {
-            case .offline, .authFailed, .rateLimited, .notConfigured:
+            case .offline, .authFailed, .rateLimited, .notConfigured, .conflict:
                 return false
-            case .success, .fileNotFound, .alreadyExists, .conflict, .serverError, .refusedByPolicy, .redirectRefused, .unexpected, .transportError:
+            case .transportError(let code):
+                return code != Self.cancelledTransportCode
+            case .success, .fileNotFound, .alreadyExists, .serverError, .refusedByPolicy, .redirectRefused, .unexpected:
                 return true
             }
         }

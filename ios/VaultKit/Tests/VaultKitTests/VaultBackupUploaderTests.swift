@@ -407,6 +407,29 @@ final class VaultBackupUploaderTests: XCTestCase {
         XCTAssertNil(status.blockedBy)
     }
 
+    /// Review of add-vault-backup: a 409 is the phone's own event upload
+    /// committing at the same moment, a cancelled request is iOS ending the
+    /// background refresh. Neither uses up the week.
+    func testAConflictAndACancelledRequestSpendNoAttempt() async throws {
+        StubURLProtocol.reset(replies: [.status(409), .failure(.cancelled)])
+        let rig = try makeRig(transport: GitHubVaultTransport(api: TestSupport.makeClient()))
+
+        let conflict = await rig.uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday)
+        let afterConflict = await rig.uploader.state()
+        let cancelled = await rig.uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday.addingTimeInterval(hour))
+        let afterCancelled = await rig.uploader.state()
+        let dueSoon = await rig.uploader.isDue(now: monday.addingTimeInterval(hour + 20 * 60))
+        let dueLater = await rig.uploader.isDue(now: monday.addingTimeInterval(2 * hour))
+
+        XCTAssertEqual(conflict, .failed(.vault(.conflict)))
+        XCTAssertEqual(afterConflict.attemptCount, 0)
+        XCTAssertEqual(cancelled, .failed(.vault(.transportError(code: VaultBackupFailure.cancelledTransportCode))))
+        XCTAssertEqual(afterCancelled.attemptCount, 0)
+        XCTAssertNil(afterCancelled.lastSuccessWeek)
+        XCTAssertFalse(dueSoon, "the hour between attempts still holds")
+        XCTAssertTrue(dueLater)
+    }
+
     func testBackupLogLinesCarryNoRepositoryOrToken() async throws {
         let log = recordVaultLog()
         StubURLProtocol.reset(replies: [.status(201), .status(500)])

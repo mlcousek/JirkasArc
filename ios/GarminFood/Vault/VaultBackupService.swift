@@ -9,9 +9,10 @@
 //
 // Who calls it:
 //   - `AppEnvironment.deliverTrainingEvents` on launch and on every return
-//     to the foreground, AFTER the training events were delivered (two
-//     commits at once would race for the branch), unstructured, never
-//     awaited by a screen;
+//     to the foreground, after that task's event drain, unstructured, never
+//     awaited by a screen. The order makes two commits at once unlikely,
+//     not impossible (another drain may be running); a 409 is not counted
+//     as an attempt and is tried again an hour later;
 //   - `BackgroundRefresh.run`, when iOS grants background time;
 //   - Settings > Vault's "Back up now".
 //
@@ -23,7 +24,9 @@
 //     request gate is open (a token, no loud block, no rate-limit pause).
 //   - `runIfDue` then asks VaultKit whether the week still needs a backup
 //     (once per ISO week, an hour between attempts, five counted failures a
-//     week). `backUpNow` skips that question, never the gate.
+//     week -- offline, a rejected token, a rate limit, a 409 and a request
+//     iOS cancelled are not counted). `backUpNow` skips that question,
+//     never the gate.
 //   - The archive is built on `DataSafetyQueue`, off the main thread and
 //     never while a snapshot or a restore is being written.
 //   - A rejected token is handed to the event upload's hook

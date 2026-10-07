@@ -63,3 +63,15 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 - [ ] 7.5 Unpack one file on the desk (`gunzip` or 7-Zip): it is the readable export JSON and contains no token.
 - [ ] 7.6 Airplane mode at foreground on a Monday: no banner, "Last problem" says offline, the backup arrives within the hour after the network is back.
 - [ ] 7.7 The vault's own tooling (pull, ingest) is not disturbed by the new `backups/` folder.
+
+## 8. Review fixes (2026-10-07, same branch, PR #133)
+
+Four findings of the review before the merge. Same rules: nothing compiled
+locally, each read against the code first; all four were real.
+
+- [x] 8.1 The export reminder: a vault backup, an export or a "Not now" dated in the future (the clock was set forward) no longer silences it (`BackupReminderPolicy.isWithin`); the 14-day edges unchanged; tests.
+- [x] 8.2 A 409 conflict and a cancelled request (`URLError.cancelled`, which the transport reports as a transport error with code -999) do not spend one of the week's five attempts; other transport errors still do. The comments in `AppEnvironment` and `VaultBackupService` no longer say the backup and the event upload never race. Tests in `VaultBackupTests` and over the URL stub.
+- [x] 8.3 `VaultBackupUploader` remembers its last attempt and the last week it saw done in memory, set before anything is saved; `isDue` holds the one-hour interval and the done week against them even when the state file cannot be written (`VaultBackupSchedule.isTooSoon`). Test with a store whose file is a directory.
+- [x] 8.4 `BackupArchive.gunzip` refuses a compressed input above `maxPackedBytes` (12 MiB, four times the upload cap) before unpacking; a plain `.json` of any size imports as before; the remaining limit is in design.md, Risks. Tests.
+- [x] 8.5 design.md (D1, D3, D4, D8, D10, Risks, Open Questions), the spec deltas and docs/vault-connection.md as built; the four checks.
+- [ ] 8.6 **Requires CI.** `swift test` for FoodLogCore and VaultKit, the app `xcodebuild`.

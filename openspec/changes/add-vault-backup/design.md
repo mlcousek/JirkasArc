@@ -523,3 +523,12 @@ after the update with a working connection uploads the first backup.
   days regardless.
 - **Background refresh**: kept in because it costs one line. If backups at
   night on mobile data are unwanted, it comes out again.
+- **"Back up now" is not limited.** Every tap in a week that has its file
+  adds one more time-stamped file to the vault's history (D5). Whether to
+  cap that (one a day, or a few a week) is the owner's call.
+- **A wrong clock names the wrong week.** The week comes from the phone's
+  clock. Set forward, the phone creates a file under a future week's name;
+  when real time reaches that week it finds the file there and calls the
+  week done, so that week keeps only the early copy. Set back, it finds an
+  old week's file and uploads nothing until the clock is right. Nothing is
+  lost that "Back up now" does not fix, but nothing detects it either.

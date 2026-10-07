@@ -21,6 +21,11 @@
 // write queue gave up on (from TrainingEventsService), each with Retry;
 // the section is absent while there are none.
 //
+// add-vault-backup D11: "Backup" -- when the weekly backup of the app's
+// data last reached the vault and how large it was, the last problem while
+// the last attempt failed, and "Back up now" (VaultBackupService). Details
+// gains the backups folder.
+//
 // No repository or token is ever built in: this repository is public
 // (proposal "Why"). The help text says how to make a token limited to one
 // repository with Contents read/write; docs/vault-connection.md has the
@@ -48,6 +53,9 @@ struct VaultSettingsView: View {
     @State private var showsDetails = false
     @State private var failedWrites: [FailedWrite] = []
     @State private var retryingWrite: UUID?
+    @State private var backupState = VaultBackupState()
+    @State private var isBackingUp = false
+    @State private var backupReport: VaultBackupService.Report?
 
     /// GitHub's page for creating a fine-grained token.
     private static let newTokenURL = URL(string: "https://github.com/settings/personal-access-tokens/new")!
@@ -70,6 +78,7 @@ struct VaultSettingsView: View {
                 tokenSection(vault)
                 testSection(vault)
                 statusSection(vault)
+                backupSection
                 if !failedWrites.isEmpty {
                     failedWritesSection
                 }
@@ -91,6 +100,7 @@ struct VaultSettingsView: View {
             name = vault.settings.name
             branch = vault.settings.branch
             failedWrites = await TrainingEventsService.shared.failedWrites()
+            backupState = await VaultBackupService.shared.state()
         }
         .confirmationDialog(
             "Disconnect from the vault?",
@@ -292,6 +302,84 @@ struct VaultSettingsView: View {
         }
     }
 
+    // MARK: - Backup (add-vault-backup D11)
+
+    /// The weekly backup of the app's data: when it last reached the vault,
+    /// what stopped the last attempt, and "Back up now".
+    private var backupSection: some View {
+        Section {
+            LabeledContent("Last backup") {
+                if let at = backupState.lastSuccessAt {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(at, format: .dateTime.day().month().year().hour().minute())
+                        if let byteCount = backupState.lastSuccessByteCount {
+                            Text(verbatim: VaultErrorPresentation.fileSize(byteCount))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } else {
+                    Text("Never")
+                }
+            }
+            if let failure = backupState.lastFailure {
+                LabeledContent("Last problem") {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(VaultErrorPresentation.backupFailure(failure))
+                            .multilineTextAlignment(.trailing)
+                        if let at = backupState.lastFailureAt {
+                            Text(at, format: .relative(presentation: .named))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            Button {
+                isBackingUp = true
+                backupReport = nil
+                Task {
+                    let report = await VaultBackupService.shared.backUpNow()
+                    backupState = await VaultBackupService.shared.state()
+                    await environment.vault.reload()
+                    backupReport = report
+                    isBackingUp = false
+                }
+            } label: {
+                HStack {
+                    Label("Back up now", systemImage: "externaldrive.badge.plus")
+                    Spacer()
+                    if isBackingUp {
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(isBackingUp)
+            if let backupReport {
+                backupReportRow(backupReport)
+            }
+        } header: {
+            Text("Backup")
+        } footer: {
+            Text("Once a week the app saves a copy of its data to your vault, next to the training events. To restore, open the file with Settings › Data › Import backup.")
+        }
+    }
+
+    /// One line under "Back up now": what the tap did.
+    @ViewBuilder
+    private func backupReportRow(_ report: VaultBackupService.Report) -> some View {
+        switch report {
+        case .uploaded, .alreadyInVault:
+            Label(VaultErrorPresentation.backupReport(report), systemImage: "checkmark.circle.fill")
+                .font(.footnote)
+                .foregroundStyle(Theme.success)
+        case .unavailable, .failed:
+            Text(VaultErrorPresentation.backupReport(report))
+                .font(.footnote)
+                .foregroundStyle(Theme.danger)
+        }
+    }
+
     // MARK: - Failed writes (add-training-checkins 4.9)
 
     /// Segments the write queue gave up on. They stay on the phone; Retry
@@ -354,6 +442,11 @@ struct VaultSettingsView: View {
                 if let id = vault.deviceID {
                     LabeledContent("Events folder") {
                         Text(verbatim: "\(VaultPathPolicy.eventsFolder)/\(id.rawValue)/")
+                            .monospaced()
+                            .textSelection(.enabled)
+                    }
+                    LabeledContent("Backups folder") {
+                        Text(verbatim: VaultBackupPath.deviceFolder(id))
                             .monospaced()
                             .textSelection(.enabled)
                     }

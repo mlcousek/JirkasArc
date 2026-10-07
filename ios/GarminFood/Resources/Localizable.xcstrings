@@ -4615,6 +4615,18 @@
         }
       }
     },
+    "Test the connection first.": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now sent nothing because Test connection has never succeeded on this phone.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejdřív otestuj připojení."
+          }
+        }
+      }
+    },
     "Tests": {
       "comment": "add-training-stats: Statistics: section with every test's history.",
       "extractionState": "manual",
@@ -10663,6 +10675,18 @@
         }
       }
     },
+    "Offline. The backup will be tried again later.": {
+      "comment": "add-vault-backup: Settings > Vault: the backup was not uploaded because the phone was offline.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline. Aplikace zkusí zálohu nahrát později znovu."
+          }
+        }
+      }
+    },
     "OK": {
       "comment": "Generic alert dismiss button.",
       "extractionState": "manual",
@@ -13069,6 +13093,42 @@
         }
       }
     },
+    "The backup couldn't be put together. Settings › Diagnostics has the details.": {
+      "comment": "add-vault-backup: Settings > Vault: the backup file could not be built on the phone.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zálohu se nepodařilo sestavit. Podrobnosti najdeš v Nastavení › Diagnostika."
+          }
+        }
+      }
+    },
+    "The backup is already in the vault.": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now found the same backup file already there.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahle záloha už ve vaultu je."
+          }
+        }
+      }
+    },
+    "The backup is too large to upload (%@, the limit is %@).": {
+      "comment": "add-vault-backup: Settings > Vault: the backup was not uploaded because it is over the size limit. First %@ = its size, second %@ = the limit, both like \"3.4 MB\".",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záloha je na nahrání moc velká (%1$@, limit je %2$@)."
+          }
+        }
+      }
+    },
     "The code is incomplete or damaged. Copy it again. Nothing was changed.": {
       "comment": "Import theme: the code is truncated, tampered with or too long.",
       "extractionState": "manual",
@@ -15325,6 +15385,30 @@
         }
       }
     },
+    "Backed up to the vault (%@).": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now succeeded. %@ = the size of the uploaded file, like \"412 KB\".",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zazálohováno do vaultu (%@)."
+          }
+        }
+      }
+    },
+    "Backup": {
+      "comment": "add-vault-backup: Settings > Vault: header of the section about the weekly backup of the app's data to the vault.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záloha"
+          }
+        }
+      }
+    },
     "Your food log lives only on this phone. If you delete the app or lose the phone, everything since your last backup is gone. Make a backup from Settings every week or two and keep it in Files or send it to yourself.": {
       "comment": "Onboarding (standalone): backup explainer text.",
       "extractionState": "manual",
@@ -15405,6 +15489,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dokončuje se synchronizace, zkuste to za chvíli."
+          }
+        }
+      }
+    },
+    "Fix the vault connection first.": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now sent nothing because GitHub rejected the token or the repository; the banner says what is wrong.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejdřív dej do pořádku připojení k vaultu."
           }
         }
       }
@@ -15705,6 +15801,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Záloha je uložená v telefonu."
+          }
+        }
+      }
+    },
+    "Backups folder": {
+      "comment": "add-vault-backup: Settings > Vault > Details: label of the folder in the vault where this phone's backups go.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Složka záloh"
           }
         }
       }
@@ -17407,6 +17515,18 @@
         }
       }
     },
+    "Once a week the app saves a copy of its data to your vault, next to the training events. To restore, open the file with Settings › Data › Import backup.": {
+      "comment": "add-vault-backup: Settings > Vault: footer under the Backup section.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jednou týdně aplikace uloží kopii svých dat do tvého vaultu, vedle tréninkových událostí. Obnovíš ji tak, že soubor otevřeš přes Nastavení › Data › Importovat zálohu."
+          }
+        }
+      }
+    },
     "Every %lld days": {
       "comment": "Supplement schedule: taken every N days. Plural.",
       "extractionState": "manual",
@@ -18351,6 +18471,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zapni doplňky stravy v Nastavení"
+          }
+        }
+      }
+    },
+    "Turn on the vault connection first.": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now sent nothing because the vault connection is off or not set up.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejdřív zapni připojení k vaultu."
           }
         }
       }
@@ -19953,6 +20085,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ranní průměr za 7 dní: %@ kg"
+          }
+        }
+      }
+    },
+    "A backup is already running.": {
+      "comment": "add-vault-backup: Settings > Vault: Back up now was tapped while a backup was still being uploaded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záloha už běží."
           }
         }
       }

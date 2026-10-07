@@ -5,7 +5,9 @@
 // never been one, and the reminder wasn't dismissed in the last 14 days.
 // The phone's own daily snapshots are deleted with the app, so only an
 // exported file survives a reinstall or a lost phone -- that's what this
-// nudges towards.
+// nudges towards. Since add-vault-backup a backup that reached the vault in
+// the last 14 days counts as that copy too, so the banner stays away while
+// the weekly vault backup works and returns when it has stopped.
 //
 // "Export" opens the Data screen in a sheet (where Export lives, with its
 // note about entries still waiting for Garmin); "Not now" hides it for 14
@@ -56,7 +58,10 @@ struct BackupReminderBanner: View {
         return BackupReminderPolicy.shouldShow(
             lastExportAt: defaults.object(forKey: BackupReminderPolicy.lastExportAtKey) as? Date,
             dismissedAt: defaults.object(forKey: BackupReminderPolicy.dismissedAtKey) as? Date,
-            now: Date()
+            now: Date(),
+            // add-vault-backup D10: a weekly vault backup that works is the
+            // off-phone copy; when it stops for 14 days, this is back.
+            lastVaultBackupAt: defaults.object(forKey: BackupReminderPolicy.lastVaultBackupAtKey) as? Date
         )
     }
 

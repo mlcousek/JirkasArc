@@ -38,15 +38,15 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 
 ## 4. The app (M)
 
-- [ ] 4.1 `VaultServices`: the state store and the uploader, one per process.
-- [ ] 4.2 `Vault/VaultBackupService.swift`: the gate (connection on, device id, request gate), `runIfDue`, `backUpNow`, the archive built on `DataSafetyQueue`, the reminder's date, the auth hook, Diagnostics lines.
-- [ ] 4.3 `AppEnvironment` (after the event delivery, on foreground) and `BackgroundRefresh.run`.
-- [ ] 4.4 `VaultSettingsView`: the "Backup" section and "Backups folder" under Details; `VaultErrorPresentation`: the failure and result texts.
-- [ ] 4.5 `DataSettingsView`: the importer accepts `.gz`; `BackupReminderBanner`: the vault backup's date.
+- [x] 4.1 `VaultServices`: the state store and the uploader, one per process.
+- [x] 4.2 `Vault/VaultBackupService.swift`: the gate (connection on, device id, request gate), `runIfDue`, `backUpNow`, the archive built on `DataSafetyQueue`, the reminder's date, the auth hook, Diagnostics lines.
+- [x] 4.3 `AppEnvironment` (after the event delivery, on foreground) and `BackgroundRefresh.run`.
+- [x] 4.4 `VaultSettingsView`: the "Backup" section and "Backups folder" under Details; `VaultErrorPresentation`: the failure and result texts.
+- [x] 4.5 `DataSettingsView`: the importer accepts `.gz`; `BackupReminderBanner`: the vault backup's date.
 
 ## 5. Strings (S)
 
-- [ ] 5.1 App `Localizable.xcstrings`: every new key with Czech (text insertion on the raw bytes, CRLF, no JSON round-trip).
+- [x] 5.1 App `Localizable.xcstrings`: every new key with Czech (text insertion on the raw bytes, CRLF, no JSON round-trip).
 
 ## 6. Checks (S)
 

@@ -8,6 +8,9 @@
 // Counts use plural catalog entries ("Expires in %lld days"), never a
 // ternary. DiagnosticsLog lines stay English and are written in VaultKit.
 //
+// add-vault-backup: also the weekly backup's failures and what "Back up
+// now" answered (`backupFailure`, `backupReport`).
+//
 // Depended on by: VaultBannerView, VaultSettingsView.
 
 import Foundation
@@ -79,6 +82,60 @@ enum VaultErrorPresentation {
         guard let days else { return String(localized: "Expiry unknown") }
         if days <= 0 { return String(localized: "Expires today") }
         return String(localized: "Expires in \(days) days")
+    }
+
+    // MARK: - Backup (add-vault-backup D11)
+
+    /// "412 KB", for the backup's size.
+    static func fileSize(_ byteCount: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(byteCount), countStyle: .file)
+    }
+
+    /// Why a backup did not reach the vault, for Settings' "Last problem".
+    static func backupFailure(_ failure: VaultBackupFailure) -> String {
+        switch failure {
+        case .tooLarge(let byteCount, let limit):
+            return String(localized: "The backup is too large to upload (\(fileSize(byteCount)), the limit is \(fileSize(limit))).")
+        case .nothingToBackUp:
+            return String(localized: "There's nothing to back up yet.")
+        case .archiveFailed:
+            return String(localized: "The backup couldn't be put together. Settings › Diagnostics has the details.")
+        case .vault(let vaultOutcome):
+            switch vaultOutcome {
+            case .offline:
+                // `outcome(.offline)` speaks of the plan.
+                return String(localized: "Offline. The backup will be tried again later.")
+            case .success, .alreadyExists, .fileNotFound, .authFailed, .rateLimited, .conflict, .serverError, .refusedByPolicy, .redirectRefused, .notConfigured, .unexpected, .transportError:
+                return outcome(vaultOutcome)
+            }
+        }
+    }
+
+    /// What "Back up now" answered.
+    static func backupReport(_ report: VaultBackupService.Report) -> String {
+        switch report {
+        case .uploaded(let byteCount):
+            return String(localized: "Backed up to the vault (\(fileSize(byteCount))).")
+        case .alreadyInVault:
+            return String(localized: "The backup is already in the vault.")
+        case .unavailable(let reason):
+            switch reason {
+            case .connectionOff:
+                return String(localized: "Turn on the vault connection first.")
+            case .notTested:
+                return String(localized: "Test the connection first.")
+            case .noToken:
+                return String(localized: "Paste your vault token again")
+            case .blocked:
+                return String(localized: "Fix the vault connection first.")
+            case .rateLimited:
+                return String(localized: "GitHub asked to slow down. The app will try again later.")
+            case .busy:
+                return String(localized: "A backup is already running.")
+            }
+        case .failed(let failure):
+            return backupFailure(failure)
+        }
     }
 
     // MARK: - Input problems

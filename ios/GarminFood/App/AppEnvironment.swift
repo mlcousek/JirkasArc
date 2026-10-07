@@ -1188,10 +1188,16 @@ final class AppEnvironment {
 
     /// add-training-checkins D4: one unstructured delivery of the phone's
     /// training events, then Settings -> Vault's counts.
+    ///
+    /// add-vault-backup D4: then the weekly backup of the app's data, if
+    /// the week still needs one -- after the events, in the same task, so
+    /// the two uploads never race for the branch. The service checks the
+    /// connection, the request gate and the schedule itself.
     private func deliverTrainingEvents() {
         let vault = self.vault
         Task {
             await TrainingEventsService.shared.drainNow()
+            await VaultBackupService.shared.runIfDue()
             await vault.reload()
         }
     }

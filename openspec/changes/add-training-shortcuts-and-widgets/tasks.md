@@ -62,3 +62,22 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 - [ ] 7.4 "Log weight in Jirka's Arc" asks for the number, the weigh-in reaches Garmin; "Log water in Jirka's Arc" and the water Control add 250 ml; the cards update when the app is open.
 - [ ] 7.5 The weight Control opens the form with the keyboard up, from any tab.
 - [ ] 7.6 The countdown widget: Edit Widget offers the name, a date-only picker and the theme; the count is right and changes overnight; Czech plurals.
+
+## 8. Review fixes (2026-10-07, branch `mlcousek/shortcuts-review-fixes`)
+
+Four findings of the review of the merged change. Same rules: nothing
+compiled locally, strings inserted as text in both languages.
+
+- [x] 8.1 A pain site without a pain score is refused, not dropped: `QuickPainAnswer.given(score:site:)`, `ActionError.painSiteNeedsScore`, its sentence in both catalogs, tests.
+- [x] 8.2 A repeated check-in is not a second event: `CheckInPlanning.quickCheckIn` and `QuickCheckInDecision` (same light without a score: nothing recorded; with a score: the earlier session and option kept; another light: a new choice), `CheckInOverlay.checkInOptions`, the receipt's `alreadyRecorded` and "Check-in already recorded: ...", tests.
+- [x] 8.3 A widget tap that recorded nothing is said by the app once: `MorningCheckInWidgetIntent` (never throws, not discoverable), `AppNavigationBridge.pendingNotice`, the alert on `ContentView`, `ActionError.notSaved`.
+- [x] 8.4 The weight Control's request is dropped when the form can't be presented now (onboarding, the theme preview, the alert): `AppRouter.applyPendingRoute(weighInBlocked:)`.
+- [x] 8.5 design.md (D1 to D4, D6, Risks incl. the countdown's time-zone limit), the three spec deltas and CLAUDE.md as built; the four checks.
+- [ ] 8.6 **Requires CI.** `swift test` for TrainingCore, the app and widget `xcodebuild`, the localization export comparison.
+
+On the phone, with section 7:
+
+- [ ] 8.7 Vault connection off, tap the check-in widget: the app opens and shows "Nothing recorded: turn on the vault connection ..." once; a Control with the connection off shows its own failure and the app shows no alert.
+- [ ] 8.8 Tap Amber on the widget twice: one event in Settings > Vault's pending writes; the amber Control afterwards answers "already recorded".
+- [ ] 8.9 On a fresh install still in onboarding, the weight Control opens the app and no weigh-in form appears after onboarding.
+- [ ] 8.10 A shortcut with a pain site and no score answers that the score is needed and records nothing.

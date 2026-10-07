@@ -133,9 +133,11 @@ ios/
                     `backups/<deviceId>/<YYYY>/<YYYY>-W<ww>.json.gz`, due
                     once a week, an hour between attempts, five counted
                     failures a week, a 3 MiB cap; VaultBackupUploader:
-                    create-only, "already exists" means the week is done,
-                    nothing is read back, and it does NOT go through the
-                    DurableQueue). VaultKit is handed bytes: FoodLogCore's
+                    create-only, "already exists" means the week is done
+                    once one read has SEEN the file -- a bare 422 is never
+                    believed, the content is never compared -- and it
+                    does NOT go through the DurableQueue). VaultKit is
+                    handed bytes: FoodLogCore's
                     Backup/BackupArchive.swift builds them (the export,
                     gzip-compressed; `BackupContainer.decode` reads both
                     forms, so restore is the existing import) and
@@ -270,9 +272,9 @@ What the app writes to the vault, all of it create-only and inside its own
 device folders under the hub root: the training events
 (`events/<deviceId>/...jsonl`, add-training-checkins) and the weekly backup
 of its own data (`backups/<deviceId>/<YYYY>/...json.gz`, add-vault-backup).
-It reads only `projection/`. A new kind of write means a new shape in
-`VaultPathPolicy.allowsWrite` with its refused shapes tested, never a
-looser rule. A backup must never contain a credential or device state:
+It reads `projection/` and, to check what it wrote, its own files. A new
+kind of write means a new shape in `VaultPathPolicy` with its refused
+shapes tested, never a looser rule. A backup must never contain a credential or device state:
 `BackupExclusions` decides, and `VaultUploadArchiveTests` names the stores
 that may not be flipped.
 

@@ -22,7 +22,9 @@ without being asked, closes the gap.
   same archive "Export backup" produces, gzip-compressed, to
   `backups/<this phone's device id>/<YYYY>/<YYYY>-W<ww>.json.gz` under the
   hub root, beside the events. Create-only: a file is never overwritten.
-  When the week's file is already there, the week is done.
+  When the week's file is already there, the week is done -- after one
+  look that it really is there, because GitHub's "already exists" answer
+  can mean other things.
 - **Only where the connection works.** The upload runs when the vault
   connection is on, tested and not blocked: the gate the event upload uses.
   On foreground (after the events are delivered) and inside the existing
@@ -53,8 +55,9 @@ without being asked, closes the gap.
 
 ### Modified Capabilities
 
-- `vault-transport` -- the write allow-list gains the phone's own backups
-  folder; the upload's own state file joins the files a backup never
+- `vault-transport` -- the write and read allow-lists gain the phone's own
+  backup files (the read only confirms that a file reported as existing is
+  there); the upload's own state file joins the files a backup never
   contains.
 - `data-safety` -- import accepts the compressed export; the export
   reminder counts a recent vault backup.

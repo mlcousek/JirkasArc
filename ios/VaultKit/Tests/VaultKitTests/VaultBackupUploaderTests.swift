@@ -2,8 +2,9 @@
 //
 // add-vault-backup task 3.5 (design D3, D5, D6, D9): one backup upload and
 // its bookkeeping, over the in-memory transport and over the GitHub client
-// behind the URLProtocol stub -- created; already there (done, nothing read
-// back, nothing overwritten); the lost answer that heals on the next
+// behind the URLProtocol stub -- created; already there (done once the file
+// is seen, never compared, never overwritten); a 422 with no file there (a
+// failure, not a done week); the lost answer that heals on the next
 // attempt; too large (nothing sent); five server errors end the week;
 // "Back up now" in a fresh week, in a done week and when the week's file is
 // there unknown to the phone; a rate limit pauses the connection; a
@@ -67,7 +68,7 @@ final class VaultBackupUploaderTests: XCTestCase {
         XCTAssertEqual(result, .uploaded(path: weeklyPath, byteCount: archive.count))
         XCTAssertEqual(transport.file(weeklyPath), archive)
         XCTAssertEqual(transport.createCount, 1)
-        XCTAssertEqual(transport.fetchCount, 0, "nothing is ever read back")
+        XCTAssertEqual(transport.fetchCount, 0, "a created file is not read back")
         XCTAssertEqual(state.lastSuccessAt, monday)
         XCTAssertEqual(state.lastSuccessWeek, "2030-W42")
         XCTAssertEqual(state.lastSuccessPath, weeklyPath)
@@ -92,9 +93,9 @@ final class VaultBackupUploaderTests: XCTestCase {
         let due = await rig.uploader.isDue(now: monday.addingTimeInterval(2 * hour))
 
         XCTAssertEqual(result, .alreadyInVault(path: weeklyPath))
-        XCTAssertEqual(transport.file(weeklyPath), existing, "never overwritten")
+        XCTAssertEqual(transport.file(weeklyPath), existing, "never overwritten, whatever it holds")
         XCTAssertEqual(transport.createCount, 1)
-        XCTAssertEqual(transport.fetchCount, 0, "not compared either")
+        XCTAssertEqual(transport.fetchCount, 1, "one look that it is really there")
         XCTAssertEqual(state.lastSuccessWeek, "2030-W42")
         XCTAssertNil(state.lastSuccessByteCount)
         XCTAssertNil(state.lastFailure)
@@ -338,16 +339,55 @@ final class VaultBackupUploaderTests: XCTestCase {
         XCTAssertNil(body["sha"], "no sha: create-only")
     }
 
-    func testAlreadyExistsOverGitHubIsDoneWithoutReadingBack() async throws {
-        StubURLProtocol.reset(replies: [.status(422)])
+    func testAlreadyExistsOverGitHubIsDoneOnceTheFileIsSeen() async throws {
+        // 422, then the file is there (with other content: not compared).
+        StubURLProtocol.reset(replies: [.status(422), .status(200, body: Data("an earlier upload".utf8))])
         let rig = try makeRig(transport: GitHubVaultTransport(api: TestSupport.makeClient()))
 
         let result = await rig.uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday)
         let state = await rig.uploader.state()
 
         XCTAssertEqual(result, .alreadyInVault(path: weeklyPath))
-        XCTAssertEqual(StubURLProtocol.requests.map(\.method), ["PUT"], "no GET: the existing file is not compared")
+        XCTAssertEqual(StubURLProtocol.requests.map(\.method), ["PUT", "GET"])
+        XCTAssertEqual(StubURLProtocol.requests.last?.url?.path, "/repos/example-owner/example-vault/contents/Sport/Training/_hub/backups/ios-0000abcd/2030/2030-W42.json.gz")
         XCTAssertEqual(state.lastSuccessWeek, "2030-W42")
+        XCTAssertNil(state.lastFailure)
+    }
+
+    func testA422WithNoFileThereIsAFailureNotADoneWeek() async throws {
+        // GitHub answers 422 to a create for more than "it exists"
+        // (validation, abuse detection). A week called done with no file in
+        // the vault would be a backup that fails silently.
+        StubURLProtocol.reset(replies: [.status(422), .status(404)])
+        let rig = try makeRig(transport: GitHubVaultTransport(api: TestSupport.makeClient()))
+
+        let result = await rig.uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday)
+        let state = await rig.uploader.state()
+        let status = await rig.status.current()
+        let dueLater = await rig.uploader.isDue(now: monday.addingTimeInterval(hour))
+
+        XCTAssertEqual(result, .failed(.vault(.unexpected(status: 422))))
+        XCTAssertEqual(StubURLProtocol.requests.map(\.method), ["PUT", "GET"])
+        XCTAssertNil(state.lastSuccessWeek, "not done")
+        XCTAssertNil(state.lastSuccessAt)
+        XCTAssertEqual(state.lastFailure, .vault(.unexpected(status: 422)))
+        XCTAssertEqual(state.attemptCount, 1)
+        XCTAssertNil(status.lastSuccessAt)
+        XCTAssertTrue(dueLater, "tried again an hour later")
+    }
+
+    func testAnUnconfirmedExistingFileIsTriedAgainLater() async throws {
+        // 422, and the look that would confirm it has no network.
+        StubURLProtocol.reset(replies: [.status(422), .failure(.notConnectedToInternet)])
+        let rig = try makeRig(transport: GitHubVaultTransport(api: TestSupport.makeClient()))
+
+        let result = await rig.uploader.upload(archive, deviceID: device, trigger: .manual, now: monday)
+        let state = await rig.uploader.state()
+
+        XCTAssertEqual(result, .failed(.vault(.offline)))
+        XCTAssertEqual(StubURLProtocol.requests.map(\.method), ["PUT", "GET"], "no time-stamped upload on an unconfirmed week")
+        XCTAssertNil(state.lastSuccessWeek)
+        XCTAssertEqual(state.attemptCount, 0)
     }
 
     func testFailuresOverGitHubAreClassified() async throws {

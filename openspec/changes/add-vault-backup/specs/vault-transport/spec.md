@@ -6,8 +6,8 @@ The system SHALL refuse, before any network request, every write whose
 normalised hub-relative path is neither under `events/<ownDeviceId>/` with
 a `.jsonl` extension nor exactly
 `backups/<ownDeviceId>/<four digits>/<name>.json.gz`, and every read
-outside `projection/*.json` and its own events folder. Nothing SHALL be
-read from the backups folder. Paths containing empty, `.` or `..`
+outside `projection/*.json`, its own events folder and that same backup
+file shape. Paths containing empty, `.` or `..`
 segments, backslashes, percent-encoding, control characters or a device id
 other than this install's SHALL be refused, not corrected. The hub root is
 `Sport/Training/_hub` in the vault repository.
@@ -24,17 +24,17 @@ other than this install's SHALL be refused, not corrected. The hub root is
 
 #### Scenario: Reading a daily note
 
-- **WHEN** a read of any path outside `projection/` and the install's own events folder is attempted
+- **WHEN** a read of any path outside `projection/`, the install's own events folder and the install's own backup files is attempted
 - **THEN** it is refused with no request sent
 
 #### Scenario: The install's own backup file
 
-- **WHEN** a write to `backups/ios-7f3a91c2/2030/2030-W42.json.gz` is attempted on the install `ios-7f3a91c2`
+- **WHEN** a write to, or a read of, `backups/ios-7f3a91c2/2030/2030-W42.json.gz` is attempted on the install `ios-7f3a91c2`
 - **THEN** it is allowed
 
 #### Scenario: Anything else under backups
 
-- **WHEN** a write to `backups/ios-00000000/2030/2030-W42.json.gz`, to `backups/ios-7f3a91c2/2030-W42.json.gz`, to `backups/ios-7f3a91c2/2030/extra/2030-W42.json.gz` or to `backups/ios-7f3a91c2/2030/2030-W42.json` is attempted on the install `ios-7f3a91c2`, or any read under `backups/`
+- **WHEN** a write to, or a read of, `backups/ios-00000000/2030/2030-W42.json.gz`, `backups/ios-7f3a91c2/2030-W42.json.gz`, `backups/ios-7f3a91c2/2030/extra/2030-W42.json.gz` or `backups/ios-7f3a91c2/2030/2030-W42.json` is attempted on the install `ios-7f3a91c2`
 - **THEN** it is refused with no request sent
 
 ### Requirement: Vault state in backups is limited to the connection settings

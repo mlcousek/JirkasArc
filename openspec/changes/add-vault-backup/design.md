@@ -127,30 +127,44 @@ week.
   opportunity of that week, usually Monday morning. It is not "the week's
   data up to Sunday".
 
-`VaultPathPolicy.allowsWrite` gains exactly this shape: four segments,
-`backups`, the own device id, four digits, a name ending in `.json.gz`.
-Another device's folder, a deeper path, another extension are refused
-before anything is sent, as for events. Nothing reads from `backups/`, so
-the read allow-list is unchanged.
+`VaultPathPolicy` gains exactly this shape, for writing and for reading:
+four segments, `backups`, the own device id, four digits, a name ending in
+`.json.gz`. Another device's folder, a deeper path, another extension are
+refused before anything is sent, as for events. The read is for D3's one
+look only.
 
-### D3 -- Create-only; "already there" is done; not through the write queue
+### D3 -- Create-only; "already there" is done once it is seen; not through the write queue
 
 The upload is one `VaultTransport.createOnly`. Its answers:
 
 - created (201): done;
 - already exists (422, `VaultWriteOutcome.alreadyExists`): the week's file
-  is in the vault -- **done, a success**. This is how a lost response heals:
-  the upload landed, the answer did not, the next attempt finds the file;
+  is in the vault -- **done, a success**, once one read of that path has
+  found it. This is how a lost response heals: the upload landed, the
+  answer did not, the next attempt finds the file;
 - anything else: a failure (D4).
 
-There is no read-back and no blob comparison. For an event segment
-"already exists" must be told apart from a collision, because the queue
-holds bytes that must not be lost. A backup has no such bytes: whatever the
-existing file holds, next week's file holds everything again. So the
-backup does not go through `DurableQueue` either: the queue would keep a
-megabyte of base64 on disk, show a failed backup as "N events" under "Not
-uploaded", and send week-old bytes when a retry finally works. The archive
-is built fresh for every attempt instead.
+**A bare 422 is not believed.** The first plan was "422 means the week is
+done". GitHub's reference lists 422 on this route as "validation failed,
+or the endpoint has been spammed", not only "the path exists" (documented,
+not observed by this project), and the event upload never believes a bare
+422 either (`CreateOnlyFileUploader` reads the file back). For a backup the cost of believing it is the worst
+one there is: every week recorded as done, "Last backup" showing a date,
+and nothing in the vault. So after a 422 the uploader reads the path once
+(`problemConfirming`): a file there means done; "not found" is a failure
+shown as "Unexpected answer from GitHub (422)"; a read that fails (offline)
+leaves the week open for the next attempt. The read happens only after a
+422, so in practice after a lost answer: one request, at most the size of
+one backup.
+
+What is kept from the decision: the content is **not** compared. For an
+event segment "already exists" must be told apart from a collision,
+because the queue holds bytes that must not be lost. A backup has no such
+bytes: whatever the existing file holds, next week's file holds everything
+again. So the backup does not go through `DurableQueue` either: the queue
+would keep a megabyte of base64 on disk, show a failed backup as "N events"
+under "Not uploaded", and send week-old bytes when a retry finally works.
+The archive is built fresh for every attempt instead.
 
 409 (two commits racing on the branch) is avoided rather than handled: the
 foreground runs the backup after the event delivery, in the same task.
@@ -203,8 +217,8 @@ the week's backup. In a week that already has one it writes
 ```
 
 (the same UTC stamp the event segments use). If the weekly name turns out
-to exist although the phone did not know (422), the week is recorded as
-done and the tap goes on to the time-stamped name.
+to exist although the phone did not know (422, confirmed as in D3), the
+week is recorded as done and the tap goes on to the time-stamped name.
 
 Chosen over "this week is already backed up": the button is pressed before
 something risky -- an update, a restore, a phone going to service -- and a
@@ -386,7 +400,9 @@ Sport/Training/_hub/backups/<deviceId>/<YYYY>/<YYYY>-W<ww>-<yyyymmdd>T<hhmmss>Z.
   UTC.
 - Commit message: `hub: <deviceId> backup <file name> (<n> bytes)`. Event
   commits read `hub: <deviceId> seq ...`.
-- Files are created once and never changed or deleted by the app.
+- Files are created once and never changed or deleted by the app. The app
+  reads one of its own files back only when GitHub answered a create with
+  "already exists", to see that it is there.
 
 **Format.** gzip (RFC 1952) of one UTF-8 JSON document, the app's export
 container:
@@ -436,6 +452,14 @@ the vault, it belongs in an event or a nutrition bridge file.
 - **The size estimate is a model.** If the real archive is much larger,
   the cap holds it back and Settings says so; the first on-phone number
   settles it (tasks 7.2).
+- **A create request this large has not been observed.** The event
+  segments stay under 900 KiB; a backup's request body can reach about
+  4 MB. GitHub documents the contents API for far larger files, and the
+  client's 20 s timeout is an idle timeout, not a total one -- but both are
+  documented, not observed here. The first real backup shows it (tasks
+  7.1); the fallback, should GitHub refuse the size, is a lower cap, and
+  the failure would be visible in Settings as "Unexpected answer from
+  GitHub (413)" or the like, never silent.
 - **History grows by every file.** Accepted for a weekly cadence; pruning
   the working copy is the desk's (above). Rewriting history is not planned.
 - **A background upload can be cut off** by iOS. Create-only makes that

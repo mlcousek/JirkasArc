@@ -60,21 +60,29 @@ Import backup like any exported backup.
 
 ### Requirement: A week's backup is created once and never overwritten
 
-The system SHALL upload a backup with a create-only request and SHALL
-treat the answer "a file already exists at this path" as success: the
-week is recorded as backed up and no further automatic request is sent
-that week. It SHALL NOT overwrite, compare or delete a file in the
-backups folder.
+The system SHALL upload a backup with a create-only request. When the
+answer is "a file already exists at this path", it SHALL read that path
+once and, when a file is there, treat the week as backed up: a success,
+with no further automatic request that week. When no file is there, or
+the read fails, the week SHALL NOT be recorded as backed up and the
+attempt SHALL be shown as failed. The system SHALL NOT overwrite or delete
+a file in the backups folder, and SHALL NOT require the existing file to
+equal the one it tried to upload.
 
 #### Scenario: The answer was lost
 
 - **WHEN** an upload reached the vault but its answer did not reach the phone, and the next attempt is answered "already exists"
-- **THEN** the week is recorded as backed up, no second file is created and no error is shown
+- **THEN** the file is found there, the week is recorded as backed up, no second file is created and no error is shown
 
 #### Scenario: A file is already there
 
-- **WHEN** the vault already holds `2030-W42.json.gz` for this device and the phone has no record of it
+- **WHEN** the vault already holds `2030-W42.json.gz` for this device, with other content, and the phone has no record of it
 - **THEN** the existing file is left as it is and the week is recorded as backed up
+
+#### Scenario: "Already exists" without a file
+
+- **WHEN** a create is answered 422 and a read of the same path is answered 404
+- **THEN** the week is not recorded as backed up, Settings > Vault shows the attempt as failed, and another attempt is made an hour later
 
 ### Requirement: A failed upload is retried later, within bounds
 
@@ -169,7 +177,8 @@ diagnostics log or the backup upload's own state.
 
 The backup SHALL work without any code running on the vault's side. It
 SHALL NOT change the training event envelope or the projection contract,
-and the app SHALL NOT read from the backups folder.
+and the app SHALL read from the backups folder only to confirm that one
+of its own files, reported as existing, is there.
 
 #### Scenario: A vault that knows nothing about backups
 

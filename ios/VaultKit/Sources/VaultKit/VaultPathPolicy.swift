@@ -11,12 +11,14 @@
 //          create-only idempotency check, design D7, reads back what it
 //          wrote).
 //
-// add-vault-backup D2 adds one more write, and no read:
+// add-vault-backup D2/D3 adds one more shape, for writing and reading:
 //
 //   write: `backups/<ownDeviceId>/<yyyy>/<name>.json.gz` -- the install's
 //          weekly backup of the app's data: exactly four segments, a
-//          four-digit year folder, a gzip file. Nothing is read from
-//          `backups/` (a week's file that already exists is simply done).
+//          four-digit year folder, a gzip file;
+//   read:  the same shape, nothing else under `backups/` -- to confirm
+//          that a file GitHub reported as "already exists" is really
+//          there before the week is called done.
 //
 // Everything else is refused, including another device's folder, and every
 // events or backups path while this install has no device id yet. Paths are
@@ -54,6 +56,7 @@ public struct VaultPathPolicy: Equatable, Sendable {
         if segments.count == 2, segments[0] == Self.projectionFolder {
             return Self.hasNamedExtension(segments[1], Self.projectionFileExtension)
         }
+        if isOwnBackupFile(segments) { return true }
         return isInOwnEventsFolder(segments)
     }
 

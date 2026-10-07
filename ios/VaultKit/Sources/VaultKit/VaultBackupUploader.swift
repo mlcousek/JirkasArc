@@ -10,11 +10,18 @@
 //       1. Over `maxBytes`: nothing is sent, the failure is recorded.
 //       2. One create-only write to the week's path.
 //          created         -> the week is done.
-//          already exists  -> the week is done too: an earlier attempt
-//                             landed and its answer was lost, or the file
-//                             was there before this phone knew. Never read
-//                             back, never compared, never overwritten --
-//                             next week's file holds everything again.
+//          already exists  -> the week is done too, ONCE THE FILE IS SEEN:
+//                             an earlier attempt landed and its answer was
+//                             lost, or the file was there before this phone
+//                             knew. Its content is never compared and never
+//                             overwritten -- next week's file holds
+//                             everything again. But GitHub answers 422 to a
+//                             create for more than "it exists" (validation,
+//                             abuse detection), and a backup that calls a
+//                             week done with no file in the vault fails
+//                             silently, every week. So one read of that
+//                             path decides: there -> done; not found -> a
+//                             failure ("unexpected 422"), shown in Settings.
 //          anything else   -> a failure, counted or not
 //                             (`VaultBackupFailure.spendsAttempt`).
 //       3. By hand (`.manual`), in a week that is already done -- known
@@ -27,7 +34,8 @@
 // a collision is never mistaken for a delivery. A backup has no bytes worth
 // keeping -- it is rebuilt fresh for every attempt -- and "a different file
 // is there" is not an error for it. The queue would hold a megabyte of
-// base64 on disk and list a failed backup as events "Not uploaded".
+// base64 on disk and list a failed backup as events "Not uploaded". What
+// this keeps from that uploader is its distrust of a bare 422.
 //
 // The connection's status is fed the way the event upload feeds it (the
 // app's TrainingEventsService.drainNow): a success moves "Last sync", a
@@ -194,7 +202,11 @@ public actor VaultBackupUploader {
 
         var write = await transport.createOnly(Self.sealed(archive, path: path, deviceID: deviceID, now: now))
         if write.outcome == .alreadyExists && path == weeklyPath {
-            // The week's file is there: done, whoever put it there.
+            // "Already exists" for the week's file: look before believing it.
+            if let problem = await problemConfirming(weeklyPath) {
+                return await failed(problem, path: weeklyPath, week: week, now: now, tokenExpiresAt: write.tokenExpiresAt)
+            }
+            // It is there: the week is done, whoever put it there.
             VaultLog.log(.info, "backup \(weeklyPath.rawValue): already in the vault; the week is done")
             await stateStore.recordSuccess(week: week, path: weeklyPath, byteCount: nil, at: now)
             await statusStore.record(.success, at: now, tokenExpiresAt: write.tokenExpiresAt)
@@ -214,19 +226,45 @@ public actor VaultBackupUploader {
             return .uploaded(path: path, byteCount: archive.count)
         case .alreadyExists:
             // Only the time-stamped name can get here (the same second
-            // twice): that copy is in the vault.
+            // twice). The same rule: seen, then believed.
+            if let problem = await problemConfirming(path) {
+                return await failed(problem, path: path, week: week, now: now, tokenExpiresAt: write.tokenExpiresAt)
+            }
             await stateStore.recordSuccess(week: week, path: path, byteCount: nil, at: now)
             await statusStore.record(.success, at: now, tokenExpiresAt: write.tokenExpiresAt)
             return .alreadyInVault(path: path)
         case .failed(let outcome):
-            let failure = VaultBackupFailure.vault(outcome)
-            VaultLog.log(outcome == .offline ? .info : .warning, "backup \(path.rawValue): \(failure.logLabel)")
-            await stateStore.recordFailure(failure, week: week, at: now)
-            if case .rateLimited = outcome {
-                await statusStore.record(outcome, at: now, tokenExpiresAt: write.tokenExpiresAt)
-            }
-            return .failed(failure)
+            return await failed(outcome, path: path, week: week, now: now, tokenExpiresAt: write.tokenExpiresAt)
         }
+    }
+
+    /// GitHub said a file already exists at `path`. `nil` when one read of
+    /// the path finds it; otherwise what stands in the way of calling the
+    /// week done -- "unexpected 422" when nothing is there (the 422 meant
+    /// something else), or the read's own failure (offline: try later).
+    private func problemConfirming(_ path: HubPath) async -> VaultOutcome? {
+        let existing = await transport.fetch(path, ifNoneMatch: nil)
+        switch existing.outcome {
+        case .fetched, .notModified:
+            return nil
+        case .failed(.fileNotFound):
+            VaultLog.log(.error, "backup \(path.rawValue): reported as existing, but nothing is there; not counted as done")
+            return .unexpected(status: 422)
+        case .failed(let outcome):
+            return outcome
+        }
+    }
+
+    /// Records a failed request and answers with it. A rate limit is also
+    /// written into the connection's status, so every vault request waits.
+    private func failed(_ outcome: VaultOutcome, path: HubPath, week: VaultBackupWeek, now: Date, tokenExpiresAt: Date?) async -> VaultBackupResult {
+        let failure = VaultBackupFailure.vault(outcome)
+        VaultLog.log(outcome == .offline ? .info : .warning, "backup \(path.rawValue): \(failure.logLabel)")
+        await stateStore.recordFailure(failure, week: week, at: now)
+        if case .rateLimited = outcome {
+            await statusStore.record(outcome, at: now, tokenExpiresAt: tokenExpiresAt)
+        }
+        return .failed(failure)
     }
 
     private static func sealed(_ archive: Data, path: HubPath, deviceID: VaultDeviceID, now: Date) -> SealedFile {

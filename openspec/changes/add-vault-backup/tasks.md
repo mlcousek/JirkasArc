@@ -30,11 +30,11 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 
 ## 3. Pure rules in VaultKit (M)
 
-- [x] 3.1 `VaultPathPolicy`: writes to `backups/<ownDeviceId>/<yyyy>/<name>.json.gz`, nothing else under `backups/`, no reads.
+- [x] 3.1 `VaultPathPolicy`: writes to, and reads of, `backups/<ownDeviceId>/<yyyy>/<name>.json.gz`; nothing else under `backups/`.
 - [x] 3.2 `VaultBackup.swift`: `VaultBackupWeek` (ISO week in UTC), `VaultBackupPath` (the weekly and the time-stamped name, the commit message), `VaultBackupFailure` (what counts as an attempt), `VaultBackupState` (success and failure bookkeeping), `VaultBackupSchedule` (due or not, the interval, the weekly bound, the cap).
-- [x] 3.3 `VaultBackupUploader.swift`: `VaultBackupStateStore` (`backup-upload.json`) and `VaultBackupUploader` (the cap, create-only, "already exists" is done, the time-stamped name for a manual backup, the connection status fed with a success or a rate limit only).
+- [x] 3.3 `VaultBackupUploader.swift`: `VaultBackupStateStore` (`backup-upload.json`) and `VaultBackupUploader` (the cap, create-only, "already exists" is done once one read has seen the file and a failure when nothing is there, the time-stamped name for a manual backup, the connection status fed with a success or a rate limit only).
 - [x] 3.4 Store fixture `backup-upload.json` and its test; `allFixtures`.
-- [x] 3.5 Tests: `VaultBackupTests` (weeks at year boundaries, paths, the policy's allowed and refused shapes, due and not due, counted and uncounted failures, the week rollover) and `VaultBackupUploaderTests` over the in-memory transport and the GitHub client behind the URL stub (created, already there, the lost answer, too large, offline, server error five times, manual in a done week, another device's folder).
+- [x] 3.5 Tests: `VaultBackupTests` (weeks at year boundaries, paths, the policy's allowed and refused shapes, due and not due, counted and uncounted failures, the week rollover) and `VaultBackupUploaderTests` over the in-memory transport and the GitHub client behind the URL stub (created, already there, a 422 with no file there, the lost answer, too large, offline, server error five times, manual in a done week, another device's folder).
 
 ## 4. The app (M)
 

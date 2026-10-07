@@ -149,12 +149,18 @@ final class VaultBackupTests: XCTestCase {
             XCTAssertFalse(policy.allowsWrite(try path(raw)), raw)
         }
 
-        // Nothing is read from the backups folder, not even the own file.
-        XCTAssertFalse(policy.allowsRead(try path("backups/ios-7f3a91c2/2030/2030-W42.json.gz")))
-        XCTAssertFalse(policy.allowsRead(try path("backups/ios-00000000/2030/2030-W42.json.gz")))
+        // Reading: the own backup file only (to confirm a file reported as
+        // existing is there); every shape refused for writing is refused
+        // for reading too.
+        XCTAssertTrue(policy.allowsRead(try path("backups/ios-7f3a91c2/2030/2030-W42.json.gz")))
+        XCTAssertTrue(policy.allowsRead(try path("backups/ios-7f3a91c2/2030/2030-W42-20301016T193005Z.json.gz")))
+        for raw in refused where raw.hasPrefix("backup") {
+            XCTAssertFalse(policy.allowsRead(try path(raw)), raw)
+        }
 
         // Without a device id there is no backups folder at all.
         XCTAssertFalse(VaultPathPolicy(ownDeviceID: nil).allowsWrite(try path("backups/ios-7f3a91c2/2030/2030-W42.json.gz")))
+        XCTAssertFalse(VaultPathPolicy(ownDeviceID: nil).allowsRead(try path("backups/ios-7f3a91c2/2030/2030-W42.json.gz")))
         // The events rule is unchanged.
         XCTAssertTrue(policy.allowsWrite(try path("events/ios-7f3a91c2/2030/10/20301014T081530Z-1.jsonl")))
     }

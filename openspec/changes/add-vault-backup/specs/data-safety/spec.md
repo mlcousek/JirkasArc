@@ -10,9 +10,11 @@ preview (backup date, app version, counts of food-log entries, custom foods,
 meal presets, favourites, weigh-ins, drinks and day notes) and, on
 confirmation, staging it as a restore. The importer SHALL accept the same
 file gzip-compressed (`.json.gz`, as the weekly vault backup writes it),
-with or without the optional gzip header fields, and SHALL refuse a
-compressed file whose checksum or length does not match as "not a backup",
-changing nothing.
+with or without the optional gzip header fields, and SHALL refuse as "not
+a backup", changing nothing, a compressed file whose checksum or length
+does not match and, before unpacking anything, a compressed file larger
+than 12 MiB. The size of an uncompressed `.json` file SHALL NOT be limited
+by this.
 
 #### Scenario: Move to a reinstalled app
 
@@ -33,6 +35,16 @@ changing nothing.
 
 - **WHEN** the user picks a `.json.gz` file whose last bytes were cut off
 - **THEN** the app says it is not a backup and nothing is staged
+
+#### Scenario: A compressed file too large to be a backup
+
+- **WHEN** the user picks a `.gz` file of 12 MiB and one byte
+- **THEN** the app says it is not a backup without unpacking it, and nothing is staged
+
+#### Scenario: A large uncompressed export
+
+- **WHEN** the user picks an uncompressed `.json` export larger than 12 MiB
+- **THEN** it is checked and previewed like any other export
 
 ### Requirement: The user is reminded to export
 

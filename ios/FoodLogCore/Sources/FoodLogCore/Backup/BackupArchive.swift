@@ -40,6 +40,22 @@ public enum BackupArchive {
     /// real backup is a few megabytes.
     public static let maxUnpackedBytes = 256 * 1024 * 1024
 
+    /// Refuse to unpack a COMPRESSED file larger than this (12 MiB): four
+    /// times the 3 MiB the weekly vault backup uploads at most (VaultKit's
+    /// `VaultBackupSchedule.maxBytes`, which this package cannot name), so
+    /// every backup the app ever uploaded fits with room to spare -- also
+    /// one unpacked and packed again on a desk at a weaker setting.
+    ///
+    /// Why it exists (review of add-vault-backup): `maxUnpackedBytes` is
+    /// checked against the gzip trailer, which the file itself declares,
+    /// and `GzipInflate` inflates the whole body before it compares size
+    /// and checksum. A file with a lying trailer could therefore ask for
+    /// any amount of memory. Bounding the INPUT bounds that without a new
+    /// inflater: DEFLATE expands at most about a thousand times. It is a
+    /// bound, not a cure -- see the change's design.md, Risks. A plain
+    /// `.json` export is not compressed and is never judged by this.
+    public static let maxPackedBytes = 12 * 1024 * 1024
+
     /// A raw DEFLATE stream holding nothing: one final, empty block.
     private static let emptyDeflateStream: [UInt8] = [0x03, 0x00]
 
@@ -73,9 +89,21 @@ public enum BackupArchive {
     }
 
     /// The payload of a gzip file. Anything that is not a complete gzip
-    /// file with a matching checksum and length is `BackupError.notABackup`.
+    /// file with a matching checksum and length -- or that is larger than
+    /// `maxPackedBytes` -- is `BackupError.notABackup`.
     public static func gunzip(_ data: Data) throws -> Data {
+        try gunzip(data, maxPackedBytes: maxPackedBytes)
+    }
+
+    /// `gunzip` with the input bound passed in, so a test can prove the
+    /// bound decides with a file of a few bytes.
+    static func gunzip(_ data: Data, maxPackedBytes: Int) throws -> Data {
         guard isGzip(data), data.count >= minimumGzipBytes else {
+            throw BackupError.notABackup
+        }
+        // Too large to be one of this app's backups: refused before a
+        // single byte is unpacked.
+        guard data.count <= maxPackedBytes else {
             throw BackupError.notABackup
         }
         // The trailer says what unpacking will give, before any work.

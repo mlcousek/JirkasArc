@@ -141,6 +141,51 @@ final class BackupArchiveTests: XCTestCase {
         }
     }
 
+    // MARK: - The bound on the compressed input
+
+    /// Review of add-vault-backup: the declared size comes from the file
+    /// itself, and the reader inflates the whole body before it compares.
+    /// So the INPUT is bounded, before anything is unpacked. Proven with a
+    /// good file: it reads back at a bound of its own size and is refused
+    /// one byte below -- nothing but the bound differs.
+    func testACompressedFileOverTheInputBoundIsRefused() throws {
+        let packed = try BackupArchive.gzip(Data(String(repeating: "vault backup ", count: 50).utf8))
+
+        XCTAssertEqual(try BackupArchive.gunzip(packed, maxPackedBytes: packed.count).count, 650)
+        XCTAssertThrowsError(try BackupArchive.gunzip(packed, maxPackedBytes: packed.count - 1)) { error in
+            XCTAssertEqual(error as? BackupError, .notABackup)
+        }
+        XCTAssertEqual(BackupArchive.maxPackedBytes, 12 * 1024 * 1024, "four times the vault backup's 3 MiB cap")
+    }
+
+    func testAnOversizedCompressedFileIsNotABackupAndAPlainFileOfAnySizePasses() throws {
+        // One byte over the bound, with the gzip magic. Its trailer is all
+        // zeros, which would read as "an empty payload" -- so only the
+        // input bound, checked first, can refuse it.
+        var oversized = Data(count: BackupArchive.maxPackedBytes + 1)
+        oversized[0] = 0x1F
+        oversized[1] = 0x8B
+        oversized[2] = 0x08
+        XCTAssertThrowsError(try BackupArchive.gunzip(oversized)) { error in
+            XCTAssertEqual(error as? BackupError, .notABackup)
+        }
+        XCTAssertThrowsError(try BackupArchive.unpacked(oversized)) { error in
+            XCTAssertEqual(error as? BackupError, .notABackup)
+        }
+        XCTAssertThrowsError(try BackupContainer.decode(oversized)) { error in
+            XCTAssertEqual(error as? BackupError, .notABackup)
+        }
+        // Exactly at the bound the same file is read (as the empty payload
+        // its trailer declares): the bound is inclusive.
+        let atTheBound = Data(oversized.prefix(BackupArchive.maxPackedBytes))
+        XCTAssertEqual(try BackupArchive.gunzip(atTheBound), Data())
+
+        // A plain export is not compressed and is never judged by the bound.
+        let plain = Data(repeating: 0x20, count: BackupArchive.maxPackedBytes + 1)
+        XCTAssertFalse(BackupArchive.isGzip(plain))
+        XCTAssertEqual(try BackupArchive.unpacked(plain).count, plain.count)
+    }
+
     // MARK: - Through the import's decoder
 
     func testACompressedExportDecodesLikeThePlainOne() throws {

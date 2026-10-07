@@ -91,11 +91,12 @@ gives the plain export back.
 so every import path reads both forms. Unpacking is the offline index's
 `GzipInflate`, not a second reader; it skips the optional header fields
 (name, extra, comment, header checksum), which a file the owner unpacked
-and packed again on the desk carries. `BackupArchive.gunzip` adds two
-things a backup needs: a declared size above 256 MB is refused before
-anything is unpacked, and every failure -- a wrong checksum, a wrong
-length, a cut-off file -- is "not a backup", like any other unreadable
-file. The file importer accepts `.gz` beside `.json`.
+and packed again on the desk carries. `BackupArchive.gunzip` adds what a
+backup needs: a compressed file above 12 MiB (four times the upload cap)
+and a declared size above 256 MB are refused before anything is unpacked,
+and every failure -- a wrong checksum, a wrong length, a cut-off file -- is
+"not a backup", like any other unreadable file. The file importer accepts
+`.gz` beside `.json`; a plain `.json` of any size imports as before.
 
 *Alternative considered:* gzip the raw store files instead of the base64
 container (about a quarter smaller again). Refused: it is a second format
@@ -493,6 +494,17 @@ the vault, it belongs in an event or a nutrition bridge file.
   up now" is the answer before anything risky.
 - **A leaked token can read the backups.** They sit in the repository the
   token already reads; no new reach.
+- **A crafted `.gz` can still ask for a lot of memory on import.** The
+  size a gzip file declares is the file's own claim, and `GzipInflate`
+  unpacks the whole body before it compares size and checksum. The
+  importer therefore refuses a compressed file above 12 MiB
+  (`BackupArchive.maxPackedBytes`, four times the upload cap) before
+  unpacking anything. What remains: a hostile file under that bound with a
+  false trailer is still unpacked in full before it is rejected, and
+  DEFLATE can expand about a thousand times. This concerns only a file
+  the owner picks by hand; the cure is an inflater that stops at a limit,
+  which was left for a later change. A plain `.json` export is not
+  affected by the bound.
 
 ## Migration Plan
 

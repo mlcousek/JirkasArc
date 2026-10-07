@@ -3,7 +3,7 @@
 Research for the owner's request: *"the look of the app — can you introduce
 themes and customizable screen, like colors, like layout? do also research
 and plan for this"*. The plan built from this lives in
-[`openspec/changes/add-themes-and-layout/`](../openspec/changes/add-themes-and-layout/).
+[`openspec/changes/archive/2026-10-07-add-themes-and-layout/`](../openspec/changes/archive/2026-10-07-add-themes-and-layout/).
 
 Read on 2026-09-24 against `origin/main` @ `b117adf`. All numbers below come
 from reading the code or from the contrast script described in §5. Nothing
@@ -246,4 +246,4 @@ Blue, vermillion and yellow stay distinct under deuteranopia, protanopia and tri
 - [AltStore FAQ](https://faq.altstore.io/altstore-classic/your-altstore) (free-account limits: 7-day signing, 3 active apps)
 - W3C WCAG 2.2: [SC 1.4.3 Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum), [SC 1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast), [relative luminance](https://www.w3.org/TR/WCAG22/#dfn-relative-luminance)
 - Okabe & Ito, *Color Universal Design* (2008): the colour-blind-safe 8-colour palette
-- Repo: `openspec/changes/add-gamification-signals/design.md` D12 and wave plan; `openspec/changes/add-app-icon-picker/`; branch `mlcousek/plan-standalone-mode` `openspec/changes/add-standalone-mode/design.md` D1
+- Repo: `openspec/changes/archive/2026-10-07-add-gamification-signals/design.md` D12 and wave plan; `openspec/changes/archive/2026-10-07-add-app-icon-picker/`; branch `mlcousek/plan-standalone-mode` `openspec/changes/add-standalone-mode/design.md` D1

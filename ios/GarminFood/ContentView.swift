@@ -47,7 +47,8 @@ struct ContentView: View {
         }
         // add-training-shortcuts-and-widgets D6: the weight Control opens
         // the weigh-in form over whichever tab is showing. Inside the
-        // themed root, like the Weight screen's own sheet.
+        // themed root, like the Weight screen's own sheet. The flag is set
+        // only when the form can come up now (`applyPendingRoute()` below).
         .sheet(isPresented: $router.weighInRequested) {
             NavigationStack {
                 AddWeightSheet()
@@ -89,7 +90,7 @@ struct ContentView: View {
         }
         .task {
             AppIconSwitcher.resetRemovedAlternateIfNeeded()
-            environment.router.applyPendingRoute()
+            applyPendingRoute()
             takePendingNotice()
             DataSafetyLaunch.snapshotIfDue() // add-data-safety D3, detached
             await environment.refreshOnForeground()
@@ -97,7 +98,7 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
-                environment.router.applyPendingRoute()
+                applyPendingRoute()
                 takePendingNotice()
                 DataSafetyLaunch.snapshotIfDue() // add-data-safety D3, detached
                 Task { await environment.refreshOnForeground() }
@@ -108,7 +109,7 @@ struct ContentView: View {
             }
         }
         .onChange(of: AppNavigationBridge.shared.pendingRoute) { _, _ in
-            environment.router.applyPendingRoute()
+            applyPendingRoute()
         }
         .onChange(of: AppNavigationBridge.shared.pendingNotice) { _, _ in
             takePendingNotice()
@@ -126,6 +127,16 @@ struct ContentView: View {
         }
         // Outermost, so the overlay and every presented screen get it too.
         .environment(environment)
+    }
+
+    /// Applies a Control's route. The weigh-in form is honoured only when
+    /// this view can present it now: under onboarding's cover or this
+    /// view's alert the request is dropped (AppRouter.applyPendingRoute
+    /// says why), never left to pop up later.
+    private func applyPendingRoute() {
+        environment.router.applyPendingRoute(
+            weighInBlocked: environment.needsOnboarding || checkInNotice != nil
+        )
     }
 
     /// Moves a waiting notice from the bridge into the alert's state. The

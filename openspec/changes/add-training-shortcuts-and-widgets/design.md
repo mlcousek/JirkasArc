@@ -261,6 +261,16 @@ every day. So "Log Weight" opens the app with the weigh-in form up
 it is: two taps and the digits. The one-tap paths are Siri and a
 Shortcuts automation with the number in it.
 
+The route is consumed at once, and the flag is set only when the sheet
+can be presented at that moment. Under onboarding's full-screen cover, the
+shared-theme preview or the root view's alert, SwiftUI would not present
+it, the flag would stay set, and the form would come up by itself when
+that screen closed (review of 2026-10-06). So there the request is
+dropped (`applyPendingRoute(weighInBlocked:)`): tapping the Control again
+is cheap, a form nobody asked for any more is not. A sheet that a screen
+deeper in a tab is presenting is not known to the router and is not
+covered by this.
+
 ### D7 -- The countdown widget
 
 `CountdownWidget`, kind `com.mlcousek.garminfood.widget.countdown`,
@@ -342,6 +352,14 @@ catalogs ("Ranní kontrola", "Zelená", "Oranžová", "Červená", "Achilovka
 - **Whether the dialog is spoken once the app comes forward** is the
   system's choice. The app showing the chosen light is the visible
   confirmation.
+- **The countdown reads its date in the phone's current calendar.** The
+  configuration stores a moment (a `Date`), not a calendar day, and
+  `EventCountdown` asks which day that moment is in the time zone the
+  phone is in NOW. A date picked at home and read after travelling far
+  enough east or west can fall on the neighbouring day, so the count can
+  be one off until the phone is back (or the widget is edited there).
+  Known limit, not handled: storing year-month-day would need a custom
+  parameter type, one more unverified shape for a rare case.
 - **A single pain number replaces a two-site answer** (D3). Stated in the
   parameter's description.
 - **"Green in Jirka's Arc" is a short phrase.** If Siri does not catch

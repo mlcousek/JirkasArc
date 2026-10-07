@@ -171,14 +171,24 @@ final class AppRouter {
     /// A Control's route. The barcode Control: Today plus the catalog, in
     /// both experiences (the catalog consumes the route). The weight
     /// Control: the weigh-in form, consumed here.
-    func applyPendingRoute() {
+    ///
+    /// The weigh-in form is a sheet on the root view, and SwiftUI presents
+    /// one thing at a time there. So the request is honoured only when the
+    /// form can come up NOW; otherwise it is DROPPED, not kept: a flag left
+    /// set would bring the form up by itself when the other screen closes,
+    /// long after the Control was tapped. `weighInBlocked` is what
+    /// ContentView knows to be in the way (onboarding's cover, its alert);
+    /// the theme-import preview is this router's own.
+    func applyPendingRoute(weighInBlocked: Bool = false) {
         switch AppNavigationBridge.shared.pendingRoute {
         case .barcodeScanner?:
             selectedTab = AppShell.destination(for: .logFood, experience: experience())
             catalogRequested = true
         case .weighIn?:
             AppNavigationBridge.shared.consume()
-            weighInRequested = true
+            if !weighInBlocked, pendingThemeImport == nil {
+                weighInRequested = true
+            }
         case nil:
             break
         }

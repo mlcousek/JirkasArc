@@ -90,6 +90,13 @@ ios/
                     (OfflineFoodIndex/OfflineCzechIndexSource/
                     OfflineIndexStore; built weekly by
                     tools/build-czech-food-index + food-index.yml).
+                    Also the pure rules of the screenless surfaces
+                    (add-training-shortcuts-and-widgets), because the
+                    widget links this package and nothing in Shared/ or a
+                    widget can be unit-tested: QuickHealthLog (what a
+                    weigh-in or a drink without its sheet may record),
+                    BoundedWait, EventCountdown (the countdown widget's
+                    calendar days).
                     improve-food-day-flow: MealDashboard overlays queued
                     deletes (`MealEntry.deletion`: "Deleting…" off the
                     totals, "Couldn't delete" counted again);
@@ -143,8 +150,12 @@ ios/
                     projection), TrainingRecorder, TrainingReminderPlanner.
                     The app's one recorder is GarminFood/Training/
                     TrainingEventsService; the lock-screen check-in
-                    Controls reach it through a hook (Shared/
-                    MorningCheckInIntents.swift). Plan edits (add-plan-
+                    Controls, the Home Screen check-in widget and the
+                    "Morning check-in" App Shortcut all reach it through
+                    ONE intent and one hook (Shared/
+                    MorningCheckInIntents.swift); a shortcut's single pain
+                    number is checked in Events/QuickCheckIn.swift
+                    (add-training-shortcuts-and-widgets). Plan edits (add-plan-
                     editing): the plan.* commands and event.retracted are
                     in HubEvent too; PlanEditPolicy (what may be asked --
                     never a race, a past day or another week) builds them,
@@ -195,13 +206,27 @@ ios/
                     Today/, Plan/, Training/, Catalog/, CustomFood/,
                     LogEntry/, Profile/, Progress/, App/ (composition root:
                     AppEnvironment.swift).
-  GarminFoodWidget/ Widget/Control extension target — static "open the app"
-                    surfaces only; cannot show live data (no shared state,
-                    see Hard constraints).
+  GarminFoodWidget/ Widget/Control extension target. It cannot read anything
+                    the app knows (no shared state, see Hard constraints),
+                    so no surface shows the app's data: each one either
+                    opens the app (`widgetURL`) or runs an intent that
+                    executes IN the app (`openAppWhenRun`: every Control,
+                    and the check-in widget's three `Button(intent:)`). The
+                    only number a widget shows is the countdown's, computed
+                    from that widget's OWN configuration (Edit Widget:
+                    event name, date, theme) and today's date.
   Shared/           Compiled into BOTH the app and widget extension targets
-                    (App Intents that must be nameable from a Control, plus
-                    AppServices.swift — the one-instance-per-store
-                    composition root both processes share within themselves).
+                    (App Intents that must be nameable from a Control or a
+                    widget button -- QuickPickLoggingIntents,
+                    MorningCheckInIntents, QuickHealthLogIntents (weight
+                    and water) -- plus AppServices.swift, the
+                    one-instance-per-store composition root both processes
+                    share within themselves). Nothing here may name an
+                    app-only package (VaultKit, TrainingCore, Gamification):
+                    the app installs a hook instead. Its strings go in BOTH
+                    Localizable catalogs. App Shortcuts (Siri, Spotlight)
+                    are declared in GarminFood/Shortcuts/
+                    GarminFoodShortcuts.swift: seven of Apple's ten.
   project.yml       XcodeGen manifest — the source of truth for the Xcode
                     project. Sources are path-globbed per target, so a new
                     .swift file dropped into an existing target's folder is

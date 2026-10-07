@@ -2251,6 +2251,30 @@
         }
       }
     },
+    "Check-in recorded: %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Confirmation of the morning check-in (Siri, Shortcuts, widget, Control). %@ is the light: Green, Amber or Red.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola zaznamenána: %@."
+          }
+        }
+      }
+    },
+    "Check-in recorded: %@. Pain %@/10, %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Confirmation of a morning check-in with a pain score. %@ = the light, the score out of ten (e.g. 4.5), the pain site.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola zaznamenána: %1$@. Bolest %2$@/10, %3$@."
+          }
+        }
+      }
+    },
     "Choose ingredient": {
       "comment": "Ingredient picker: navigation title.",
       "extractionState": "manual",
@@ -3205,6 +3229,30 @@
         }
       }
     },
+    "Knee (left)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the left knee.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koleno (levé)"
+          }
+        }
+      }
+    },
+    "Knee (right)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the right knee.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koleno (pravé)"
+          }
+        }
+      }
+    },
     "Last 6 weeks": {
       "comment": "Streak screen: the calendar grid's header.",
       "extractionState": "manual",
@@ -3297,6 +3345,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zapiš jídlo a dostaneš první výzvu."
+          }
+        }
+      }
+    },
+    "Log a Glass of Water": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title: the water Control's action, one 250 ml glass.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat sklenici vody"
           }
         }
       }
@@ -3423,6 +3483,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Počet zápisů"
+          }
+        }
+      }
+    },
+    "Logs one 250 ml glass of water in Jirka's Arc.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description: the water Control's action.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapíše do Jirka's Arc jednu sklenici vody (250 ml)."
           }
         }
       }
@@ -4239,6 +4311,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uložený token"
+          }
+        }
+      }
+    },
+    "Saves a drink for now in Jirka's Arc. One 250 ml glass unless you set an amount.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description of the Log Water shortcut.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloží do Jirka's Arc pití s aktuálním časem. Když nezadáš množství, je to jedna sklenice (250 ml)."
+          }
+        }
+      }
+    },
+    "Saves a weigh-in for now in Jirka's Arc.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description of the Log Weight shortcut.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloží do Jirka's Arc vážení s aktuálním časem."
           }
         }
       }
@@ -5107,6 +5203,30 @@
         }
       }
     },
+    "Achilles (left)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the left Achilles tendon. Same wording as the pain step on Today.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achilovka (levá)"
+          }
+        }
+      }
+    },
+    "Achilles (right)": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: the right Achilles tendon.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achilovka (pravá)"
+          }
+        }
+      }
+    },
     "also in %@": {
       "comment": "Caption under a search result found in several sources; %@ = list of the other sources.",
       "extractionState": "manual",
@@ -5127,6 +5247,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Množství"
+          }
+        }
+      }
+    },
+    "Amount (ml)": {
+      "comment": "add-training-shortcuts-and-widgets: Parameter of the Log Water shortcut: the amount in millilitres.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Množství (ml)"
           }
         }
       }
@@ -7807,6 +7939,18 @@
         }
       }
     },
+    "From 0 to 10, in half steps. Leave it empty to record the light only. A score replaces this morning's earlier pain answer.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the check-in shortcut's Pain Score parameter (Shortcuts app).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Od 0 do 10, po půl bodu. Když ho necháš prázdné, zaznamená se jen barva. Skóre nahradí dřívější dnešní odpověď o bolesti."
+          }
+        }
+      }
+    },
     "Frozen": {
       "comment": "Streak calendar legend: a day covered by a streak freeze.",
       "extractionState": "manual",
@@ -9079,6 +9223,18 @@
         }
       }
     },
+    "Log ${weightKg} kg in Jirka's Arc": {
+      "comment": "add-training-shortcuts-and-widgets: Shortcuts parameter summary (LogWeightIntent.parameterSummary). ${weightKg} is the weight parameter; keep it verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat ${weightKg} kg do Jirka's Arc"
+          }
+        }
+      }
+    },
     "Log a few days of food to see your macro trends here.": {
       "comment": "Trends empty state message.",
       "extractionState": "manual",
@@ -9279,6 +9435,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zapsat obvyklé jídlo"
+          }
+        }
+      }
+    },
+    "Log Water": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title and App Shortcut short title: saves a drink.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat vodu"
+          }
+        }
+      }
+    },
+    "Log Weight": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title and App Shortcut short title: saves a weigh-in.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat váhu"
           }
         }
       }
@@ -10627,6 +10807,18 @@
         }
       }
     },
+    "Opens Jirka's Arc on the weigh-in form.": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent description, and the description of the Log Weight Control.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevře Jirka's Arc rovnou na zápisu váhy."
+          }
+        }
+      }
+    },
     "Opens the Jirka's Arc page in iOS Settings, where the app's language can be changed": {
       "comment": "VoiceOver hint of the Language settings row.",
       "extractionState": "manual",
@@ -11175,6 +11367,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nedávné rekordy"
+          }
+        }
+      }
+    },
+    "Record a ${light} morning check-in": {
+      "comment": "add-training-shortcuts-and-widgets: Shortcuts parameter summary (MorningCheckInIntent.parameterSummary). ${light} is the traffic-light parameter; keep it verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaznamenat ranní kontrolu: ${light}"
           }
         }
       }
@@ -13729,6 +13933,18 @@
         }
       }
     },
+    "Weight (kg)": {
+      "comment": "add-training-shortcuts-and-widgets: Parameter of the Log Weight shortcut: the weight in kilograms.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váha (kg)"
+          }
+        }
+      }
+    },
     "Weight & Water": {
       "comment": "Today screen section header above the weight and water cards.",
       "extractionState": "manual",
@@ -13809,6 +14025,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kdy"
+          }
+        }
+      }
+    },
+    "Where it hurts, used with a pain score. Leave it empty for the site you scored last.": {
+      "comment": "add-training-shortcuts-and-widgets: Description of the check-in shortcut's Pain Site parameter (Shortcuts app).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kde to bolí; použije se jen se skóre bolesti. Když ho necháš prázdné, vezme se naposledy hodnocené místo."
           }
         }
       }
@@ -16231,6 +16459,18 @@
         }
       }
     },
+    "Other site": {
+      "comment": "add-training-shortcuts-and-widgets: Pain site in the check-in shortcut and its confirmation: anywhere else.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jiné místo"
+          }
+        }
+      }
+    },
     "Keep a copy of your data": {
       "comment": "Today backup reminder: title.",
       "extractionState": "manual",
@@ -16327,6 +16567,18 @@
         }
       }
     },
+    "Log ${amountML} ml of water in Jirka's Arc": {
+      "comment": "add-training-shortcuts-and-widgets: Shortcuts parameter summary (LogWaterIntent.parameterSummary). ${amountML} is the amount parameter; keep it verbatim.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat ${amountML} ml vody do Jirka's Arc"
+          }
+        }
+      }
+    },
     "Supplement": {
       "comment": "Extra dose sheet: product picker label.",
       "extractionState": "manual",
@@ -16407,6 +16659,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Otevřít doplňky"
+          }
+        }
+      }
+    },
+    "Open the Weigh-in Form": {
+      "comment": "add-training-shortcuts-and-widgets: App Intent title: the weight Control's action, opens the weigh-in form.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít zápis váhy"
           }
         }
       }
@@ -16887,6 +17151,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Balení a zásoba"
+          }
+        }
+      }
+    },
+    "Pain Score": {
+      "comment": "add-training-shortcuts-and-widgets: Parameter of the check-in shortcut: an optional pain score from 0 to 10.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skóre bolesti"
+          }
+        }
+      }
+    },
+    "Pain Site": {
+      "comment": "add-training-shortcuts-and-widgets: App Intents type and parameter name: where it hurts (morning check-in shortcut).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Místo bolesti"
           }
         }
       }
@@ -17971,6 +18259,18 @@
         }
       }
     },
+    "What do you weigh, in kilograms?": {
+      "comment": "add-training-shortcuts-and-widgets: Siri's question when the Log Weight shortcut runs without a weight.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolik vážíš, v kilogramech?"
+          }
+        }
+      }
+    },
     "You can change amounts and times, or add your own products, later in My stack.": {
       "comment": "Supplements onboarding: under the catalog list.",
       "extractionState": "manual",
@@ -18787,6 +19087,18 @@
         }
       }
     },
+    "Nothing recorded: the pain score must be between 0 and 10.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the check-in shortcut: the pain score given is outside 0 to 10. Nothing was recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nezaznamenalo: skóre bolesti musí být od 0 do 10."
+          }
+        }
+      }
+    },
     "Couldn't save that on the phone. Try again.": {
       "comment": "add-training-checkins: recording a check-in, tick, RPE or note on the phone failed.",
       "extractionState": "manual",
@@ -18943,6 +19255,18 @@
         }
       }
     },
+    "Green, amber or red?": {
+      "comment": "add-training-shortcuts-and-widgets: Siri's question when the check-in shortcut runs without a light.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelená, oranžová, nebo červená?"
+          }
+        }
+      }
+    },
     "Amber": {
       "comment": "add-training-checkins: the amber morning check-in light (App Intents).",
       "extractionState": "manual",
@@ -18999,6 +19323,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nic se nezaznamenalo: nejdřív v Jirka's Arc zapni propojení s vaultem."
+          }
+        }
+      }
+    },
+    "Nothing saved: the amount must be above 0 and below 5000 ml.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the Log Water shortcut: not an amount the water form would accept. Nothing was saved.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se neuložilo: množství musí být větší než 0 a menší než 5000 ml."
+          }
+        }
+      }
+    },
+    "Nothing saved: the weight must be above 0 and below 500 kg.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the Log Weight shortcut: not a weight the weigh-in form would accept. Nothing was saved.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se neuložilo: váha musí být větší než 0 a menší než 500 kg."
           }
         }
       }

@@ -26,8 +26,11 @@ struct GarminFoodApp: App {
         // their intent in this process; Shared/ can't import TrainingCore,
         // so it calls this hook. Set before any scene, so a cold launch by
         // a Control finds it. (Touches no store until a Control fires.)
-        MorningCheckInControlAction.handler = { rawLight in
-            try await TrainingEventsService.shared.handleControlCheckIn(rawLight)
+        // add-training-shortcuts-and-widgets D2: the same hook serves the
+        // Home Screen check-in widget and the App Shortcut; the request may
+        // carry a pain score, the receipt says what was recorded.
+        MorningCheckInControlAction.handler = { request in
+            try await TrainingEventsService.shared.handleCheckIn(request)
         }
     }
 

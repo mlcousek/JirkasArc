@@ -23,6 +23,9 @@ import AppearanceKit
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var environment = AppEnvironment()
+    /// A check-in from the Home Screen widget that recorded nothing: the
+    /// reason, shown once (taken from `AppNavigationBridge.pendingNotice`).
+    @State private var checkInNotice: String?
 
     var body: some View {
         @Bindable var router = environment.router
@@ -44,7 +47,8 @@ struct ContentView: View {
         }
         // add-training-shortcuts-and-widgets D6: the weight Control opens
         // the weigh-in form over whichever tab is showing. Inside the
-        // themed root, like the Weight screen's own sheet.
+        // themed root, like the Weight screen's own sheet. The flag is set
+        // only when the form can come up now (`applyPendingRoute()` below).
         .sheet(isPresented: $router.weighInRequested) {
             NavigationStack {
                 AddWeightSheet()
@@ -69,19 +73,33 @@ struct ContentView: View {
         .sheet(item: $router.pendingThemeImport) { request in
             ThemeImportPreviewSheet(code: request.code)
         }
+        // add-training-shortcuts-and-widgets (review fix): a widget button
+        // can't show that its check-in recorded nothing, so the app says
+        // it, once, when it comes forward (MorningCheckInWidgetIntent).
+        .alert(
+            "Morning Check-in",
+            isPresented: Binding(get: { checkInNotice != nil }, set: { if !$0 { checkInNotice = nil } }),
+            presenting: checkInNotice
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { notice in
+            Text(verbatim: notice)
+        }
         .onOpenURL { url in
             environment.router.handle(url: url)
         }
         .task {
             AppIconSwitcher.resetRemovedAlternateIfNeeded()
-            environment.router.applyPendingRoute()
+            applyPendingRoute()
+            takePendingNotice()
             DataSafetyLaunch.snapshotIfDue() // add-data-safety D3, detached
             await environment.refreshOnForeground()
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
-                environment.router.applyPendingRoute()
+                applyPendingRoute()
+                takePendingNotice()
                 DataSafetyLaunch.snapshotIfDue() // add-data-safety D3, detached
                 Task { await environment.refreshOnForeground() }
             case .background:
@@ -91,7 +109,10 @@ struct ContentView: View {
             }
         }
         .onChange(of: AppNavigationBridge.shared.pendingRoute) { _, _ in
-            environment.router.applyPendingRoute()
+            applyPendingRoute()
+        }
+        .onChange(of: AppNavigationBridge.shared.pendingNotice) { _, _ in
+            takePendingNotice()
         }
         // The day changing while the app is open: `.NSCalendarDayChanged`
         // at midnight, `significantTimeChangeNotification` also for a
@@ -106,6 +127,24 @@ struct ContentView: View {
         }
         // Outermost, so the overlay and every presented screen get it too.
         .environment(environment)
+    }
+
+    /// Applies a Control's route. The weigh-in form is honoured only when
+    /// this view can present it now: under onboarding's cover or this
+    /// view's alert the request is dropped (AppRouter.applyPendingRoute
+    /// says why), never left to pop up later.
+    private func applyPendingRoute() {
+        environment.router.applyPendingRoute(
+            weighInBlocked: environment.needsOnboarding || checkInNotice != nil
+        )
+    }
+
+    /// Moves a waiting notice from the bridge into the alert's state. The
+    /// bridge is cleared in the same step, so it is shown once.
+    private func takePendingNotice() {
+        if let notice = AppNavigationBridge.shared.consumeNotice() {
+            checkInNotice = notice
+        }
     }
 
     @ViewBuilder

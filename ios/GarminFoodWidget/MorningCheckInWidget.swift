@@ -7,12 +7,18 @@
 // that opens the app), this one has buttons -- and it is still built
 // entirely around the same fact: there is no App Group on this free
 // account, so this process can't read or write anything the app knows.
-// Each button is `Button(intent: MorningCheckInIntent(light:))`
-// (Shared/MorningCheckInIntents.swift), the very intent the lock-screen
-// Controls use. Its `openAppWhenRun` brings the app forward and
+// Each button is `Button(intent: MorningCheckInWidgetIntent(light:))`
+// (Shared/MorningCheckInIntents.swift): the lock-screen Controls' action in
+// a type of its own. Its `openAppWhenRun` brings the app forward and
 // `perform()` runs THERE, with the app's own files, through the hook
 // `GarminFoodApp.init()` installs. Nothing is shared and the widget stores
 // nothing.
+//
+// Why its own type: a widget button shows nothing when its intent throws.
+// So that intent never throws; when the app records nothing (the vault
+// connection is off, never tested, ...) it leaves the reason for the app,
+// which is in front by then and says it once in an alert (ContentView).
+// The owner is never left believing a check-in that didn't happen.
 //
 // So it shows NO state: not the light that was chosen, not "done". It
 // can't know either, and a guess would be worse than nothing
@@ -68,7 +74,7 @@ private struct CheckInWidgetButton: View {
     let showsName: Bool
 
     var body: some View {
-        Button(intent: MorningCheckInIntent(light: light)) {
+        Button(intent: MorningCheckInWidgetIntent(light: light)) {
             VStack(spacing: 3) {
                 Image(systemName: symbol)
                     .font(.system(size: showsName ? 22 : 18, weight: .bold))

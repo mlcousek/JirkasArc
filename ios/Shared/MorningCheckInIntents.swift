@@ -6,8 +6,12 @@
 // checkin.morning"), and, since add-training-shortcuts-and-widgets (design
 // D1-D3), the Home Screen check-in widget's three buttons and the "Morning
 // check-in" App Shortcut (GarminFood/Shortcuts/GarminFoodShortcuts.swift).
-// ONE intent for all of them, so there is one place that records and one
-// set of failure messages.
+// ONE action for all of them (the hook below), so there is one place that
+// records and one set of failure messages. The Controls and the shortcut
+// use `MorningCheckInIntent`; the widget's buttons use the thin
+// `MorningCheckInWidgetIntent` at the end of this file, which differs in
+// one thing only: where a failure is SHOWN (a widget button can't show its
+// intent's error, so the app shows it once when it opens).
 //
 // Same shape as the quick-pick Controls (QuickPickLoggingIntents.swift;
 // read its header for the full reasoning): there is no App Group on this
@@ -39,12 +43,18 @@
 //     only when given (TrainingCore's QuickCheckIn.swift has the rules: 0
 //     to 10 or refused, half steps, the default site); without one the
 //     check-in carries no pain answer and the day's earlier one is kept.
+//     A site WITHOUT a score is refused (`painSiteNeedsScore`), not
+//     ignored: the answer must never say "recorded" about something that
+//     was dropped.
 //
 // The confirmation names what was RECORDED (the receipt), not what was
-// asked. A failure throws a localized error, so the Control shows it
-// instead of a success it hasn't earned (the connection is off, never
-// tested, the app couldn't record, or the score is out of range). Strings
-// live in BOTH catalogs (the checker's rule for Shared/).
+// asked -- including "already recorded" when the same light is sent again
+// without a pain score: a second tap records nothing, so it can't replace
+// what the first check-in said. A failure throws a localized error, so the
+// Control shows it instead of a success it hasn't earned (the connection
+// is off, never tested, the app couldn't record, the score is out of
+// range, a site came without a score). Strings live in BOTH catalogs (the
+// checker's rule for Shared/).
 
 import AppIntents
 import Foundation
@@ -125,14 +135,19 @@ struct MorningCheckInRequest: Equatable, Sendable {
 }
 
 /// What the app recorded: the pain entry in the event, if any (the score
-/// on the half-step grid, the site it chose).
+/// on the half-step grid, the site it chose) -- or that it recorded
+/// NOTHING NEW because this light is already the day's check-in
+/// (`alreadyRecorded`; TrainingCore's QuickCheckIn.swift, "A repeated
+/// check-in"). Then there is no pain entry either.
 struct MorningCheckInReceipt: Equatable, Sendable {
     var painScore: Double?
     var painSite: String?
+    var alreadyRecorded: Bool
 
-    init(painScore: Double? = nil, painSite: String? = nil) {
+    init(painScore: Double? = nil, painSite: String? = nil, alreadyRecorded: Bool = false) {
         self.painScore = painScore
         self.painSite = painSite
+        self.alreadyRecorded = alreadyRecorded
     }
 }
 
@@ -146,6 +161,13 @@ enum MorningCheckInControlAction {
         case notTested
         case notAvailable
         case painScoreOutOfRange
+        /// A pain site was given without a pain score: refused, so the
+        /// site is never dropped behind a "recorded".
+        case painSiteNeedsScore
+        /// The app tried and could not write the check-in (anything the
+        /// recorder throws that is not one of the cases above). Used for
+        /// the widget's in-app notice, which needs a sentence for it.
+        case notSaved
 
         var localizedStringResource: LocalizedStringResource {
             switch self {
@@ -157,15 +179,31 @@ enum MorningCheckInControlAction {
                 return "Nothing recorded: open Jirka's Arc once, then try again."
             case .painScoreOutOfRange:
                 return "Nothing recorded: the pain score must be between 0 and 10."
+            case .painSiteNeedsScore:
+                return "Nothing recorded: a pain site needs a pain score. Add the score, or leave the site empty."
+            case .notSaved:
+                return "Nothing recorded: the check-in couldn't be saved on this phone. Try again."
             }
         }
     }
 
+    /// The sentence for `error`, in the app's language: its own when it is
+    /// an `ActionError`, else "couldn't be saved". For a surface that has
+    /// to SHOW the failure itself (the widget's notice, below).
+    static func failureText(_ error: Error) -> String {
+        let known = (error as? ActionError) ?? .notSaved
+        return String(localized: known.localizedStringResource)
+    }
+
     /// "Check-in recorded: Amber." or, with a pain entry, "Check-in
     /// recorded: Amber. Pain 4.5/10, Achilles (left)." A label and its
-    /// values, in the catalog's own words.
+    /// values, in the catalog's own words. A repeat of the day's light
+    /// says so instead: "Check-in already recorded: Amber."
     static func confirmation(light: CheckInLightOption, receipt: MorningCheckInReceipt) -> IntentDialog {
         let lightName = light.localizedName
+        if receipt.alreadyRecorded {
+            return "Check-in already recorded: \(lightName)."
+        }
         guard let score = receipt.painScore else {
             return "Check-in recorded: \(lightName)."
         }
@@ -227,5 +265,52 @@ struct MorningCheckInIntent: AppIntent {
             painSite: painSite?.rawValue
         ))
         return .result(dialog: MorningCheckInControlAction.confirmation(light: light, receipt: receipt))
+    }
+}
+
+/// The Home Screen check-in widget's buttons (GarminFoodWidget/
+/// MorningCheckInWidget.swift). The SAME action as `MorningCheckInIntent`
+/// -- the same hook, the light only -- in its own thin type for one reason:
+/// a widget's `Button(intent:)` shows nothing when its intent throws. A
+/// Control marks the failure and Siri speaks it; a widget button just opens
+/// the app, and the owner would believe the check-in was recorded.
+///
+/// So this intent never throws. When the app refuses (the vault connection
+/// is off or was never tested, the hook is missing, the write failed) it
+/// leaves the reason on `AppNavigationBridge`, and ContentView shows it
+/// ONCE as the app's own alert. The Controls and the shortcut keep
+/// `MorningCheckInIntent` and their own error path, so nobody is told
+/// twice. A repeat of the day's light is not a failure and says nothing.
+///
+/// Not offered in the Shortcuts app (`isDiscoverable`): it is the widget's
+/// plumbing, and "Morning Check-in" there is the intent above. Its strings
+/// are that intent's own keys.
+struct MorningCheckInWidgetIntent: AppIntent {
+    static var title: LocalizedStringResource = "Morning Check-in"
+    static var description = IntentDescription("Records this morning's check-in in Jirka's Arc.")
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+    static var openAppWhenRun: Bool = true
+    static var isDiscoverable: Bool = false
+
+    @Parameter(title: "Traffic Light")
+    var light: CheckInLightOption
+
+    init() {}
+
+    init(light: CheckInLightOption) {
+        self.light = light
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        do {
+            guard let handler = MorningCheckInControlAction.handler else {
+                throw MorningCheckInControlAction.ActionError.notAvailable
+            }
+            _ = try await handler(MorningCheckInRequest(light: light.rawValue))
+        } catch {
+            AppNavigationBridge.shared.post(notice: MorningCheckInControlAction.failureText(error))
+        }
+        return .result()
     }
 }

@@ -21,12 +21,21 @@ expired Garmin sign-in is reported even though the drink is saved.
 
 Because a Control cannot take a number, the system SHALL offer a "Log
 Weight" Control that opens the app with the weigh-in form presented, and
-SHALL NOT record a weigh-in until the user saves that form.
+SHALL NOT record a weigh-in until the user saves that form. When the app
+cannot present the form at that moment, because first-run onboarding, the
+shared-theme preview or an alert of the app is on screen, the request
+SHALL be dropped: the form SHALL NOT appear by itself after that screen
+closes.
 
 #### Scenario: Opening the form
 
 - **WHEN** the user activates the weight Control
 - **THEN** the app opens with the weigh-in form on screen, whichever tab was showing
+
+#### Scenario: During onboarding
+
+- **WHEN** the user activates the weight Control on a fresh install that is still showing onboarding
+- **THEN** the app opens on onboarding, and no weigh-in form appears when onboarding is finished
 
 #### Scenario: Leaving without saving
 

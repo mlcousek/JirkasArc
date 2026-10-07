@@ -133,6 +133,12 @@ final class TrainingEventsService {
     /// none was given; the receipt says what is in the event. Without a
     /// score the check-in carries no pain answer, and only then is Today
     /// brought forward for the pain step (`onControlCheckIn`).
+    ///
+    /// A repeat is not a second event (`CheckInPlanning.quickCheckIn`):
+    /// the same light again without a score records nothing and the
+    /// receipt says so; the same light with a score keeps the earlier
+    /// check-in's session and option. The vault takes the LAST check-in's
+    /// light, session and option, so a rebuilt one could undo a choice.
     func handleCheckIn(_ request: MorningCheckInRequest) async throws -> MorningCheckInReceipt {
         guard let light = MorningLight(rawValue: request.light) else {
             throw MorningCheckInControlAction.ActionError.notAvailable
@@ -143,21 +149,26 @@ final class TrainingEventsService {
             throw MorningCheckInControlAction.ActionError.vaultOff
         }
         let cached = await services.projectionStore.loadCached()
-        let pain = request.painScore.map { score in
-            QuickPainAnswer(score: score, site: request.painSite.map(PainSite.init(wire:)))
-        }
-        // The phone's own earlier answers matter for the default site only
-        // (the same overlay TrainingModel lays over the plan).
-        var checkIns = CheckInOverlay.empty
-        if pain != nil {
-            checkIns = await recorder.overlay(
-                acks: cached?.projection.acks ?? [:],
-                outcomes: cached?.projection.outcomes ?? []
-            )
-        }
-        let payload: MorningCheckInPayload
+        // A site without a score is refused, never dropped (QuickCheckIn.swift).
+        let pain: QuickPainAnswer?
         do {
-            payload = try CheckInPlanning.morningCheckIn(
+            pain = try QuickPainAnswer.given(
+                score: request.painScore,
+                site: request.painSite.map(PainSite.init(wire:))
+            )
+        } catch {
+            throw MorningCheckInControlAction.ActionError.painSiteNeedsScore
+        }
+        // The phone's own events (the same overlay TrainingModel lays over
+        // the plan): the default pain site, and whether this light is
+        // already the day's check-in.
+        let checkIns = await recorder.overlay(
+            acks: cached?.projection.acks ?? [:],
+            outcomes: cached?.projection.outcomes ?? []
+        )
+        let decision: QuickCheckInDecision
+        do {
+            decision = try CheckInPlanning.quickCheckIn(
                 light: light,
                 pain: pain,
                 projection: cached?.projection,
@@ -167,6 +178,18 @@ final class TrainingEventsService {
             )
         } catch {
             throw MorningCheckInControlAction.ActionError.painScoreOutOfRange
+        }
+        let payload: MorningCheckInPayload
+        switch decision {
+        case .alreadyRecorded:
+            // A repeat of the day's light: nothing new to record, and a
+            // second event would replace the first one's session and
+            // option. Today still comes forward in pain mode -- the pain
+            // step may be what the tap was for.
+            onControlCheckIn?()
+            return MorningCheckInReceipt(alreadyRecorded: true)
+        case .record(let decided):
+            payload = decided
         }
         do {
             try await record(.morningCheckIn(payload))

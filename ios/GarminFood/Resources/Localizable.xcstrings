@@ -2251,6 +2251,18 @@
         }
       }
     },
+    "Check-in already recorded: %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Answer of the morning check-in (Siri, Shortcuts, Control) when this light is already today's check-in: nothing new was recorded. %@ is the light: Green, Amber or Red.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola už je zaznamenaná: %@."
+          }
+        }
+      }
+    },
     "Check-in recorded: %@.": {
       "comment": "add-training-shortcuts-and-widgets: Confirmation of the morning check-in (Siri, Shortcuts, widget, Control). %@ is the light: Green, Amber or Red.",
       "extractionState": "manual",
@@ -16699,6 +16711,18 @@
         }
       }
     },
+    "Nothing recorded: a pain site needs a pain score. Add the score, or leave the site empty.": {
+      "comment": "add-training-shortcuts-and-widgets: Error of the check-in shortcut: a pain site was given without a pain score. Nothing was recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nezaznamenalo: k místu bolesti chybí skóre bolesti. Přidej skóre, nebo nech místo prázdné."
+          }
+        }
+      }
+    },
     "Nothing planned for this day.": {
       "comment": "Supplements screen: the selected day has no planned items.",
       "extractionState": "manual",
@@ -19083,6 +19107,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nic se nezaznamenalo: nejdřív v Nastavení otestuj připojení k vaultu."
+          }
+        }
+      }
+    },
+    "Nothing recorded: the check-in couldn't be saved on this phone. Try again.": {
+      "comment": "add-training-shortcuts-and-widgets: Shown by the app after a check-in from the Home Screen widget failed for a reason that has no sentence of its own (the write failed). Nothing was recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nezaznamenalo: ranní kontrolu se nepodařilo uložit v telefonu. Zkus to znovu."
           }
         }
       }

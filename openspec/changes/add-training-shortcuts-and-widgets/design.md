@@ -63,11 +63,28 @@ No Swift toolchain here: correctness rests on the package tests and the
 
 ## Decisions
 
-### D1 -- One check-in intent for every surface
+### D1 -- One check-in action for every surface
 
-`MorningCheckInIntent` stays the only check-in intent. The Controls, the
-new widget's buttons and the App Shortcut all use it, so there is one
-place that records and one set of failure messages.
+`MorningCheckInIntent` stays the check-in intent of the Controls and the
+App Shortcut, and every surface goes through the same hook (D2), so there
+is one place that records and one set of failure messages.
+
+The widget's buttons use a second, thin type, `MorningCheckInWidgetIntent`
+(same file, same hook, the light only), added after the review of
+2026-10-06 for one reason: a widget's `Button(intent:)` shows nothing when
+its intent throws. A Control marks the failure and Siri speaks it; a
+widget tap with the vault connection off opened the app, recorded nothing
+and said nothing. That intent never throws: on a refusal it leaves the
+sentence on `AppNavigationBridge` (`pendingNotice`, in memory, consumed
+once) and `ContentView` shows it as an alert titled "Morning Check-in"
+when the app is in front. Two types rather than a flag on one, because
+only a `@Parameter` survives the trip from the widget to the app and a
+hidden "source" parameter would show in the Shortcuts app; a second type
+is how the quick-pick Controls already share one action. It is not
+offered in Shortcuts (`isDiscoverable = false`) and reuses the first
+intent's strings. The Controls and the shortcut keep their own error path,
+so nobody is told twice. A repeat of the day's light (D3) is not a
+failure and shows nothing.
 
 - `light` keeps its type (`CheckInLightOption`, an `AppEnum`, which is
   what a phrase parameter must be). `init()` no longer presets green: a
@@ -104,7 +121,9 @@ request is plain values (`light`, `painScore?`, `painSite?` as the
 contract's words), because `Shared/` cannot name TrainingCore's types.
 The receipt says which pain entry was recorded (site and score after the
 rules of D3), so the dialog reads back what is in the event, not what was
-asked. `TrainingEventsService.handleCheckIn` is the one implementation;
+asked; or it says `alreadyRecorded`, when the request was a repeat of the
+day's light and nothing new was written ("Check-in already recorded:
+Amber."). `TrainingEventsService.handleCheckIn` is the one implementation;
 the connection guards are unchanged (off, not configured, standalone, no
 device id: nothing recorded, a message that says why).
 
@@ -128,23 +147,46 @@ Pure, in TrainingCore, tested there:
   than one site.
 - Without a score `pains` is not sent (`null`), which keeps the day's
   earlier answer: the Controls' rule (`add-checkin-pain-score` D7).
+- A site WITHOUT a score is refused whole (`QuickPainAnswer.given`,
+  `painSiteWithoutScore`; the answer is "Nothing recorded: a pain site
+  needs a pain score. ..."). The first build dropped the site and
+  answered "recorded" (review of 2026-10-06): a confirmation must never
+  cover something that was ignored.
 - A score is recorded whenever it is given, in or out of pain mode. Like
   "Something hurts?", a score above 0 turns the phone's half of pain mode
   on by itself (`PainModeState`, derived from the event log).
 - After a check-in without a score the app still brings Today forward in
   pain mode (`onControlCheckIn`); with a score it does not, because the
   question is answered.
+- **A repeat is not a second event** (`CheckInPlanning.quickCheckIn`,
+  added after the review of 2026-10-06). The vault takes the LAST
+  `checkin.morning` of a day for its light, session and option (only
+  `pains` survives from an earlier event), and this path builds session
+  and option from today's cached plan and the light's own letter. So,
+  against the phone's own check-in of that training day (`CheckInOverlay`,
+  which now also keeps the option an event named): the same light without
+  a score records nothing and the receipt says "already recorded"; the
+  same light with a score is recorded with the EARLIER session and option
+  and the new pain entry; another light, or no check-in of this phone for
+  the day, is recorded as a new choice. No contract change. Two limits,
+  stated: a check-in only the vault knows (another install) is not seen,
+  and no screen of this app records a check-in whose option differs from
+  its light's letter today -- so what the rule prevents in practice is
+  the duplicate event and a session or option rebuilt from a plan that
+  changed since the first tap; the carried option is there for the day a
+  screen does offer that choice.
 
 ### D4 -- The check-in widget
 
 `MorningCheckInWidget`, kind `com.mlcousek.garminfood.widget.checkin`,
 `systemSmall` and `systemMedium`, in the existing extension.
 
-- Three `Button(intent: MorningCheckInIntent(light:))`. Interactive
-  widgets are iOS 17, the deployment target. A button's intent runs where
-  the intent says: `openAppWhenRun` brings the app forward and `perform()`
-  runs there, exactly as for a Control. Nothing is shared and nothing is
-  stored by the widget.
+- Three `Button(intent: MorningCheckInWidgetIntent(light:))` (D1).
+  Interactive widgets are iOS 17, the deployment target. A button's
+  intent runs where the intent says: `openAppWhenRun` brings the app
+  forward and `perform()` runs there, exactly as for a Control. Nothing
+  is shared and nothing is stored by the widget. A check-in that could
+  not be recorded is said by the app, once, in an alert.
 - **It shows no state.** Not the chosen light, not "done": the extension
   cannot read the app's files, and a guess would be worse than nothing
   (`add-glanceable-surfaces` D2). The buttons look the same before and
@@ -219,6 +261,16 @@ every day. So "Log Weight" opens the app with the weigh-in form up
 it is: two taps and the digits. The one-tap paths are Siri and a
 Shortcuts automation with the number in it.
 
+The route is consumed at once, and the flag is set only when the sheet
+can be presented at that moment. Under onboarding's full-screen cover, the
+shared-theme preview or the root view's alert, SwiftUI would not present
+it, the flag would stay set, and the form would come up by itself when
+that screen closed (review of 2026-10-06). So there the request is
+dropped (`applyPendingRoute(weighInBlocked:)`): tapping the Control again
+is cheap, a form nobody asked for any more is not. A sheet that a screen
+deeper in a tab is presenting is not known to the router and is not
+covered by this.
+
 ### D7 -- The countdown widget
 
 `CountdownWidget`, kind `com.mlcousek.garminfood.widget.countdown`,
@@ -288,11 +340,26 @@ catalogs ("Ranní kontrola", "Zelená", "Oranžová", "Červená", "Achilovka
   and run there, as a Control's does. Unconfirmed on a phone. Fallback:
   give each button a `Link` to a `garminfood://checkin?light=` URL that
   the app handles (one more deep-link action).
+- **The widget's failure notice is an alert on the root view.** While
+  onboarding or another sheet is up it waits and shows when that closes;
+  it is still true then ("Nothing recorded: ..."), so it is kept rather
+  than dropped. `static var isDiscoverable = false` and
+  `String(localized:)` with a `LocalizedStringResource` are two more
+  signatures with no earlier use here (fallbacks: delete the line; build
+  the sentence with a `switch` of `String(localized: "...")` literals).
 - **A Siri check-in opens the app** (D1) and, on a locked phone, may ask
   to unlock, as the Controls may. Follow-up named in D1.
 - **Whether the dialog is spoken once the app comes forward** is the
   system's choice. The app showing the chosen light is the visible
   confirmation.
+- **The countdown reads its date in the phone's current calendar.** The
+  configuration stores a moment (a `Date`), not a calendar day, and
+  `EventCountdown` asks which day that moment is in the time zone the
+  phone is in NOW. A date picked at home and read after travelling far
+  enough east or west can fall on the neighbouring day, so the count can
+  be one off until the phone is back (or the widget is edited there).
+  Known limit, not handled: storing year-month-day would need a custom
+  parameter type, one more unverified shape for a rare case.
 - **A single pain number replaces a two-site answer** (D3). Stated in the
   parameter's description.
 - **"Green in Jirka's Arc" is a short phrase.** If Siri does not catch

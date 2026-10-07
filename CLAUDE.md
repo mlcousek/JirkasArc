@@ -152,9 +152,14 @@ ios/
                     TrainingEventsService; the lock-screen check-in
                     Controls, the Home Screen check-in widget and the
                     "Morning check-in" App Shortcut all reach it through
-                    ONE intent and one hook (Shared/
-                    MorningCheckInIntents.swift); a shortcut's single pain
-                    number is checked in Events/QuickCheckIn.swift
+                    ONE hook (Shared/MorningCheckInIntents.swift; the
+                    widget's buttons have their own thin intent there,
+                    because a widget button can't show an error -- the app
+                    shows it once instead). Events/QuickCheckIn.swift
+                    decides what such a check-in records: a shortcut's
+                    single pain number, and a repeat of the day's light,
+                    which is NOT a second event (the vault takes the last
+                    check-in's light, session and option)
                     (add-training-shortcuts-and-widgets). Plan edits (add-plan-
                     editing): the plan.* commands and event.retracted are
                     in HubEvent too; PlanEditPolicy (what may be asked --

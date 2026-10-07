@@ -175,6 +175,10 @@ public enum StoreCatalog {
         StoreCatalogEntry(id: "vault.status", location: .file("VaultKit/status.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
         StoreCatalogEntry(id: "vault.fetch-cache", location: .file("VaultKit/fetch-cache.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
         StoreCatalogEntry(id: "vault.write-queue", location: .file("VaultKit/write-queue.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
+        // add-vault-backup D8: what THIS phone uploaded as its weekly vault
+        // backup (last success, the week's failed attempts). Delivery state:
+        // restored anywhere it would claim a week is done that is not.
+        StoreCatalogEntry(id: "vault.backup-upload", location: .file("VaultKit/backup-upload.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false),
 
         // App target
         StoreCatalogEntry(id: "app.siri-donations", location: .file("GarminFood/donations.json"), schemaVersion: 1, area: .deviceOnly, inBackup: false)

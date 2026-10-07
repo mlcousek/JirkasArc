@@ -13,6 +13,8 @@
 // every data file as base64 + typed preferences; design D5 explains why a
 // JSON container and not a zip) and `BackupCompatibility` (the refusal rules
 // of D4). Pure Codable -- testable with `swift test`, no UI, no network.
+// `BackupContainer.decode` also reads the file gzip-compressed, as the
+// weekly vault backup writes it (add-vault-backup, BackupArchive.swift).
 //
 // Depends on: StoreCatalog (store ids and versions), PreferenceValue.
 // Depended on by: BackupVault, BackupPreview, the app's DataSafetyController.
@@ -154,9 +156,14 @@ public struct BackupContainer: Codable, Equatable, Sendable {
     /// that isn't a GarminFood backup or that this build is too old for --
     /// before decoding the body, so a newer layout fails as "update the
     /// app", not as a decoding error.
+    ///
+    /// add-vault-backup D1: `data` may also be the same file gzip-compressed
+    /// (the weekly vault backup's `.json.gz`); it is unpacked first. A
+    /// damaged compressed file is `notABackup`.
     public static func decode(_ data: Data) throws -> BackupContainer {
+        let payload = try BackupArchive.unpacked(data)
         let decoder = BackupCoding.decoder()
-        guard let header = try? decoder.decode(ContainerHeader.self, from: data),
+        guard let header = try? decoder.decode(ContainerHeader.self, from: payload),
               header.manifest.schema == BackupManifest.schemaIdentifier else {
             throw BackupError.notABackup
         }
@@ -165,7 +172,7 @@ public struct BackupContainer: Codable, Equatable, Sendable {
         }
         let container: BackupContainer
         do {
-            container = try decoder.decode(BackupContainer.self, from: data)
+            container = try decoder.decode(BackupContainer.self, from: payload)
         } catch {
             throw BackupError.notABackup
         }

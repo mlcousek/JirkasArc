@@ -1,0 +1,1 @@
+{"attemptCount":2,"attemptWeek":"2030-W42","lastAttemptAt":"2030-10-15T09:00:00Z","lastFailure":{"vault":{"_0":{"serverError":{"status":502}}}},"lastFailureAt":"2030-10-15T09:00:00Z","lastSuccessAt":"2030-10-07T06:30:00Z","lastSuccessByteCount":412345,"lastSuccessPath":"backups/ios-0000abcd/2030/2030-W41.json.gz","lastSuccessWeek":"2030-W41"}

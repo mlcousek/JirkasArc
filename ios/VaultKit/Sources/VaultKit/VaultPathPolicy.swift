@@ -11,8 +11,15 @@
 //          create-only idempotency check, design D7, reads back what it
 //          wrote).
 //
+// add-vault-backup D2 adds one more write, and no read:
+//
+//   write: `backups/<ownDeviceId>/<yyyy>/<name>.json.gz` -- the install's
+//          weekly backup of the app's data: exactly four segments, a
+//          four-digit year folder, a gzip file. Nothing is read from
+//          `backups/` (a week's file that already exists is simply done).
+//
 // Everything else is refused, including another device's folder, and every
-// events path while this install has no device id yet. Paths are
+// events or backups path while this install has no device id yet. Paths are
 // `HubPath`s, already normal (no `..`, no encoding tricks), so the check is
 // plain segment comparison -- there is nothing left to normalise.
 //
@@ -38,6 +45,9 @@ public struct VaultPathPolicy: Equatable, Sendable {
     public static let eventsFolder = "events"
     public static let eventFileExtension = ".jsonl"
     public static let projectionFileExtension = ".json"
+    /// add-vault-backup D2: the weekly backups of the app's data.
+    public static let backupsFolder = "backups"
+    public static let backupFileExtension = ".json.gz"
 
     public func allowsRead(_ path: HubPath) -> Bool {
         let segments = path.segments
@@ -49,8 +59,29 @@ public struct VaultPathPolicy: Equatable, Sendable {
 
     public func allowsWrite(_ path: HubPath) -> Bool {
         let segments = path.segments
+        if isOwnBackupFile(segments) { return true }
         guard isInOwnEventsFolder(segments), let last = segments.last else { return false }
         return Self.hasNamedExtension(last, Self.eventFileExtension)
+    }
+
+    /// `backups/<ownDeviceId>/<yyyy>/<name>.json.gz`, exactly.
+    private func isOwnBackupFile(_ segments: [String]) -> Bool {
+        guard let own = ownDeviceID, segments.count == 4 else { return false }
+        return segments[0] == Self.backupsFolder
+            && segments[1] == own.rawValue
+            && Self.isFourDigits(segments[2])
+            && Self.hasNamedExtension(segments[3], Self.backupFileExtension)
+    }
+
+    private static func isFourDigits(_ segment: String) -> Bool {
+        let scalars = segment.unicodeScalars
+        guard scalars.count == 4 else { return false }
+        return scalars.allSatisfy { scalar in
+            switch scalar.value {
+            case 0x30...0x39: return true
+            default: return false
+            }
+        }
     }
 
     /// `events/<ownDeviceId>/<at least one more segment>`.

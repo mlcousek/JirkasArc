@@ -52,3 +52,11 @@ override set in Settings SHALL replace it.
 #### Scenario: Local override
 - **WHEN** the user sets a weight-goal override of 78 kg in Settings
 - **THEN** the card uses 78 kg as the target until the user resets to Garmin's goal
+
+### Requirement: A weigh-in whose save failed never syncs
+
+The system SHALL save a weigh-in locally before queueing it for Garmin, and SHALL NOT leave anything queued when the local save fails.
+
+#### Scenario: Local save fails
+- **WHEN** the user saves a weigh-in and the local write fails
+- **THEN** the user sees the failure and nothing is ever sent to Garmin for it

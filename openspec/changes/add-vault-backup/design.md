@@ -341,6 +341,17 @@ next attempt finds the week's file and records the week as done.
 Disconnect does not clear it. It is history, and a reconnect to the same
 repository should not upload the week twice.
 
+**When the file cannot be written.** The store logs a failed save and
+keeps its old state, and like every store it refuses to save while its
+file exists but cannot be read. Judged by the stored state alone, the
+backup would then be due on every foreground: an archive built and a
+multi-megabyte upload each time. So `VaultBackupUploader` also remembers,
+in memory, its own last attempt and the last week it saw done, set whether
+or not the save works; `isDue` respects the one-hour interval and the done
+week against them first. They last as long as the process, which is where
+the loop would be; after a relaunch the worst case is one attempt per
+launch, and that attempt finds the week's file (D3).
+
 ### D9 -- Failures are quiet; the status is fed like the event upload feeds it
 
 A failed backup never raises a banner. It is recorded in the state file,

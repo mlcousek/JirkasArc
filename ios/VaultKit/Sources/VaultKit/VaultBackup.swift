@@ -289,11 +289,16 @@ public enum VaultBackupSchedule {
         let week = VaultBackupWeek(containing: now)
         if state.lastSuccessWeek == week.key { return false }
         if state.attempts(in: week) >= maxAttemptsPerWeek { return false }
-        if let lastAttempt = state.lastAttemptAt {
-            let since = now.timeIntervalSince(lastAttempt)
-            // A clock set back (negative) must not block the backup.
-            if since >= 0 && since < retryInterval { return false }
-        }
+        if isTooSoon(after: state.lastAttemptAt, now: now) { return false }
         return true
+    }
+
+    /// Whether an attempt at `lastAttempt` is less than `retryInterval`
+    /// before `now`. `false` without an attempt, and for an attempt in the
+    /// future: a clock set back must not block the backup.
+    public static func isTooSoon(after lastAttempt: Date?, now: Date) -> Bool {
+        guard let lastAttempt else { return false }
+        let since = now.timeIntervalSince(lastAttempt)
+        return since >= 0 && since < retryInterval
     }
 }

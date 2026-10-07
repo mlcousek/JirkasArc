@@ -95,7 +95,9 @@ cancelled SHALL NOT count, but SHALL still be held to the one-hour
 interval. A week that ends without
 a success SHALL be skipped: the next week starts with no failures counted.
 A rate limit SHALL pause all vault requests until its reset time, as for
-every vault request.
+every vault request. The one-hour interval, and "no further automatic
+request in a week that has its backup", SHALL hold while the app keeps
+running even when the phone cannot save its record of the attempt.
 
 #### Scenario: Offline all day
 
@@ -111,6 +113,11 @@ every vault request.
 
 - **WHEN** iOS ends the background refresh while the backup is being uploaded
 - **THEN** the attempt does not count towards the week's five and the next one is made an hour later at the earliest
+
+#### Scenario: The record of the attempt cannot be saved
+
+- **WHEN** an attempt fails, its record cannot be written to the phone's storage, and the app comes to the foreground again ten minutes later
+- **THEN** no backup is built or sent, and the next attempt is made an hour after the failed one
 
 #### Scenario: The server keeps failing
 

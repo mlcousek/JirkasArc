@@ -210,6 +210,73 @@ final class VaultBackupUploaderTests: XCTestCase {
         XCTAssertEqual(afterBroken.attemptCount, 1, "an archive that can't be built counts")
     }
 
+    // MARK: - A state file that cannot be written
+
+    /// Review of add-vault-backup: the state store logs a failed save and
+    /// keeps its old state, and it refuses to save while its file exists
+    /// but cannot be read. Judged by the stored state alone the backup
+    /// would then be due on every foreground -- an archive and a multi-MB
+    /// upload each time. The uploader's own memory of its last attempt and
+    /// of a done week is the floor under that.
+    ///
+    /// A directory where the file should be makes every read fail with an
+    /// error that is not "no such file" (the stand-in PersistedJSONTests
+    /// uses for a locked file), so every save is refused.
+    func testAStateThatCannotBeSavedStillKeepsTheHourAndTheDoneWeek() async throws {
+        let directory = try makeTemporaryDirectory()
+        try FileManager.default.createDirectory(
+            at: directory.appendingPathComponent(VaultBackupStateStore.fileName),
+            withIntermediateDirectories: true
+        )
+        let transport = InMemoryVaultTransport()
+        let uploader = VaultBackupUploader(
+            transport: transport,
+            stateStore: VaultBackupStateStore(directory: directory),
+            statusStore: VaultStatusStore(directory: directory)
+        )
+
+        // A failure that cannot be saved.
+        transport.failNextCreate(with: .serverError(status: 503))
+        let dueBefore = await uploader.isDue(now: monday)
+        let first = await uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday)
+        let storedAfterFailure = await uploader.state()
+        let dueSoon = await uploader.isDue(now: monday.addingTimeInterval(10 * 60))
+        let dueAlmostAnHour = await uploader.isDue(now: monday.addingTimeInterval(59 * 60))
+        let dueAfterAnHour = await uploader.isDue(now: monday.addingTimeInterval(hour))
+
+        XCTAssertTrue(dueBefore)
+        XCTAssertEqual(first, .failed(.vault(.serverError(status: 503))))
+        XCTAssertEqual(storedAfterFailure, VaultBackupState(), "nothing could be saved: the stored state knows no attempt")
+        XCTAssertFalse(dueSoon, "not due again on the next foreground")
+        XCTAssertFalse(dueAlmostAnHour)
+        XCTAssertTrue(dueAfterAnHour, "and not blocked for good either")
+
+        // An attempt that never reached the network is remembered the same way.
+        await uploader.recordNotUploaded(.archiveFailed, now: monday.addingTimeInterval(hour))
+        let dueAfterBrokenArchive = await uploader.isDue(now: monday.addingTimeInterval(hour + 5 * 60))
+        XCTAssertFalse(dueAfterBrokenArchive)
+
+        // A success that cannot be saved: the week is done for this process.
+        let second = await uploader.upload(archive, deviceID: device, trigger: .automatic, now: monday.addingTimeInterval(2 * hour))
+        let storedAfterSuccess = await uploader.state()
+        let dueSameWeek = await uploader.isDue(now: monday.addingTimeInterval(30 * hour))
+        let dueNextWeek = await uploader.isDue(now: monday.addingTimeInterval(7 * 24 * hour))
+
+        XCTAssertEqual(second, .uploaded(path: weeklyPath, byteCount: archive.count))
+        XCTAssertNil(storedAfterSuccess.lastSuccessWeek, "still nothing saved")
+        XCTAssertFalse(dueSameWeek, "no second upload in a week this process saw done")
+        XCTAssertTrue(dueNextWeek)
+        XCTAssertEqual(transport.createCount, 2)
+
+        // "Back up now" in that week goes to the time-stamped name, not to
+        // the week's file again.
+        let wednesday = date("2030-10-16T19:30:05Z")
+        let byHand = await uploader.upload(archive, deviceID: device, trigger: .manual, now: wednesday)
+        let manualPath = try XCTUnwrap(HubPath("backups/ios-0000abcd/2030/2030-W42-20301016T193005Z.json.gz"))
+        XCTAssertEqual(byHand, .uploaded(path: manualPath, byteCount: archive.count))
+        XCTAssertEqual(transport.fetchCount, 0, "no 422, so nothing was read back")
+    }
+
     // MARK: - By hand
 
     func testBackUpNowInAFreshWeekWritesTheWeeksFile() async throws {

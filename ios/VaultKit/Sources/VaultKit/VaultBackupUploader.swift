@@ -140,6 +140,17 @@ public actor VaultBackupUploader {
     private let stateStore: VaultBackupStateStore
     private let statusStore: VaultStatusStore
     private let maxBytes: Int
+    /// The last attempt and the last done week of THIS PROCESS, kept
+    /// whether or not the state file could be written (review of
+    /// add-vault-backup). The state store logs a failed save and keeps its
+    /// old state, and it refuses to save at all while its file exists but
+    /// cannot be read. Judged by the stored state alone, the backup would
+    /// then be "due" on every foreground: an archive built and a multi-MB
+    /// upload each time, with no hour between them. These two are the
+    /// floor under that; they are lost with the process, where the stored
+    /// state takes over again.
+    private var lastAttemptThisProcess: Date?
+    private var doneWeekThisProcess: String?
 
     public init(
         transport: VaultTransport,
@@ -157,15 +168,21 @@ public actor VaultBackupUploader {
         await stateStore.current()
     }
 
-    /// `VaultBackupSchedule.isDue` over the stored state.
+    /// `VaultBackupSchedule.isDue` over the stored state -- and never
+    /// within the hour after this process's own last attempt, nor in a week
+    /// this process already saw done, whatever the state file holds.
     public func isDue(now: Date = Date()) async -> Bool {
-        VaultBackupSchedule.isDue(await stateStore.current(), now: now)
+        if doneWeekThisProcess == VaultBackupWeek(containing: now).key { return false }
+        if VaultBackupSchedule.isTooSoon(after: lastAttemptThisProcess, now: now) { return false }
+        let stored = await stateStore.current()
+        return VaultBackupSchedule.isDue(stored, now: now)
     }
 
     /// Records an attempt that never reached the network (no data, or the
     /// archive could not be built), so the retry interval applies to it.
     public func recordNotUploaded(_ failure: VaultBackupFailure, now: Date = Date()) async {
         let week = VaultBackupWeek(containing: now)
+        lastAttemptThisProcess = now
         VaultLog.log(failure == .nothingToBackUp ? .info : .warning, "backup \(week.key): \(failure.logLabel)")
         await stateStore.recordFailure(failure, week: week, at: now)
     }
@@ -178,6 +195,8 @@ public actor VaultBackupUploader {
         now: Date = Date()
     ) async -> VaultBackupResult {
         let week = VaultBackupWeek(containing: now)
+        // Before anything can fail: this is an attempt, saved or not.
+        lastAttemptThisProcess = now
 
         guard archive.count <= maxBytes else {
             let failure = VaultBackupFailure.tooLarge(byteCount: archive.count, limit: maxBytes)
@@ -194,7 +213,7 @@ public actor VaultBackupUploader {
         }
 
         let before = await stateStore.current()
-        let weekAlreadyDone = before.lastSuccessWeek == week.key
+        let weekAlreadyDone = before.lastSuccessWeek == week.key || doneWeekThisProcess == week.key
         var path = weeklyPath
         if trigger == .manual && weekAlreadyDone {
             path = manualPath
@@ -208,8 +227,7 @@ public actor VaultBackupUploader {
             }
             // It is there: the week is done, whoever put it there.
             VaultLog.log(.info, "backup \(weeklyPath.rawValue): already in the vault; the week is done")
-            await stateStore.recordSuccess(week: week, path: weeklyPath, byteCount: nil, at: now)
-            await statusStore.record(.success, at: now, tokenExpiresAt: write.tokenExpiresAt)
+            await reachedVault(week: week, path: weeklyPath, byteCount: nil, now: now, tokenExpiresAt: write.tokenExpiresAt)
             guard trigger == .manual else {
                 return .alreadyInVault(path: weeklyPath)
             }
@@ -221,8 +239,7 @@ public actor VaultBackupUploader {
         switch write.outcome {
         case .created:
             VaultLog.log(.info, "backup \(path.rawValue): created, \(archive.count) bytes")
-            await stateStore.recordSuccess(week: week, path: path, byteCount: archive.count, at: now)
-            await statusStore.record(.success, at: now, tokenExpiresAt: write.tokenExpiresAt)
+            await reachedVault(week: week, path: path, byteCount: archive.count, now: now, tokenExpiresAt: write.tokenExpiresAt)
             return .uploaded(path: path, byteCount: archive.count)
         case .alreadyExists:
             // Only the time-stamped name can get here (the same second
@@ -230,8 +247,7 @@ public actor VaultBackupUploader {
             if let problem = await problemConfirming(path) {
                 return await failed(problem, path: path, week: week, now: now, tokenExpiresAt: write.tokenExpiresAt)
             }
-            await stateStore.recordSuccess(week: week, path: path, byteCount: nil, at: now)
-            await statusStore.record(.success, at: now, tokenExpiresAt: write.tokenExpiresAt)
+            await reachedVault(week: week, path: path, byteCount: nil, now: now, tokenExpiresAt: write.tokenExpiresAt)
             return .alreadyInVault(path: path)
         case .failed(let outcome):
             return await failed(outcome, path: path, week: week, now: now, tokenExpiresAt: write.tokenExpiresAt)
@@ -253,6 +269,15 @@ public actor VaultBackupUploader {
         case .failed(let outcome):
             return outcome
         }
+    }
+
+    /// A backup is in the vault for `week`: remembered by this process
+    /// first (so a state file that cannot be written does not make the week
+    /// "due" again), then saved, then the connection's "Last sync" moves.
+    private func reachedVault(week: VaultBackupWeek, path: HubPath, byteCount: Int?, now: Date, tokenExpiresAt: Date?) async {
+        doneWeekThisProcess = week.key
+        await stateStore.recordSuccess(week: week, path: path, byteCount: byteCount, at: now)
+        await statusStore.record(.success, at: now, tokenExpiresAt: tokenExpiresAt)
     }
 
     /// Records a failed request and answers with it. A rate limit is also

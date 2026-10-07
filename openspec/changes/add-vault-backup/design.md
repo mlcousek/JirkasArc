@@ -360,6 +360,11 @@ banner stays away; when it has not worked for 14 days the banner is back.
 That makes the banner the loud signal of a stalled weekly backup, which D9
 otherwise keeps quiet.
 
+A date in the future counts for nothing (`BackupReminderPolicy.isWithin`),
+for the vault backup, the export and "Not now" alike: recorded while the
+clock was set forward, it would otherwise keep the banner away until real
+time caught up, and then 14 days more.
+
 Settings > Data is unchanged: "Last export" is still the last export by
 hand.
 

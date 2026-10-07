@@ -39,7 +39,9 @@ changing nothing.
 The system SHALL show in Settings → Data when the last export was made and,
 when neither an export nor a backup that reached the vault was made in the
 last 14 days, a quiet reminder in the Today banner area that can be
-dismissed for 14 days, in both data modes.
+dismissed for 14 days, in both data modes. A recorded export, vault backup
+or dismissal whose time lies in the future (the clock was set forward when
+it was recorded) SHALL count for nothing.
 
 #### Scenario: Reminder after two weeks
 
@@ -59,4 +61,9 @@ dismissed for 14 days, in both data modes.
 #### Scenario: The weekly vault backup stopped
 
 - **WHEN** there has never been an export and the last backup that reached the vault is 15 days old
+- **THEN** the reminder is shown
+
+#### Scenario: A backup dated in the future
+
+- **WHEN** there has never been an export and the only recorded vault backup is dated one day after the current time
 - **THEN** the reminder is shown

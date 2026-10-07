@@ -56,7 +56,7 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 
 ## 7. On the phone (not verifiable here)
 
-- [ ] 7.1 First foreground after the update with a working connection: one commit `hub: <device> backup <YYYY>-W<ww>.json.gz (...)` in the vault; a second foreground the same week sends nothing.
+- [ ] 7.1 First foreground after the update with a working connection: one commit `hub: <device> backup <YYYY>-W<ww>.json.gz (...)` in the vault; a second foreground the same week sends nothing. This is also the first create request above the event segments' 900 KiB limit that the project sends: note GitHub's status code in design.md (Risks) if it is not 201.
 - [ ] 7.2 Settings > Vault > Backup shows the date and the size. Write the real size into design.md D6 beside the estimate.
 - [ ] 7.3 "Back up now" in the same week creates the time-stamped file and shows "Backed up to the vault".
 - [ ] 7.4 Restore: take the file from the vault into Files, Settings > Data > Import backup, the preview shows plausible counts; confirm on a spare install or cancel.

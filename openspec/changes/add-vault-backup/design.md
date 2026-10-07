@@ -29,7 +29,6 @@ What the code already provided:
   Garmin-connected install, with a token, no loud block and no rate-limit
   pause. Segments go through `DurableQueue` and `CreateOnlyFileUploader`,
   which on 422 reads the file back and compares git blob SHAs.
-
 - **Gzip in FoodLogCore** (`add-offline-czech-food-index`,
   `OfflineFoodIndex.swift`). `GzipInflate` reads a gzip file (header with
   its optional fields, raw DEFLATE through `NSData.decompressed(using:

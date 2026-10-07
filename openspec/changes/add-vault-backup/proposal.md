@@ -91,7 +91,8 @@ Grounded on `main` at `b628f91`; every name below was read in the code.
   `VaultBackupUploader`). A new device-local file
   `VaultKit/backup-upload.json` with a store fixture.
 - FoodLogCore: new `Backup/BackupArchive.swift` (gzip framing over
-  Foundation's DEFLATE, CRC-32, `BackupVault.makeUploadArchive`);
+  Foundation's DEFLATE, reading through the offline index's existing
+  `GzipInflate` and `GzipCRC32`, `BackupVault.makeUploadArchive`);
   `BackupContainer.decode` reads the compressed form;
   `BackupReminderPolicy` counts a vault backup; `StoreCatalog` gains
   `vault.backup-upload` (device only).

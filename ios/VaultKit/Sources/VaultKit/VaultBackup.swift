@@ -114,7 +114,8 @@ public enum VaultBackupPath {
     }
 
     static func folder(deviceID: VaultDeviceID, week: VaultBackupWeek) -> String {
-        "\(VaultPathPolicy.backupsFolder)/\(deviceID.rawValue)/\(String(format: "%04d", week.year))"
+        let year = String(format: "%04d", week.year)
+        return "\(VaultPathPolicy.backupsFolder)/\(deviceID.rawValue)/\(year)"
     }
 
     /// `yyyymmddThhmmssZ` in UTC, the stamp the event segments use.

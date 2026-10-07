@@ -22,7 +22,7 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 
 ## 2. Pure rules in FoodLogCore (M)
 
-- [x] 2.1 `Backup/BackupArchive.swift`: gzip (RFC 1952 header and trailer around Foundation's raw DEFLATE), gunzip (the optional header fields skipped, CRC-32 and length checked, a declared size above 256 MB refused), `CRC32`, `BackupUploadArchive` and `BackupVault.makeUploadArchive` (the export container, compressed; `nil` for an empty data set).
+- [x] 2.1 `Backup/BackupArchive.swift`: gzip (RFC 1952 header and trailer around Foundation's raw DEFLATE, the checksum from the offline index's `GzipCRC32`), gunzip (through the offline index's `GzipInflate`, which skips the optional header fields and checks CRC-32 and length; a declared size above 256 MB refused first; every failure is `notABackup`), `BackupUploadArchive` and `BackupVault.makeUploadArchive` (the export container, compressed; `nil` for an empty data set).
 - [x] 2.2 `BackupContainer.decode` unpacks a gzip file first; a damaged one is `notABackup`.
 - [x] 2.3 `BackupReminderPolicy`: `lastVaultBackupAtKey` and `shouldShow(..., lastVaultBackupAt:)`.
 - [x] 2.4 `StoreCatalog`: `vault.backup-upload` (device only, not in backups).
@@ -50,9 +50,9 @@ so sections 6.3 and 7 stay open until CI and the phone have said so.
 
 ## 6. Checks (S)
 
-- [ ] 6.1 `openspec validate add-vault-backup --strict`, `node tools/check-localizations.mjs --scan`, `sh tools/lint-design-tokens.sh`, the TrainingCore key check.
-- [ ] 6.2 Docs: `docs/vault-connection.md` (the write table, Backups), `CLAUDE.md` (VaultKit, FoodLogCore, what is written to the vault); this design kept as built.
-- [ ] 6.3 **Requires CI.** `swift test` for FoodLogCore and VaultKit, the app and widget `xcodebuild`, the localization export comparison. `testRealGzipFilesDecode` is the proof that Foundation's `.zlib` is a raw DEFLATE stream.
+- [x] 6.1 `openspec validate add-vault-backup --strict`, `node tools/check-localizations.mjs --scan`, `sh tools/lint-design-tokens.sh`, the TrainingCore key check.
+- [x] 6.2 Docs: `docs/vault-connection.md` (the write table, Backups), `CLAUDE.md` (VaultKit, FoodLogCore, what is written to the vault); this design kept as built.
+- [ ] 6.3 **Requires CI.** `swift test` for FoodLogCore and VaultKit, the app and widget `xcodebuild`, the localization export comparison.
 
 ## 7. On the phone (not verifiable here)
 

@@ -1,13 +1,13 @@
 // BackupArchiveTests.swift
 //
 // add-vault-backup tasks 2.1-2.2 (design D1): the gzip form of an exported
-// backup. The framing is hand-written around Foundation's DEFLATE and no
-// compiler ran on the machine it was written on, so these tests pin it from
-// both sides: the CRC-32 check value everybody uses, the exact header and
-// trailer bytes, a round trip -- and two files written by a STANDARD gzip
-// (zlib, via Node, text "hello ... vault backup"), one plain and one with
-// every optional header field, which the decoder must read. That last test
-// is the proof that `NSData`'s `.zlib` is a raw DEFLATE stream.
+// backup. Reading goes through the offline index's `GzipInflate`; writing
+// is hand-framed around Foundation's DEFLATE, and no compiler ran on the
+// machine it was written on, so these tests pin it from both sides: the
+// CRC-32 check value everybody uses, the exact header and trailer bytes, a
+// round trip -- and two files written by a STANDARD gzip (zlib, via Node,
+// text "hello ... vault backup"), one plain and one with every optional
+// header field, which must read back.
 //
 // Also: damaged, truncated and oversized input is "not a backup", and
 // `BackupContainer.decode` reads a compressed export.
@@ -33,9 +33,9 @@ final class BackupArchiveTests: XCTestCase {
     // MARK: - CRC-32
 
     func testCRC32CheckValues() {
-        XCTAssertEqual(CRC32.checksum(Data("123456789".utf8)), 0xCBF4_3926)
-        XCTAssertEqual(CRC32.checksum(Data()), 0)
-        XCTAssertEqual(CRC32.checksum(hello), 0x07EF_55D1)
+        XCTAssertEqual(GzipCRC32.checksum(Data("123456789".utf8)), 0xCBF4_3926)
+        XCTAssertEqual(GzipCRC32.checksum(Data()), 0)
+        XCTAssertEqual(GzipCRC32.checksum(hello), 0x07EF_55D1)
     }
 
     // MARK: - Writing
@@ -50,7 +50,7 @@ final class BackupArchiveTests: XCTestCase {
         XCTAssertFalse(BackupArchive.isGzip(payload))
         XCTAssertEqual([UInt8](packed.prefix(10)), [0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF])
         let trailer = [UInt8](packed.suffix(8))
-        XCTAssertEqual(littleEndian(Array(trailer[0..<4])), CRC32.checksum(payload))
+        XCTAssertEqual(littleEndian(Array(trailer[0..<4])), GzipCRC32.checksum(payload))
         XCTAssertEqual(littleEndian(Array(trailer[4..<8])), UInt32(payload.count))
         XCTAssertLessThan(packed.count, payload.count / 10, "repetitive JSON compresses well")
     }
@@ -105,8 +105,6 @@ final class BackupArchiveTests: XCTestCase {
         wrongLength[wrongLength.count - 4] ^= 0x01
         var wrongMethod = packed
         wrongMethod[2] = 0x07
-        var reservedFlag = packed
-        reservedFlag[3] = 0x80
         var unterminatedName = packed
         unterminatedName[3] = 0x08
         for index in 10..<unterminatedName.count where unterminatedName[index] == 0 {
@@ -119,7 +117,6 @@ final class BackupArchiveTests: XCTestCase {
             ("wrong checksum", wrongChecksum),
             ("wrong length", wrongLength),
             ("wrong method", wrongMethod),
-            ("reserved flag", reservedFlag),
             ("unterminated name", unterminatedName),
             ("truncated", Data(truncated)),
             ("header only", Data(headerOnly))

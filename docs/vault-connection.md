@@ -17,11 +17,12 @@ is typed in on the phone.
 | Reads | `projection/projection.v1.json` | On foreground, at most once a minute while the connection is on (pull to refresh skips the minute). A conditional GET: an unchanged file costs a `304` with no body. |
 | Reads | the repository itself (`GET /repos/{owner}/{repo}`) | "Test connection", and once after the plan file first answers `404`, to tell "no plan yet" from "repository not found". |
 | Writes | `events/<this phone's device id>/<yyyy>/<mm>/<yyyymmddThhmmssZ>-<firstSeq>.jsonl` | Since `add-training-checkins`: the training events recorded on the phone (morning check-in -- since `add-checkin-pain-score` with the morning pain score --, habit ticks, RPE, notes; since `add-plan-editing` also plan changes -- move, swap, skip, unskip, a rule override -- and their withdrawal), sealed into one JSON Lines file per delivery, on foreground, on leaving the app and two minutes after an action. Only once "Test connection" has succeeded (the device id names the folder). Writes are create-only: an existing file is never overwritten. |
+| Writes | `backups/<this phone's device id>/<YYYY>/<YYYY>-W<ww>.json.gz` | Since `add-vault-backup`: a backup of the app's own data, once per ISO week (see "The weekly backup" below). Create-only too. "Back up now" in a week that already has its file writes `<YYYY>-W<ww>-<yyyymmdd>T<hhmmss>Z.json.gz` beside it. Nothing is ever read from this folder. |
 
 Everything else is refused before a request is built (`VaultPathPolicy`):
-another phone's events folder, anything outside the hub, daily notes,
-scripts, paths with `..`, encoded characters or backslashes. A refusal is
-logged as an error in Settings → Diagnostics (category `vault`).
+another phone's events or backups folder, anything outside the hub, daily
+notes, scripts, paths with `..`, encoded characters or backslashes. A
+refusal is logged as an error in Settings → Diagnostics (category `vault`).
 
 Other rules the app keeps:
 
@@ -115,14 +116,66 @@ connection". Then delete the old token on github.com.
   same folder. Disconnecting does not revoke the token on GitHub — do both
   if the token should never work again.
 
+## The weekly backup
+
+Since `add-vault-backup` (design:
+`openspec/changes/add-vault-backup/design.md`) the app saves a copy of its
+own data into the vault, so a lost phone, a wiped container or a build that
+will not launch does not lose what was logged.
+
+- **What**: exactly the file Settings → Data → "Export backup" writes,
+  gzip-compressed. Closed food days, custom foods, meal presets,
+  favourites, weigh-ins, drinks, day notes, supplements, the gamification
+  state and the preferences. Not in it: anything in the Keychain (the
+  Garmin sign-in, the vault token), the device id, the cached plan, the
+  queues of entries still waiting for Garmin or the vault, the diagnostics
+  log, the offline food index. The training events (check-ins, habit
+  ticks, RPE, plan edits) are not in it either: they already live in the
+  vault under `events/`.
+- **Where**: `Sport/Training/_hub/backups/<device id>/<YYYY>/<YYYY>-W<ww>.json.gz`
+  in the vault repository. `<YYYY>` is the ISO week-numbering year and
+  `<ww>` the ISO week, both in UTC. One file per week, never overwritten.
+- **When**: at the first opportunity of each ISO week, when the app comes
+  to the foreground (after the training events were delivered) or in a
+  background refresh, and only while the event upload could run too: the
+  connection on and tested, a token, no loud problem, no rate-limit pause,
+  on the Garmin-connected install.
+- **When it fails**: quietly. Settings → Vault → Backup shows the last
+  problem; the next attempt is an hour later at the earliest, and after
+  five failed attempts in a week (being offline does not count) the week is
+  skipped. The next week's file holds everything anyway. When no backup
+  has reached the vault for 14 days, Today's "Keep a copy of your data"
+  banner is back.
+- **How large**: a few hundred kilobytes. A backup above 3 MiB is not
+  uploaded and Settings says so. Every file stays in the vault's git
+  history, so old ones are worth pruning on the desk now and then.
+- **By hand**: Settings → Vault → "Back up now". In a week that already
+  has its file this writes a second, time-stamped one, so there is always
+  a current copy before an update or a restore.
+
+### Restoring from the vault
+
+1. Get the newest file of the phone's folder onto the iPhone: from the
+   vault folder in Files, or download it from the repository's page on
+   github.com. A reinstalled app or a new phone has a new device id, so
+   look in the old id's folder.
+2. Settings → Data → "Import backup…", pick the `.json.gz` file as it is
+   (unpacked with `gunzip` or 7-Zip it is the plain export, which imports
+   too).
+3. Check the preview, confirm, then close the app and open it again. The
+   data on the phone is saved as a safety backup first.
+4. Sign in to Garmin again and paste the vault token again: neither is in
+   any backup.
+
 ## Backups
 
-Backups (snapshots and exports) carry the connection **settings**
-(`vault.connection.v1`: on/off, owner, name, branch) and nothing else:
-never the token (Keychain only), never the device id, the status, the
-cached plan or the write queue (`VaultKit/` is excluded). After restoring
-on a new phone the connection is configured but has no token; the banner
-asks you to paste it again, and the new phone gets its own device id on its
+Backups (snapshots, exports and the weekly vault backup) carry the
+connection **settings** (`vault.connection.v1`: on/off, owner, name,
+branch) and nothing else: never the token (Keychain only), never the
+device id, the status, the cached plan, the write queue or the weekly
+backup's own bookkeeping (`VaultKit/` is excluded). After restoring on a
+new phone the connection is configured but has no token; the banner asks
+you to paste it again, and the new phone gets its own device id on its
 first successful test.
 
 ## Probing GitHub from the PC

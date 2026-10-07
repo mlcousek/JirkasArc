@@ -30,6 +30,16 @@ What the code already provided:
   pause. Segments go through `DurableQueue` and `CreateOnlyFileUploader`,
   which on 422 reads the file back and compares git blob SHAs.
 
+- **Gzip in FoodLogCore** (`add-offline-czech-food-index`,
+  `OfflineFoodIndex.swift`). `GzipInflate` reads a gzip file (header with
+  its optional fields, raw DEFLATE through `NSData.decompressed(using:
+  .zlib)`, CRC-32 and length checked) and `GzipCRC32` computes the
+  checksum. They decode the weekly-built Czech index, a real gzip file
+  written by a Node tool, in production; that package's tests build their
+  gzip files with `NSData.compressed(using: .zlib)` and the same ten-byte
+  header. So that Foundation's `.zlib` is a raw DEFLATE stream is observed
+  in this repository, not assumed.
+
 What was probed: nothing new against GitHub. The create-only PUT, its 201
 and its 422 are the ones the event upload has used since
 `add-training-checkins`. Two things were checked on this machine with
@@ -38,13 +48,9 @@ Node, because no Swift runs here:
 - the gzip framing the app writes (10-byte header, raw DEFLATE, CRC-32,
   length) is read back by a standard `gunzip`, and two real gzip files
   (one plain, one with a name, an extra field, a comment and a header
-  checksum) are the decoder's test vectors;
+  checksum) are test vectors the reader must decode;
 - the ISO-week arithmetic agrees with a reference implementation for every
   half day from 1999 to 2044.
-
-That `NSData.compressed(using: .zlib)` produces a raw DEFLATE stream (no
-zlib header) is Apple's documented behaviour, not observed here. The test
-`testRealGzipFilesDecode` fails in CI if it is not so.
 
 No Swift toolchain here: correctness rests on the package tests and the
 `xcodebuild` in CI, and on a phone for tasks.md section 7.
@@ -77,17 +83,20 @@ compressed, and that is the one adaptation: it is pretty-printed JSON
 holding base64, about 1.35 times the size of the stores it carries. Gzip
 brings it to roughly a fifth (D6). The compression is Foundation's
 (`NSData.compressed(using: .zlib)`, a raw DEFLATE stream) wrapped in the
-gzip header and trailer by `BackupArchive`, which also computes the CRC-32.
-Gzip rather than a bare DEFLATE stream so that the file opens with any
-tool on the desk (`gunzip`, 7-Zip, Node's `zlib.gunzipSync`) and gives the
-plain export back.
+gzip header and trailer by `BackupArchive.gzip`, with `GzipCRC32` for the
+checksum. Gzip rather than a bare DEFLATE stream so that the file opens
+with any tool on the desk (`gunzip`, 7-Zip, Node's `zlib.gunzipSync`) and
+gives the plain export back.
 
 `BackupContainer.decode` recognises the gzip magic bytes and unpacks first,
-so every import path reads both forms. The decoder skips the optional
-header fields (name, extra, comment, header checksum): a file the owner
-unpacked and packed again on the desk carries its name there. A wrong
-checksum or length is "not a backup", like any other unreadable file. The
-file importer accepts `.gz` beside `.json`.
+so every import path reads both forms. Unpacking is the offline index's
+`GzipInflate`, not a second reader; it skips the optional header fields
+(name, extra, comment, header checksum), which a file the owner unpacked
+and packed again on the desk carries. `BackupArchive.gunzip` adds two
+things a backup needs: a declared size above 256 MB is refused before
+anything is unpacked, and every failure -- a wrong checksum, a wrong
+length, a cut-off file -- is "not a backup", like any other unreadable
+file. The file importer accepts `.gz` beside `.json`.
 
 *Alternative considered:* gzip the raw store files instead of the base64
 container (about a quarter smaller again). Refused: it is a second format
@@ -420,12 +429,10 @@ the vault, it belongs in an event or a nutrition bridge file.
 
 ## Risks / Trade-offs
 
-- **Nothing was compiled.** The gzip framing, the CRC and the ISO week
-  were checked with Node; the Swift is read against its declarations only.
-  The first CI run is the compiler.
-- **`NSData.compressed(using: .zlib)` being raw DEFLATE** is documented,
-  not observed here. If it were not, `testRealGzipFilesDecode` and the
-  round trip fail in CI and the fix is in one file (`BackupArchive`).
+- **Nothing was compiled.** The gzip framing and the ISO week were checked
+  with Node; the Swift is read against its declarations only. The first CI
+  run is the compiler. The compression calls are the shapes
+  `OfflineFoodIndex.swift` and its tests already compile.
 - **The size estimate is a model.** If the real archive is much larger,
   the cap holds it back and Settings says so; the first on-phone number
   settles it (tasks 7.2).

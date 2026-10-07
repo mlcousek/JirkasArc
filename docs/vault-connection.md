@@ -2,7 +2,7 @@
 
 How the app connects to the owner's Obsidian vault on GitHub, what it can
 and cannot do there, and how to create, rotate and revoke the token. The
-design is `openspec/changes/add-vault-connection/` (design D1–D13); the
+design is `openspec/changes/archive/2026-10-07-add-vault-connection/` (design D1–D13); the
 code is `ios/VaultKit` (the wire layer) and `ios/GarminFood/Vault` (the
 screens).
 

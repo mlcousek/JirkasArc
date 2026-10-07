@@ -44,7 +44,9 @@
 //     was dropped.
 //
 // The confirmation names what was RECORDED (the receipt), not what was
-// asked. A failure throws a localized error, so the Control shows it
+// asked -- including "already recorded" when the same light is sent again
+// without a pain score: a second tap records nothing, so it can't replace
+// what the first check-in said. A failure throws a localized error, so the Control shows it
 // instead of a success it hasn't earned (the connection is off, never
 // tested, the app couldn't record, or the score is out of range). Strings
 // live in BOTH catalogs (the checker's rule for Shared/).
@@ -128,14 +130,19 @@ struct MorningCheckInRequest: Equatable, Sendable {
 }
 
 /// What the app recorded: the pain entry in the event, if any (the score
-/// on the half-step grid, the site it chose).
+/// on the half-step grid, the site it chose) -- or that it recorded
+/// NOTHING NEW because this light is already the day's check-in
+/// (`alreadyRecorded`; TrainingCore's QuickCheckIn.swift, "A repeated
+/// check-in"). Then there is no pain entry either.
 struct MorningCheckInReceipt: Equatable, Sendable {
     var painScore: Double?
     var painSite: String?
+    var alreadyRecorded: Bool
 
-    init(painScore: Double? = nil, painSite: String? = nil) {
+    init(painScore: Double? = nil, painSite: String? = nil, alreadyRecorded: Bool = false) {
         self.painScore = painScore
         self.painSite = painSite
+        self.alreadyRecorded = alreadyRecorded
     }
 }
 
@@ -171,9 +178,13 @@ enum MorningCheckInControlAction {
 
     /// "Check-in recorded: Amber." or, with a pain entry, "Check-in
     /// recorded: Amber. Pain 4.5/10, Achilles (left)." A label and its
-    /// values, in the catalog's own words.
+    /// values, in the catalog's own words. A repeat of the day's light
+    /// says so instead: "Check-in already recorded: Amber."
     static func confirmation(light: CheckInLightOption, receipt: MorningCheckInReceipt) -> IntentDialog {
         let lightName = light.localizedName
+        if receipt.alreadyRecorded {
+            return "Check-in already recorded: \(lightName)."
+        }
         guard let score = receipt.painScore else {
             return "Check-in recorded: \(lightName)."
         }

@@ -153,6 +153,10 @@ public struct CheckInOverlay: Equatable, Sendable {
     public private(set) var lights: [LocalDate: OverlayValue<MorningLight>] = [:]
     /// The session a check-in named, per day (kept with the light).
     public private(set) var checkInSessions: [LocalDate: String] = [:]
+    /// The option a check-in named, per day (kept with the light; absent
+    /// when it named none). Read by QuickCheckIn.swift, so a repeated
+    /// check-in from a Control or a shortcut keeps what was chosen.
+    public private(set) var checkInOptions: [LocalDate: OptionCode] = [:]
     public private(set) var habitTicks: [HabitDayKey: OverlayValue<Bool>] = [:]
     public private(set) var rpes: [String: OverlayValue<Int>] = [:]
     public private(set) var notes: [String: OverlayValue<String>] = [:]
@@ -322,6 +326,7 @@ public struct CheckInOverlay: Equatable, Sendable {
             case .morningCheckIn(let payload):
                 overlay.lights[payload.date] = OverlayValue(value: payload.light, delivery: delivery)
                 overlay.checkInSessions[payload.date] = payload.sessionId
+                overlay.checkInOptions[payload.date] = payload.option
                 // Keep without the key, replace with it (`[]` included).
                 if let pains = payload.pains {
                     overlay.painAnswers[payload.date] = OverlayValue(value: pains, delivery: delivery)

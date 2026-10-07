@@ -104,7 +104,9 @@ request is plain values (`light`, `painScore?`, `painSite?` as the
 contract's words), because `Shared/` cannot name TrainingCore's types.
 The receipt says which pain entry was recorded (site and score after the
 rules of D3), so the dialog reads back what is in the event, not what was
-asked. `TrainingEventsService.handleCheckIn` is the one implementation;
+asked; or it says `alreadyRecorded`, when the request was a repeat of the
+day's light and nothing new was written ("Check-in already recorded:
+Amber."). `TrainingEventsService.handleCheckIn` is the one implementation;
 the connection guards are unchanged (off, not configured, standalone, no
 device id: nothing recorded, a message that says why).
 
@@ -139,6 +141,23 @@ Pure, in TrainingCore, tested there:
 - After a check-in without a score the app still brings Today forward in
   pain mode (`onControlCheckIn`); with a score it does not, because the
   question is answered.
+- **A repeat is not a second event** (`CheckInPlanning.quickCheckIn`,
+  added after the review of 2026-10-06). The vault takes the LAST
+  `checkin.morning` of a day for its light, session and option (only
+  `pains` survives from an earlier event), and this path builds session
+  and option from today's cached plan and the light's own letter. So,
+  against the phone's own check-in of that training day (`CheckInOverlay`,
+  which now also keeps the option an event named): the same light without
+  a score records nothing and the receipt says "already recorded"; the
+  same light with a score is recorded with the EARLIER session and option
+  and the new pain entry; another light, or no check-in of this phone for
+  the day, is recorded as a new choice. No contract change. Two limits,
+  stated: a check-in only the vault knows (another install) is not seen,
+  and no screen of this app records a check-in whose option differs from
+  its light's letter today -- so what the rule prevents in practice is
+  the duplicate event and a session or option rebuilt from a plan that
+  changed since the first tap; the carried option is there for the day a
+  screen does offer that choice.
 
 ### D4 -- The check-in widget
 

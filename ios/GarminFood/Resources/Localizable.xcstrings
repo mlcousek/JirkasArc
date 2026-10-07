@@ -2251,6 +2251,18 @@
         }
       }
     },
+    "Check-in already recorded: %@.": {
+      "comment": "add-training-shortcuts-and-widgets: Answer of the morning check-in (Siri, Shortcuts, Control) when this light is already today's check-in: nothing new was recorded. %@ is the light: Green, Amber or Red.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranní kontrola už je zaznamenaná: %@."
+          }
+        }
+      }
+    },
     "Check-in recorded: %@.": {
       "comment": "add-training-shortcuts-and-widgets: Confirmation of the morning check-in (Siri, Shortcuts, widget, Control). %@ is the light: Green, Amber or Red.",
       "extractionState": "manual",

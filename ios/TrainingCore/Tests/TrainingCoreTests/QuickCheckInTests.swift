@@ -168,6 +168,115 @@ final class QuickCheckInTests: XCTestCase {
         )
     }
 
+    // MARK: A repeated check-in
+
+    /// This phone's own events, folded; each a check-in recorded ten
+    /// minutes apart before `morning`, oldest first, none delivered yet.
+    private func overlay(_ payloads: MorningCheckInPayload...) -> CheckInOverlay {
+        let events = payloads.enumerated().map { index, payload in
+            LoggedEvent(
+                event: HubEvent(id: "id-\(index + 1)", deviceId: "ios-0000beef", seq: index + 1, at: "t", payload: .morningCheckIn(payload)),
+                recordedAt: morning.addingTimeInterval(Double(index - payloads.count) * 600)
+            )
+        }
+        return CheckInOverlay.fold(events, unsentSegments: [])
+    }
+
+    private func decide(_ light: MorningLight, pain: QuickPainAnswer? = nil, projection: Projection?, checkIns: CheckInOverlay) throws -> QuickCheckInDecision {
+        try CheckInPlanning.quickCheckIn(light: light, pain: pain, projection: projection, checkIns: checkIns, now: morning, deviceTimeZone: utc)
+    }
+
+    /// Amber for the example's Wednesday, with an option that is NOT
+    /// amber's own letter: what a second tap must not overwrite.
+    private var amberWithAChosenOption: MorningCheckInPayload {
+        MorningCheckInPayload(date: wednesday, light: .amberLight, sessionId: "2030-w43-wed-am", option: .r)
+    }
+
+    func testTheSameLightAgainRecordsNothing() throws {
+        let example = try projection()
+
+        XCTAssertEqual(
+            try decide(.amberLight, projection: example, checkIns: overlay(amberWithAChosenOption)),
+            .alreadyRecorded(date: wednesday, light: .amberLight),
+            "a second tap would replace the chosen option with amber's default"
+        )
+        let plain = MorningCheckInPayload(date: wednesday, light: .greenLight, sessionId: "2030-w43-wed-am")
+        XCTAssertEqual(
+            try decide(.greenLight, projection: example, checkIns: overlay(plain)),
+            .alreadyRecorded(date: wednesday, light: .greenLight),
+            "two taps are one check-in"
+        )
+    }
+
+    func testTheSameLightWithAScoreKeepsTheEarlierSessionAndOption() throws {
+        let example = try projection()
+
+        let decision = try decide(.amberLight, pain: QuickPainAnswer(score: 2), projection: example, checkIns: overlay(amberWithAChosenOption))
+        var expected = amberWithAChosenOption
+        expected.pains = [PainEntry(site: .achillesLeft, score: 2)]
+        XCTAssertEqual(decision, .record(expected), "only the pain is new")
+
+        // An earlier check-in that named no session keeps none, even
+        // though today's plan has one.
+        let noSession = MorningCheckInPayload(date: wednesday, light: .amberLight, sessionId: nil)
+        let kept = try decide(.amberLight, pain: QuickPainAnswer(score: 0.5, site: .kneeRight), projection: example, checkIns: overlay(noSession))
+        XCTAssertEqual(
+            kept,
+            .record(MorningCheckInPayload(date: wednesday, light: .amberLight, sessionId: nil, option: nil, pains: [PainEntry(site: .kneeRight, score: 0.5)]))
+        )
+    }
+
+    func testAnotherLightIsANewChoiceWithItsOwnOption() throws {
+        let example = try projection()
+
+        XCTAssertEqual(
+            try decide(.greenLight, projection: example, checkIns: overlay(amberWithAChosenOption)),
+            .record(MorningCheckInPayload(date: wednesday, light: .greenLight, sessionId: "2030-w43-wed-am")),
+            "a changed light is a new check-in: today's session, green's own option, no pain answer"
+        )
+        let withScore = try decide(.redLight, pain: QuickPainAnswer(score: 6), projection: example, checkIns: overlay(amberWithAChosenOption))
+        XCTAssertEqual(
+            withScore,
+            .record(MorningCheckInPayload(date: wednesday, light: .redLight, sessionId: "2030-w43-wed-am", pains: [PainEntry(site: .achillesLeft, score: 6)]))
+        )
+    }
+
+    func testWithoutAnEarlierCheckInItIsRecordedAsBefore() throws {
+        let example = try projection()
+        let asBefore = CheckInPlanning.morningCheckIn(light: .amberLight, projection: example, now: morning, deviceTimeZone: utc)
+
+        XCTAssertEqual(try decide(.amberLight, projection: example, checkIns: .empty), .record(asBefore))
+        // Yesterday's amber is not today's.
+        let yesterday = MorningCheckInPayload(date: tuesday, light: .amberLight, sessionId: nil)
+        XCTAssertEqual(try decide(.amberLight, projection: example, checkIns: overlay(yesterday)), .record(asBefore))
+        // No plan at all: still a day, and still a repeat the second time.
+        let bare = MorningCheckInPayload(date: wednesday, light: .redLight, sessionId: nil)
+        XCTAssertEqual(try decide(.redLight, projection: nil, checkIns: .empty), .record(bare))
+        XCTAssertEqual(try decide(.redLight, projection: nil, checkIns: overlay(bare)), .alreadyRecorded(date: wednesday, light: .redLight))
+    }
+
+    func testARefusedScoreRecordsNothingEvenOnARepeat() throws {
+        let example = try projection()
+        XCTAssertThrowsError(try decide(.amberLight, pain: QuickPainAnswer(score: 12), projection: example, checkIns: overlay(amberWithAChosenOption))) { error in
+            XCTAssertEqual(error as? QuickCheckInError, .painScoreOutOfRange)
+        }
+    }
+
+    func testTheOverlayHoldsTheLatestCheckInOfADay() {
+        XCTAssertNil(CheckInOverlay.empty.checkIn(on: wednesday))
+        XCTAssertEqual(
+            overlay(amberWithAChosenOption).checkIn(on: wednesday),
+            RecordedCheckIn(light: .amberLight, sessionId: "2030-w43-wed-am", option: .r)
+        )
+        // Latest wins for the light, the session and the option together.
+        let later = MorningCheckInPayload(date: wednesday, light: .greenLight, sessionId: nil)
+        XCTAssertEqual(
+            overlay(amberWithAChosenOption, later).checkIn(on: wednesday),
+            RecordedCheckIn(light: .greenLight, sessionId: nil, option: nil)
+        )
+        XCTAssertNil(overlay(amberWithAChosenOption).checkIn(on: tuesday))
+    }
+
     // MARK: A site needs a score
 
     func testASiteWithoutAScoreIsRefusedNotDropped() throws {

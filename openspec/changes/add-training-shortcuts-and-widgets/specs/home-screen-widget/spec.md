@@ -44,8 +44,13 @@ The system SHALL offer a Home Screen widget, small and medium, with three
 buttons: Green, Amber and Red, each distinguished by letter and shape as
 well as colour and labelled for VoiceOver. A button SHALL open the app and
 record that check-in there for the current training day, exactly as the
-matching lock-screen Control does, and SHALL fail with the same visible
-message when the vault connection is off or has no device id.
+matching lock-screen Control does. A widget button cannot show a failure
+itself, so when the check-in could not be recorded (the vault connection
+is off or has no device id, or the write failed) the app SHALL say why,
+once, in an alert when it comes forward, with the sentence the Control
+would show. It SHALL NOT leave the owner believing a check-in that was not
+recorded. A repeat of the day's light records nothing and is not a failure
+(see `training-checkins`).
 
 #### Scenario: Amber from the Home Screen
 
@@ -56,6 +61,12 @@ message when the vault connection is off or has no device id.
 
 - **WHEN** a button is tapped on an install without the vault connection
 - **THEN** nothing is recorded
+- **AND** the app, now in front, shows once that nothing was recorded and that the vault connection must be turned on first
+
+#### Scenario: The notice is shown once
+
+- **WHEN** the owner dismisses that alert and returns to the app later without tapping the widget again
+- **THEN** the alert is not shown again
 
 ### Requirement: A countdown widget counts the days to an event set in its own configuration
 

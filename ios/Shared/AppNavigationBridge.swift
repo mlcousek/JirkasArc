@@ -54,4 +54,24 @@ final class AppNavigationBridge {
         defer { pendingRoute = nil }
         return pendingRoute
     }
+
+    /// add-training-shortcuts-and-widgets (review fix): a sentence the app
+    /// must say ONCE when it comes forward, already in the app's language.
+    /// It exists for the Home Screen check-in widget: a widget button
+    /// can't show its intent's error (a Control and Siri can), so when that
+    /// check-in records nothing, `MorningCheckInWidgetIntent` leaves the
+    /// reason here and ContentView shows it as an alert. The same
+    /// in-process hand-off as `pendingRoute`, never persisted.
+    private(set) var pendingNotice: String?
+
+    func post(notice: String) {
+        pendingNotice = notice
+    }
+
+    /// Reads and clears in one step: the notice is shown once.
+    @discardableResult
+    func consumeNotice() -> String? {
+        defer { pendingNotice = nil }
+        return pendingNotice
+    }
 }

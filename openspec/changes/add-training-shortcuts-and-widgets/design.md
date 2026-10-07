@@ -63,11 +63,28 @@ No Swift toolchain here: correctness rests on the package tests and the
 
 ## Decisions
 
-### D1 -- One check-in intent for every surface
+### D1 -- One check-in action for every surface
 
-`MorningCheckInIntent` stays the only check-in intent. The Controls, the
-new widget's buttons and the App Shortcut all use it, so there is one
-place that records and one set of failure messages.
+`MorningCheckInIntent` stays the check-in intent of the Controls and the
+App Shortcut, and every surface goes through the same hook (D2), so there
+is one place that records and one set of failure messages.
+
+The widget's buttons use a second, thin type, `MorningCheckInWidgetIntent`
+(same file, same hook, the light only), added after the review of
+2026-10-06 for one reason: a widget's `Button(intent:)` shows nothing when
+its intent throws. A Control marks the failure and Siri speaks it; a
+widget tap with the vault connection off opened the app, recorded nothing
+and said nothing. That intent never throws: on a refusal it leaves the
+sentence on `AppNavigationBridge` (`pendingNotice`, in memory, consumed
+once) and `ContentView` shows it as an alert titled "Morning Check-in"
+when the app is in front. Two types rather than a flag on one, because
+only a `@Parameter` survives the trip from the widget to the app and a
+hidden "source" parameter would show in the Shortcuts app; a second type
+is how the quick-pick Controls already share one action. It is not
+offered in Shortcuts (`isDiscoverable = false`) and reuses the first
+intent's strings. The Controls and the shortcut keep their own error path,
+so nobody is told twice. A repeat of the day's light (D3) is not a
+failure and shows nothing.
 
 - `light` keeps its type (`CheckInLightOption`, an `AppEnum`, which is
   what a phrase parameter must be). `init()` no longer presets green: a
@@ -164,11 +181,12 @@ Pure, in TrainingCore, tested there:
 `MorningCheckInWidget`, kind `com.mlcousek.garminfood.widget.checkin`,
 `systemSmall` and `systemMedium`, in the existing extension.
 
-- Three `Button(intent: MorningCheckInIntent(light:))`. Interactive
-  widgets are iOS 17, the deployment target. A button's intent runs where
-  the intent says: `openAppWhenRun` brings the app forward and `perform()`
-  runs there, exactly as for a Control. Nothing is shared and nothing is
-  stored by the widget.
+- Three `Button(intent: MorningCheckInWidgetIntent(light:))` (D1).
+  Interactive widgets are iOS 17, the deployment target. A button's
+  intent runs where the intent says: `openAppWhenRun` brings the app
+  forward and `perform()` runs there, exactly as for a Control. Nothing
+  is shared and nothing is stored by the widget. A check-in that could
+  not be recorded is said by the app, once, in an alert.
 - **It shows no state.** Not the chosen light, not "done": the extension
   cannot read the app's files, and a guess would be worse than nothing
   (`add-glanceable-surfaces` D2). The buttons look the same before and
@@ -312,6 +330,13 @@ catalogs ("Ranní kontrola", "Zelená", "Oranžová", "Červená", "Achilovka
   and run there, as a Control's does. Unconfirmed on a phone. Fallback:
   give each button a `Link` to a `garminfood://checkin?light=` URL that
   the app handles (one more deep-link action).
+- **The widget's failure notice is an alert on the root view.** While
+  onboarding or another sheet is up it waits and shows when that closes;
+  it is still true then ("Nothing recorded: ..."), so it is kept rather
+  than dropped. `static var isDiscoverable = false` and
+  `String(localized:)` with a `LocalizedStringResource` are two more
+  signatures with no earlier use here (fallbacks: delete the line; build
+  the sentence with a `switch` of `String(localized: "...")` literals).
 - **A Siri check-in opens the app** (D1) and, on a locked phone, may ask
   to unlock, as the Controls may. Follow-up named in D1.
 - **Whether the dialog is spoken once the app comes forward** is the

@@ -235,7 +235,8 @@ final class VaultBackupTests: XCTestCase {
         XCTAssertEqual(state.lastSuccessByteCount, 412_345)
         XCTAssertNil(state.lastFailure)
         // Not again this week, however often the app comes forward.
-        for hours in [0.0, 0.5, 2, 48, 6 * 24 + 17] {
+        let laterHours: [Double] = [0, 0.5, 2, 48, 161]
+        for hours in laterHours {
             XCTAssertFalse(VaultBackupSchedule.isDue(state, now: monday.addingTimeInterval(hours * hour)), "\(hours) h later")
         }
         // The next Monday it is.

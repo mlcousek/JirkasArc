@@ -139,7 +139,9 @@ final class StoreCatalogTests: XCTestCase {
             ("VaultKit/device-identity.json", "vault.device-identity"),
             ("VaultKit/status.json", "vault.status"),
             ("VaultKit/fetch-cache.json", "vault.fetch-cache"),
-            ("VaultKit/write-queue.json", "vault.write-queue")
+            ("VaultKit/write-queue.json", "vault.write-queue"),
+            // add-vault-backup D8: the weekly upload's own state.
+            ("VaultKit/backup-upload.json", "vault.backup-upload")
         ] {
             XCTAssertEqual(StoreCatalog.entry(forRelativePath: path)?.id, id, path)
             XCTAssertEqual(StoreCatalog.entry(id: id)?.inBackup, false, id)

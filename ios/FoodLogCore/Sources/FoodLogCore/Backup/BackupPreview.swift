@@ -75,7 +75,8 @@ public struct BackupPreview: Equatable, Sendable {
 
 /// Design D6's reminder: show when the last export is more than
 /// `interval` old (or there never was one), unless "Not now" was tapped
-/// within `interval`. Pure, so the 14-day edges are tested.
+/// within `interval`. Pure, so the 14-day edges are tested. Since
+/// add-vault-backup a backup that reached the vault counts like an export.
 public enum BackupReminderPolicy {
     public static let interval: TimeInterval = 14 * 24 * 60 * 60
 
@@ -84,6 +85,10 @@ public enum BackupReminderPolicy {
     /// never rewinds when the last export happened.
     public static let lastExportAtKey = "dataSafety.lastExportAt"
     public static let dismissedAtKey = "dataSafety.reminderDismissedAt"
+    /// add-vault-backup D10: when a backup last reached the vault (a file
+    /// created there, or found already there). Written by the app's
+    /// VaultBackupService; excluded from backups by the same prefix.
+    public static let lastVaultBackupAtKey = "dataSafety.lastVaultBackupAt"
 
     /// Whole calendar days from `date` to `now` (0 = today), for "Today" /
     /// "N days ago" on the Data screen. Never negative, so a clock set back
@@ -93,9 +98,33 @@ public enum BackupReminderPolicy {
         return max(0, days)
     }
 
-    public static func shouldShow(lastExportAt: Date?, dismissedAt: Date?, now: Date, interval: TimeInterval = BackupReminderPolicy.interval) -> Bool {
-        if let lastExportAt, now.timeIntervalSince(lastExportAt) < interval { return false }
-        if let dismissedAt, now.timeIntervalSince(dismissedAt) < interval { return false }
+    /// add-vault-backup D10: `lastVaultBackupAt` counts like an export --
+    /// either one within `interval` is an off-phone copy. So the reminder
+    /// stays away while the weekly vault backup works and comes back when
+    /// it has not worked for `interval`. Last and defaulted, so callers
+    /// without a vault (the tests of add-data-safety) read as before.
+    ///
+    /// A date in the FUTURE counts for nothing (review of add-vault-backup):
+    /// a backup, an export or a "Not now" recorded while the clock was set
+    /// forward must not keep the reminder away until real time catches up
+    /// and then for `interval` more. Ignoring it errs towards showing.
+    public static func shouldShow(
+        lastExportAt: Date?,
+        dismissedAt: Date?,
+        now: Date,
+        interval: TimeInterval = BackupReminderPolicy.interval,
+        lastVaultBackupAt: Date? = nil
+    ) -> Bool {
+        if isWithin(interval, of: lastExportAt, now: now) { return false }
+        if isWithin(interval, of: lastVaultBackupAt, now: now) { return false }
+        if isWithin(interval, of: dismissedAt, now: now) { return false }
         return true
+    }
+
+    /// `date` is in the past (or now) and less than `interval` ago.
+    static func isWithin(_ interval: TimeInterval, of date: Date?, now: Date) -> Bool {
+        guard let date else { return false }
+        let age = now.timeIntervalSince(date)
+        return age >= 0 && age < interval
     }
 }

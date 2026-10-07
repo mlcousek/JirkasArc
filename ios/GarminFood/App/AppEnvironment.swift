@@ -1188,10 +1188,21 @@ final class AppEnvironment {
 
     /// add-training-checkins D4: one unstructured delivery of the phone's
     /// training events, then Settings -> Vault's counts.
+    ///
+    /// add-vault-backup D4: then the weekly backup of the app's data, if
+    /// the week still needs one -- after this drain, in the same task, so
+    /// the two uploads USUALLY do not commit at the same moment. Not never:
+    /// `drainNow` returns at once when another drain is already running,
+    /// the delayed drain after an action can start mid-backup, and the
+    /// background refresh runs the backup without any drain. GitHub then
+    /// answers one of them 409, which the backup does not count as an
+    /// attempt and tries again an hour later. The service checks the
+    /// connection, the request gate and the schedule itself.
     private func deliverTrainingEvents() {
         let vault = self.vault
         Task {
             await TrainingEventsService.shared.drainNow()
+            await VaultBackupService.shared.runIfDue()
             await vault.reload()
         }
     }

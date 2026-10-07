@@ -128,6 +128,21 @@ ios/
                     generic DurableQueue + create-only uploads, and the
                     VaultTransport seam. No training concepts, no
                     user-facing strings. App-only, never the widget.
+                    add-vault-backup: the weekly backup of the app's own
+                    data (VaultBackup.swift: the ISO week in UTC, the path
+                    `backups/<deviceId>/<YYYY>/<YYYY>-W<ww>.json.gz`, due
+                    once a week, an hour between attempts, five counted
+                    failures a week, a 3 MiB cap; VaultBackupUploader:
+                    create-only, "already exists" means the week is done
+                    once one read has SEEN the file -- a bare 422 is never
+                    believed, the content is never compared -- and it
+                    does NOT go through the DurableQueue). VaultKit is
+                    handed bytes: FoodLogCore's
+                    Backup/BackupArchive.swift builds them (the export,
+                    gzip-compressed; `BackupContainer.decode` reads both
+                    forms, so restore is the existing import) and
+                    GarminFood/Vault/VaultBackupService.swift joins the
+                    two, behind the gate the event upload uses.
   TrainingCore/     SPM package (depends on VaultKit, GarminKit) — the
                     training domain (add-training-today-and-plan): tolerant
                     decoding of the vault's projection v1 (OpenEnum,
@@ -252,6 +267,16 @@ log the token, the repository owner or its name (`VaultLog`,
 `RedactionTests`). This repository is public: no vault repository name,
 token or vault content in code, CI or fixtures. See
 `docs/vault-connection.md`.
+
+What the app writes to the vault, all of it create-only and inside its own
+device folders under the hub root: the training events
+(`events/<deviceId>/...jsonl`, add-training-checkins) and the weekly backup
+of its own data (`backups/<deviceId>/<YYYY>/...json.gz`, add-vault-backup).
+It reads `projection/` and, to check what it wrote, its own files. A new
+kind of write means a new shape in `VaultPathPolicy` with its refused
+shapes tested, never a looser rule. A backup must never contain a credential or device state:
+`BackupExclusions` decides, and `VaultUploadArchiveTests` names the stores
+that may not be flipped.
 
 TrainingCore sits on top: the app's views reach the plan only through it
 (`GarminFood/Training/TrainingModel.swift` holds its `TrainingSource`,

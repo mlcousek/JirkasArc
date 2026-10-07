@@ -4,7 +4,9 @@
 // 9.5, design D10). iOS decides when, and whether, a refresh actually runs.
 // For a sideloaded app that is a device check, not an assumption. The
 // foreground drain keeps working regardless. It also runs the Czech
-// offline index's daily update check (add-offline-czech-food-index).
+// offline index's daily update check (add-offline-czech-food-index) and,
+// on a Garmin-connected install, the weekly vault backup when one is due
+// (add-vault-backup).
 
 import BackgroundTasks
 import Foundation
@@ -45,6 +47,15 @@ enum BackgroundRefresh {
         let allowsGarmin = GarminSyncPlan.for(AppServices.currentDataMode()).allows(.backgroundDelivery)
         if allowsGarmin {
             await deliver(services)
+        }
+        // add-vault-backup D4: the weekly backup of the app's data to the
+        // vault, when this refresh happens to run in a week that has none
+        // yet. A bonus, not the schedule (the foreground is): the refresh
+        // is only scheduled while Garmin entries wait. The service checks
+        // the connection, the request gate and the week itself; create-only
+        // makes an upload cut off by iOS harmless.
+        if AppServices.currentDataMode() == .garminConnected {
+            await VaultBackupService.shared.runIfDue()
         }
         // add-offline-czech-food-index D3: the at-most-daily index check,
         // piggybacking on whatever background time iOS grants. Throttled

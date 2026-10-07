@@ -399,5 +399,43 @@ final class BackupCoreTests: XCTestCase {
     func testReminderBookkeepingKeysNeverTravelWithABackup() {
         XCTAssertFalse(BackupExclusions.includesPreference(key: BackupReminderPolicy.lastExportAtKey))
         XCTAssertFalse(BackupExclusions.includesPreference(key: BackupReminderPolicy.dismissedAtKey))
+        XCTAssertFalse(BackupExclusions.includesPreference(key: BackupReminderPolicy.lastVaultBackupAtKey))
+    }
+
+    /// add-vault-backup D10: a backup that reached the vault is an
+    /// off-phone copy like an export -- and when the weekly backup has not
+    /// worked for 14 days, the reminder is back.
+    func testAVaultBackupCountsLikeAnExportForTheReminder() {
+        let now = Date(timeIntervalSince1970: 1_918_196_130)
+        let day: TimeInterval = 24 * 60 * 60
+        // Never exported, the weekly backup works.
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-3 * day)))
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-13 * day)))
+        // ...and stopped working.
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-14 * day)))
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: now.addingTimeInterval(-30 * day), dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-15 * day)))
+        // An old vault backup doesn't cancel a fresh export, nor the reverse.
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: now.addingTimeInterval(-2 * day), dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-40 * day)))
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: now.addingTimeInterval(-40 * day), dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-2 * day)))
+        // "Not now" still hides it.
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: now.addingTimeInterval(-1 * day), now: now, lastVaultBackupAt: now.addingTimeInterval(-20 * day)))
+    }
+
+    /// Review of add-vault-backup: a date recorded while the clock was set
+    /// forward lies in the future once the clock is right again. It must
+    /// not silence the reminder -- neither a vault backup, nor an export,
+    /// nor a "Not now".
+    func testADateInTheFutureDoesNotSilenceTheReminder() {
+        let now = Date(timeIntervalSince1970: 1_918_196_130)
+        let day: TimeInterval = 24 * 60 * 60
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(day)))
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(400 * day)))
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: now.addingTimeInterval(day), dismissedAt: nil, now: now))
+        XCTAssertTrue(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: now.addingTimeInterval(day), now: now))
+        // The moment itself is "just now", not the future.
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: nil, dismissedAt: nil, now: now, lastVaultBackupAt: now))
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: now, dismissedAt: nil, now: now))
+        // A future date does not hide a real, recent one.
+        XCTAssertFalse(BackupReminderPolicy.shouldShow(lastExportAt: now.addingTimeInterval(day), dismissedAt: nil, now: now, lastVaultBackupAt: now.addingTimeInterval(-2 * day)))
     }
 }

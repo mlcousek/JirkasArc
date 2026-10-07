@@ -36,6 +36,7 @@ final class StoreFixtureTests: XCTestCase {
         "status.json",
         "fetch-cache.json",
         "write-queue.json",
+        "backup-upload.json",
     ]
 
     private static let cacheFixture = "cache/656d7a69627eb5f5fc0256a9dbba4a1c2e7b46f7b3fe03bc52dde6528f473840.bin"
@@ -125,6 +126,34 @@ final class StoreFixtureTests: XCTestCase {
         XCTAssertEqual(String(decoding: bytes, as: UTF8.self), "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"example\"}\n")
         XCTAssertEqual(entries[0].record.blobSHA, GitBlob.sha1Hex(of: bytes), "the sealed SHA matches the sealed bytes")
         XCTAssertEqual(entries[0].nextAttemptAt, iso("2026-09-28T08:00:00Z"))
+    }
+
+    /// add-vault-backup D8: the weekly backup's bookkeeping -- a success in
+    /// one week, two counted failures in the next.
+    func testBackupUploadFixture() async throws {
+        let directory = try copyFixtures(["backup-upload.json"])
+        let store = VaultBackupStateStore(directory: directory)
+        let state = await store.current()
+        try assertNothingQuarantined(in: directory)
+        XCTAssertEqual(state.lastSuccessAt, iso("2030-10-07T06:30:00Z"))
+        XCTAssertEqual(state.lastSuccessWeek, "2030-W41")
+        XCTAssertEqual(state.lastSuccessPath?.rawValue, "backups/ios-0000abcd/2030/2030-W41.json.gz")
+        XCTAssertEqual(state.lastSuccessByteCount, 412_345)
+        XCTAssertEqual(state.lastAttemptAt, iso("2030-10-15T09:00:00Z"))
+        XCTAssertEqual(state.attemptWeek, "2030-W42")
+        XCTAssertEqual(state.attemptCount, 2)
+        XCTAssertEqual(state.lastFailure, .vault(.serverError(status: 502)))
+        XCTAssertEqual(state.lastFailureAt, iso("2030-10-15T09:00:00Z"))
+        // The rules read it: W42 is not done, two of five attempts are
+        // spent, and an hour after the last attempt it is due again.
+        XCTAssertFalse(VaultBackupSchedule.isDue(state, now: iso("2030-10-15T09:30:00Z")))
+        XCTAssertTrue(VaultBackupSchedule.isDue(state, now: iso("2030-10-15T10:00:00Z")))
+        // The store writes back what it read plus the change.
+        let after = await store.recordFailure(.vault(.serverError(status: 503)), week: VaultBackupWeek(containing: iso("2030-10-15T10:00:00Z")), at: iso("2030-10-15T10:00:00Z"))
+        XCTAssertEqual(after.attemptCount, 3)
+        XCTAssertEqual(after.lastSuccessWeek, "2030-W41")
+        let reread = await VaultBackupStateStore(directory: directory).current()
+        XCTAssertEqual(reread, after)
     }
 
     // MARK: - Coverage

@@ -12,7 +12,9 @@
 //   restore, after a confirmation);
 // - export to a single file (Files / iCloud Drive), with a note that
 //   entries still waiting for Garmin are not in any backup (design D8);
-// - import from a file, through a preview (`BackupImportPreviewSheet`).
+// - import from a file, through a preview (`BackupImportPreviewSheet`);
+//   since add-vault-backup also from the compressed file the weekly vault
+//   backup writes.
 //
 // Built from Sections so another one can be added with one line. Thin:
 // the state and actions are `DataSafetyController`; the logic is
@@ -83,7 +85,9 @@ struct DataSettingsView: View {
             controller.didExport(result)
             exportDocument = nil
         }
-        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
+        // add-vault-backup D1: also the compressed export the weekly vault
+        // backup writes (`.json.gz`); `BackupContainer.decode` unpacks it.
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json, .gzip]) { result in
             guard case .success(let url) = result else { return }
             Task { importedBackup = await controller.readImport(url) }
         }

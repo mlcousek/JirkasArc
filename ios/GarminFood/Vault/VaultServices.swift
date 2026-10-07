@@ -22,8 +22,12 @@
 // `ProjectionStore`, over the same `ConditionalFileSync`, so the last good
 // plan is VaultKit's cached copy and nothing else.
 //
+// add-vault-backup task 4.1: and the weekly backup's uploader with its
+// state file, over the same transport and status (VaultBackupService is
+// the one caller).
+//
 // Depended on by: VaultController (AppEnvironment.vault), TrainingModel
-// (AppEnvironment.training).
+// (AppEnvironment.training), VaultBackupService.
 
 import Foundation
 import VaultKit
@@ -40,6 +44,8 @@ final class VaultServices {
     let fetchSync: ConditionalFileSync
     let coordinator: VaultSyncCoordinator
     let projectionStore: ProjectionStore
+    /// add-vault-backup: the weekly backup of the app's data.
+    let backupUploader: VaultBackupUploader
 
     private init() {
         let directory = VaultStorage.defaultDirectory()
@@ -71,6 +77,11 @@ final class VaultServices {
             fetchSync: fetchSync,
             statusStore: statusStore,
             identityStore: identityStore
+        )
+        self.backupUploader = VaultBackupUploader(
+            transport: transport,
+            stateStore: VaultBackupStateStore(directory: directory),
+            statusStore: statusStore
         )
     }
 }

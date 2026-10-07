@@ -158,3 +158,147 @@ undocumented write contract.
 
 - **WHEN** the device has no network connectivity
 - **THEN** marking or unmarking a favorite still succeeds immediately
+
+### Requirement: Picking an ingredient searches every food source
+
+The system SHALL offer the same food sources when picking a meal-preset
+ingredient as when logging a food: Garmin search results, Czech Open Food
+Facts results, and the user's custom foods matched by name.
+
+#### Scenario: Czech product found while building a meal
+
+- **WHEN** the user adds an ingredient to a meal preset and searches for a Czech product that only Open Food Facts has
+- **THEN** the Open Food Facts section is shown in the picker
+- **AND** choosing that product, after the Garmin match is confirmed, adds the matched food to the meal instead of logging it
+
+#### Scenario: Custom food found by typing while building a meal
+
+- **WHEN** the user types part of a custom food's name in the ingredient picker
+- **THEN** that custom food is listed and can be added to the meal
+
+### Requirement: A tap in picker mode never logs a food
+
+The system SHALL return the tapped food to the calling screen, and SHALL NOT
+log it, whenever the catalog is open to pick an ingredient or a backing food.
+This applies to quick-pick cards, favorites, custom foods and search results.
+
+#### Scenario: Quick pick tapped while adding an ingredient
+
+- **WHEN** the catalog is open to add a meal-preset ingredient and the user taps a Quick pick card
+- **THEN** the food is added to the meal preset with that card's serving and quantity
+- **AND** no food log entry is created
+
+### Requirement: The Log Food screen offers swipeable shelves in a fixed order
+
+When the search field is empty, the system SHALL show horizontal card shelves
+in this order: Quick pick, Favorites, Usual for <meal>, Meals, Recent. The
+system SHALL hide any shelf that has no items.
+
+#### Scenario: Meals shown as cards
+- **WHEN** the user has two meal presets and opens Log Food
+- **THEN** both presets appear as cards in the Meals shelf, after Usual for <meal>
+- **AND** tapping a card opens the preset's confirm screen
+
+#### Scenario: Empty shelf hidden
+- **WHEN** the user has no favorites
+- **THEN** no Favorites shelf is shown and the next shelf moves up
+
+### Requirement: A per-meal shelf surfaces the foods usually eaten at that meal
+
+The system SHALL show a "Usual for <meal>" shelf. It lists the foods most
+often logged for the meal currently being logged, ranked by frequency with a
+recency decay. The shelf SHALL only appear once that meal has at least 3
+logged events.
+
+#### Scenario: Breakfast staples at breakfast
+- **WHEN** the user opens Log Food from the Breakfast card, and oatmeal was logged at breakfast 8 times and at dinner 0 times
+- **THEN** the shelf is titled "Usual for breakfast" and oatmeal appears in it
+
+#### Scenario: Dinner shelf differs
+- **WHEN** the user opens Log Food from the Dinner card
+- **THEN** oatmeal does not appear in "Usual for dinner" unless it was logged at dinner
+
+### Requirement: A Recent shelf lists the last foods logged
+
+The system SHALL show a Recent shelf with the last 10 distinct foods logged,
+newest first.
+
+#### Scenario: Just-logged food is first
+- **WHEN** the user logs a banana and reopens Log Food
+- **THEN** the banana is the first card in Recent
+
+### Requirement: Search returns one ranked list across all sources
+
+The system SHALL return search results as a single list ranked by relevance.
+The list covers the user's own foods (custom foods, favorites, previously
+logged foods), Garmin's database (`GET /nutrition-service/food/search`,
+confirmed 2026-09-14), and Czech Open Food Facts. Each result SHALL show a
+small source badge. Duplicates of the same product across sources SHALL
+appear once.
+
+#### Scenario: Own custom food found by typing
+
+- **WHEN** the user has a custom food "Domácí tvaroh" and types "tvaroh"
+- **THEN** "Domácí tvaroh" appears in the results, marked as the user's own food
+
+#### Scenario: Same product from two sources
+
+- **WHEN** Garmin and Open Food Facts both return "Madeta Jihočeský tvaroh" with calories within 5% per 100 g
+- **THEN** it appears once, as the directly loggable Garmin item
+
+### Requirement: Matching tolerates Czech inflection, word order, diacritics and typos
+
+The system SHALL match a query against food names regardless of:
+
+- diacritics and letter case;
+- word order;
+- common Czech inflected forms;
+- a single-character typo in words of four or more letters.
+
+#### Scenario: Inflection
+
+- **WHEN** the user searches "rohlíky"
+- **THEN** foods named "Rohlík" are among the top results
+
+#### Scenario: Word order and no diacritics
+
+- **WHEN** the user searches "tvaroh mekky"
+- **THEN** "Měkký tvaroh" is among the top 3 results
+
+#### Scenario: Typo
+
+- **WHEN** the user searches "banan" or "chlba"
+- **THEN** "Banán" or "Chléb" respectively is among the top 3 results
+
+#### Scenario: Unrelated garbage is not shown
+
+- **WHEN** no word of a candidate matches any query word at any tier
+- **THEN** that candidate is not shown
+
+### Requirement: Foods the user eats often rank higher
+
+The system SHALL boost results by how often and how recently the user has
+logged them, and by favorite status, so that among comparable matches the
+user's usual food ranks first.
+
+#### Scenario: Usual yogurt first
+
+- **WHEN** two yogurts match "jogurt" equally and the user logged one of them 10 times last month
+- **THEN** that yogurt ranks above the other
+
+### Requirement: Results appear instantly and update without jumping
+
+The system SHALL show matching local foods on the first keystroke without
+waiting on the network. The system SHALL merge remote results as they arrive
+without reordering rows already shown. It SHALL keep previous results visible
+while loading, and SHALL never report a cancelled request as an error.
+
+#### Scenario: Offline typing
+
+- **WHEN** the device is offline and the user types the name of a food they logged before
+- **THEN** that food is shown immediately, with a note that online databases are unavailable
+
+#### Scenario: Fast typing
+
+- **WHEN** the user types quickly, cancelling in-flight requests
+- **THEN** no error message flashes

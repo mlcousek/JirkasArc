@@ -11,8 +11,8 @@
 // approved by the owner on docs/guide/badges.html, which uses the same
 // files and the same motif box. A locked badge is the frame as a grey
 // silhouette with a lock (a question mark for a hidden secret) and no
-// motif. The art has never been seen on a device before its first
-// sideload, so families are switched on one wave at a time.
+// motif. Every family is switched on; `BadgeArt.enabledFamilies` can
+// switch one back to the disc without touching a call site.
 //
 // THE DISC (the original, and the fallback): a base disc, a rarity-coloured
 // rim, an inner highlight ring, a shine for the top two rarities, and the
@@ -34,11 +34,11 @@ import SwiftUI
 import UIKit
 import Gamification
 
-/// Which badge families already use the drawn art (redesign-badge-art
-/// tasks 3.2/3.3): streak first, compared with the gallery on a device,
-/// then the rest.
+/// Which badge families use the drawn art (redesign-badge-art tasks
+/// 3.2/3.3): all of them. Streak went first; taking a family out of this
+/// set puts it back on the disc if it misdraws on a device.
 enum BadgeArt {
-    static let enabledFamilies: Set<BadgeFamily> = [.streak]
+    static let enabledFamilies = Set(BadgeFamily.allCases)
 
     /// Where the motif sits in the frame's 64-unit box: x, y, side. The same
     /// numbers as tools/docs/build-badge-gallery.mjs's MOTIF_BOX.

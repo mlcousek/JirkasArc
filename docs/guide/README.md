@@ -18,6 +18,9 @@ and a spoiler switch for secret badges and undiscovered collection entries.
   them over the embedded copy.
 - **As a claude.ai artifact:** publish `index.html` alone; everything it
   needs is inline.
+- **The badge art:** `badges.html` is the gallery of the drawn badges (the
+  same SVGs and motif box the app uses), with a family filter.
+  `node tools/docs/build-badge-gallery.mjs` rebuilds it.
 
 ## Regenerate the data
 

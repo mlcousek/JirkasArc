@@ -389,6 +389,42 @@
         }
       }
     },
+    "%@, %@ badge": {
+      "comment": "VoiceOver: a badge tile's name. Title, then its rarity (adjective; Czech agrees with \"odznak\"). Locked or unlocked is read as the value.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ odznak"
+          }
+        }
+      }
+    },
+    "%@, %@ badge, earned": {
+      "comment": "VoiceOver: a supplement badge already earned. Title, then its rarity (adjective; Czech agrees with \"odznak\").",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ odznak, získáno"
+          }
+        }
+      }
+    },
+    "%@, %@ badge, not earned yet. %@": {
+      "comment": "VoiceOver: a supplement badge not earned yet. Title, its rarity (adjective; Czech agrees with \"odznak\"), how to earn it.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ odznak, zatím nezískáno. %3$@"
+          }
+        }
+      }
+    },
     "%@, %@ times %@": {
       "comment": "VoiceOver label of a quick-pick card. %1$@ = food name, %2$@ = usual quantity (e.g. 2), %3$@ = serving (e.g. 100 g).",
       "extractionState": "manual",
@@ -18639,30 +18675,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Všechny milníky splněny"
-          }
-        }
-      }
-    },
-    "%@, earned": {
-      "comment": "VoiceOver: a supplement badge already earned. The value is the badge name.",
-      "extractionState": "manual",
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@, získáno"
-          }
-        }
-      }
-    },
-    "%@, not earned yet. %@": {
-      "comment": "VoiceOver: a supplement badge not earned yet. First value is the badge name, second how to earn it.",
-      "extractionState": "manual",
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@, zatím nezískáno. %@"
           }
         }
       }

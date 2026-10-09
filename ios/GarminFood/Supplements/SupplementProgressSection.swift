@@ -89,8 +89,8 @@ struct SupplementProgressSection: View {
                     .frame(width: 72)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(isEarned
-                        ? Text("\(badge.title), earned", comment: "VoiceOver: a supplement badge already earned. The value is the badge name.")
-                        : Text("\(badge.title), not earned yet. \(badge.subtitle)", comment: "VoiceOver: a supplement badge not earned yet. First value is the badge name, second how to earn it."))
+                        ? Text("\(badge.title), \(badge.rarity.displayName) badge, earned", comment: "VoiceOver: a supplement badge already earned. Title, then its rarity (adjective; Czech agrees with \"odznak\").")
+                        : Text("\(badge.title), \(badge.rarity.displayName) badge, not earned yet. \(badge.subtitle)", comment: "VoiceOver: a supplement badge not earned yet. Title, its rarity (adjective; Czech agrees with \"odznak\"), how to earn it."))
                 }
             }
             .padding(.vertical, Theme.Spacing.xs)

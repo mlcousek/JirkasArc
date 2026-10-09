@@ -23,8 +23,10 @@ public enum GamificationMoment: Sendable, Equatable {
     /// visible moment" requirement. Carries `rarity` (added alongside
     /// `BadgeMedallion`) so the celebration card can render the same
     /// rarity-graded medallion the Achievements screen uses, instead of a
-    /// plain icon -- see `AchievementDefinition.rarity`.
-    case achievementUnlocked(title: String, badgeSymbol: String, rarity: AchievementRarity)
+    /// plain icon -- see `AchievementDefinition.rarity`. `family`
+    /// (redesign-badge-art 3.3) is the badge's frame, so the moment draws
+    /// the same badge as the grid; `nil` draws the disc.
+    case achievementUnlocked(title: String, badgeSymbol: String, rarity: AchievementRarity, family: BadgeFamily? = nil)
     /// add-gamification-signals D7/D12: any `GamificationFeature`'s moment
     /// (bingo line, record, secret reveal, event, boss, freeze), rendered
     /// generically by the app's `MomentOverlay` so no wave-2 change has to

@@ -78,7 +78,8 @@ enum BackgroundRefresh {
             reconciliation: services.reconciliation,
             weightOutbox: services.weightOutbox,
             hydrationOutbox: services.hydrationOutbox,
-            client: services.garminClient
+            client: services.garminClient,
+            usageHistory: services.usageHistory
         )
         if outcome.authOutcome != DrainAuthOutcome.none {
             DiagnosticsLog.log(.warning, category: "BackgroundRefresh", "background drain stopped on auth: \(outcome.authOutcome)")

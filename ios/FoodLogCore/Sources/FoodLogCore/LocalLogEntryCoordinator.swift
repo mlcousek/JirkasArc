@@ -220,7 +220,7 @@ public struct LocalLogEntryCoordinator: FoodLogging {
         try await store.append([copy])
 
         await cacheForDisplay(entry: entry, source: source.food.source)
-        try? await usageHistory.record(foodId: entry.foodId, servingId: servingId, numberOfUnits: entry.servingQty, timestamp: now, nutritionDay: date, mealType: mealType)
+        try? await usageHistory.record(foodId: entry.foodId, servingId: servingId, numberOfUnits: entry.servingQty, timestamp: now, nutritionDay: date, mealType: mealType, entryId: copy.id.uuidString)
         return Self.receipt(for: copy, now: now)
     }
 
@@ -254,7 +254,7 @@ public struct LocalLogEntryCoordinator: FoodLogging {
                 source: entry.food.source ?? Self.foodSource(item.source),
                 serving: item.serving, regionCode: item.regionCode, languageCode: item.languageCode
             )
-            try? await usageHistory.record(foodId: item.foodId, servingId: item.servingId, numberOfUnits: item.servingQty, timestamp: now, nutritionDay: date, mealType: mealType)
+            try? await usageHistory.record(foodId: item.foodId, servingId: item.servingId, numberOfUnits: item.servingQty, timestamp: now, nutritionDay: date, mealType: mealType, entryId: entry.id.uuidString)
         }
         return entries.map { Self.receipt(for: $0, now: now) }
     }
@@ -286,6 +286,10 @@ public struct LocalLogEntryCoordinator: FoodLogging {
         } catch LocalFoodLogError.entryNotFound {
             throw LogEntryEditError.entryGone
         }
+        // Its usage event goes with it (harden-gamification-data-integrity
+        // 1.2). A local entry's id is its usage identity: it is also the
+        // row's `logId`, and an edit keeps it.
+        try? await usageHistory.remove(.entry(id.uuidString))
     }
 
     // MARK: - Building entries
@@ -405,7 +409,7 @@ public struct LocalLogEntryCoordinator: FoodLogging {
     private func recordCatalogUsage(_ entry: LocalLogEntry, now: Date) async {
         // Best-effort, as in Garmin mode: bookkeeping must never undo an
         // entry that is already committed.
-        try? await usageHistory.record(foodId: entry.food.id, servingId: entry.servingId, numberOfUnits: entry.quantity, timestamp: now, nutritionDay: entry.day, mealType: entry.mealType)
+        try? await usageHistory.record(foodId: entry.food.id, servingId: entry.servingId, numberOfUnits: entry.quantity, timestamp: now, nutritionDay: entry.day, mealType: entry.mealType, entryId: entry.id.uuidString)
         try? await servingDefaults.setDefault(foodId: entry.food.id, servingId: entry.servingId, numberOfUnits: entry.quantity, updatedAt: now)
     }
 
@@ -418,7 +422,7 @@ public struct LocalLogEntryCoordinator: FoodLogging {
     }
 
     private func recordCustomUsage(_ entry: LocalLogEntry, now: Date) async {
-        try? await usageHistory.record(foodId: entry.food.id, servingId: CustomFoodDraft.servingId, numberOfUnits: entry.quantity, timestamp: now, nutritionDay: entry.day, mealType: entry.mealType)
+        try? await usageHistory.record(foodId: entry.food.id, servingId: CustomFoodDraft.servingId, numberOfUnits: entry.quantity, timestamp: now, nutritionDay: entry.day, mealType: entry.mealType, entryId: entry.id.uuidString)
     }
 
     private func cacheForDisplay(entry: MealEntry, source: FoodSource?) async {

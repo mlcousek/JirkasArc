@@ -59,11 +59,11 @@ final class UsageEventIdentityTests: XCTestCase {
             MealPresetIngredient(food: banana, serving: banana.servings[0], quantity: 1),
         ])
 
-        let entries = try await h.coordinator.confirmMealPreset(preset, mealType: .snack, date: day)
+        let entries = try await h.coordinator.confirmMealPreset(preset, mealType: .snacks, date: day)
 
         let events = await h.usageHistory.all()
         XCTAssertEqual(events.count, 2)
-        XCTAssertEqual(Set(events.compactMap(\.entryId)), Set(entries.map(\.id.uuidString)))
+        XCTAssertEqual(Set(events.compactMap(\.entryId)), Set(entries.map { $0.id.uuidString }))
     }
 
     // MARK: - Removing

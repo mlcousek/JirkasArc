@@ -93,7 +93,7 @@ public struct LogEntryCoordinator: Sendable {
         // already-committed, already-enqueued entry -- the entry existing is
         // the durability guarantee the spec cares about, not this
         // bookkeeping.
-        try? await usageHistory.record(foodId: food.id, servingId: serving.id, numberOfUnits: numberOfUnits, timestamp: now, nutritionDay: date, mealType: mealType)
+        try? await usageHistory.record(foodId: food.id, servingId: serving.id, numberOfUnits: numberOfUnits, timestamp: now, nutritionDay: date, mealType: mealType, entryId: entry.id.uuidString)
         try? await servingDefaults.setDefault(foodId: food.id, servingId: serving.id, numberOfUnits: numberOfUnits, updatedAt: now)
         return entry
     }
@@ -146,7 +146,8 @@ public struct LogEntryCoordinator: Sendable {
             numberOfUnits: quantity,
             timestamp: now,
             nutritionDay: date,
-            mealType: mealType
+            mealType: mealType,
+            entryId: entry.id.uuidString
         )
         return (entry, customFood.discrepancyNote)
     }
@@ -284,7 +285,24 @@ public struct LogEntryCoordinator: Sendable {
             serving: entry.serving, regionCode: entry.regionCode, languageCode: entry.languageCode
         )
         try? await servingDefaults.setDefault(foodId: entry.foodId, servingId: servingId, numberOfUnits: newQuantity, updatedAt: now)
+        // The edited row's usage event now belongs to the entry that
+        // replaced it, so deleting the edited row still removes it
+        // (harden-gamification-data-integrity 1.2). Best-effort.
+        if let identity = Self.usageIdentity(of: entry) {
+            try? await usageHistory.reassign(identity, toEntryId: result.id.uuidString)
+        }
         return result
+    }
+
+    /// The usage-event identity a dashboard row names: a queued row by its
+    /// outbox id, a delivered one by Garmin's `logId`.
+    static func usageIdentity(of entry: MealEntry) -> UsageEventIdentity? {
+        switch entry.status {
+        case .synced(let logId):
+            return logId.isEmpty ? nil : .garminLog(logId)
+        case .syncing(let outboxId), .failed(let outboxId, _):
+            return .entry(outboxId.uuidString)
+        }
     }
 
     /// Logs the same food, serving and quantity again into the same meal
@@ -319,7 +337,7 @@ public struct LogEntryCoordinator: Sendable {
             foodId: entry.foodId, name: entry.name, brandName: entry.brandName, source: entry.source,
             serving: entry.serving, regionCode: entry.regionCode, languageCode: entry.languageCode
         )
-        try? await usageHistory.record(foodId: entry.foodId, servingId: servingId, numberOfUnits: entry.servingQty, timestamp: now, nutritionDay: date, mealType: mealType)
+        try? await usageHistory.record(foodId: entry.foodId, servingId: servingId, numberOfUnits: entry.servingQty, timestamp: now, nutritionDay: date, mealType: mealType, entryId: result.id.uuidString)
         return result
     }
 
@@ -359,7 +377,7 @@ public struct LogEntryCoordinator: Sendable {
                 foodId: item.foodId, name: item.name, brandName: item.brandName, source: item.source,
                 serving: item.serving, regionCode: item.regionCode, languageCode: item.languageCode
             )
-            try? await usageHistory.record(foodId: item.foodId, servingId: item.servingId, numberOfUnits: item.servingQty, timestamp: now, nutritionDay: date, mealType: mealType)
+            try? await usageHistory.record(foodId: item.foodId, servingId: item.servingId, numberOfUnits: item.servingQty, timestamp: now, nutritionDay: date, mealType: mealType, entryId: entry.id.uuidString)
         }
         return entries
     }
@@ -414,6 +432,10 @@ public struct LogEntryCoordinator: Sendable {
         } catch let error as OutboxEditError {
             throw Self.editError(for: error)
         }
+        // Nothing of it is eaten any more: its usage event goes, so it no
+        // longer counts for streaks or challenges (harden-gamification-
+        // data-integrity 1.2). Best-effort, after the cancel succeeded.
+        try? await usageHistory.remove(.entry(outboxId.uuidString))
         if let replaced = entry.replaces {
             return .deleteOriginal(date: replaced.date, logId: replaced.logId)
         }
@@ -430,6 +452,11 @@ public struct LogEntryCoordinator: Sendable {
     /// the store's own error when the queue file can't be written.
     public func deleteCommitted(logId: String, date: String) async throws {
         try await outbox.queueDeletion(logId: logId, date: date)
+        // Removed from the user's day now, so from usage history now too
+        // (harden-gamification-data-integrity 1.2); a delete that later
+        // gives up and is kept again doesn't bring the event back -- the
+        // accepted, documented gap (design.md).
+        try? await usageHistory.remove(.garminLog(logId))
     }
 
     static func editError(for error: OutboxEditError) -> LogEntryEditError {

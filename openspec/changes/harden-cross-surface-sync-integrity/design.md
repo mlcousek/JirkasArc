@@ -1,3 +1,9 @@
+> **Superseded 2026-10-09.** Every finding below was re-checked and fixed or
+> shown not real by `fix-review-findings-2026-09` and
+> `fix-review-findings-2026-09-b` (PRs #116, #117, archived 2026-10-07). The
+> mapping and the evidence for each one are in tasks.md section 0. Kept for
+> the record; no code follows from this change.
+
 ## Required invariants
 
 1. A successfully committed food entry gains its gamification effects exactly

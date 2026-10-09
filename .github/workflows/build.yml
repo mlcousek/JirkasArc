@@ -37,7 +37,15 @@ on:
       - "tools/check-localizations.mjs"
       - "tools/lint-design-tokens.sh"
       - "tools/design-token-allowlist.txt"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      pseudo_czech:
+        # add-localization task 6.3: a throwaway truncation build. Every
+        # Czech string is 40 % longer and bracketed (tools/pseudo-localize.mjs);
+        # sideload it on a phone set to Czech. Never shipped.
+        description: "Pseudo-localized Czech (+40 %) for the truncation pass"
+        type: boolean
+        default: false
 
 jobs:
   localization:
@@ -171,6 +179,10 @@ jobs:
         # it fails fast.
         run: sh ../tools/lint-design-tokens.sh
 
+      - name: Pseudo-localize Czech (manual truncation build only)
+        if: ${{ inputs.pseudo_czech }}
+        run: node ../tools/pseudo-localize.mjs
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -238,7 +250,7 @@ jobs:
       - name: Upload unsigned .ipa artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GarminFood-unsigned-ipa
+          name: GarminFood-unsigned-ipa${{ inputs.pseudo_czech && '-pseudo-cs' || '' }}
           path: ios/build/GarminFood-unsigned.ipa
           retention-days: 14
 

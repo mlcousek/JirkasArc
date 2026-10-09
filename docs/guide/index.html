@@ -546,7 +546,7 @@ footer.site { color: var(--muted); font-size: 12.5px; padding-block: 20px 40px; 
   <details class="topic" id="achievements" open>
     <summary><h3>Achievements</h3><span class="meta" id="ach-meta"></span></summary>
     <div class="body">
-      <div class="block note-approx"><b>About the badge art.</b> In the app every badge is an SF Symbol inside a rarity-coloured medallion (<code>DesignSystem/BadgeMedallion.swift</code>). SF Symbols can't be used on the web, so the medallions here use the app's exact rarity gradients with the closest <a href="https://lucide.dev" target="_blank" rel="noopener">Lucide</a> icon. The SF Symbol name is printed under each one. These are approximations of the in-app art.</div>
+      <div class="block note-approx"><b>About the badge art.</b> In the app every badge is drawn art: a frame (shape = family, trim and colour = rarity) with a motif on top (<code>DesignSystem/BadgeMedallion.swift</code>, <code>ios/BadgeArt</code>). The <a href="badges.html">badge gallery</a> shows the real art for every badge. The medallions here are a quick index: the app's rarity gradients with the closest <a href="https://lucide.dev" target="_blank" rel="noopener">Lucide</a> icon, and the SF Symbol name under each one.</div>
       <div class="block" id="rarity-legend"></div>
       <div id="ach-body"></div>
     </div>

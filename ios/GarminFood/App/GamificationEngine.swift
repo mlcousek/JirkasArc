@@ -551,7 +551,7 @@ final class GamificationEngine {
             for definition in newlyUnlocked where recorded.contains(definition.id) {
                 let xpResult = try? await xpStore.recordChallengeCompletion(xp: XPAward.achievementBonus)
                 if let xpResult { levelProgress = xpResult.levelAfter }
-                pendingMoments.append(.achievementUnlocked(title: definition.title, badgeSymbol: definition.badgeSymbol, rarity: definition.rarity))
+                pendingMoments.append(.achievementUnlocked(title: definition.title, badgeSymbol: definition.badgeSymbol, rarity: definition.rarity, family: BadgeArtCatalog.family(for: definition)))
             }
         }
         unlockedAchievements = await achievementStore.all()

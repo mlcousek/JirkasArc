@@ -380,7 +380,8 @@ final class FeatureHost {
                             outcome.moments.append(.achievementUnlocked(
                                 title: definition.title,
                                 badgeSymbol: definition.badgeSymbol,
-                                rarity: definition.rarity
+                                rarity: definition.rarity,
+                                family: BadgeArtCatalog.family(for: definition)
                             ))
                         }
                     }

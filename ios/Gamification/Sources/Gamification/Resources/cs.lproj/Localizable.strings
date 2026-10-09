@@ -20,6 +20,7 @@
 "Legendary" = "Legendární";
 
 /* add-gamification-signals: creative real-world challenges (ChallengeTemplates+Signals.swift). */
+"Two Fish Days" = "Dva rybí dny";
 "Something Fishy" = "Něco rybího";
 "Log fish on 2 different days." = "Zapiš rybu ve 2 různých dnech.";
 "Five-a-Day Week" = "Týden pěti porcí";
@@ -299,7 +300,7 @@
 "Meet your carb goal on both days before a race." = "Splň cíl sacharidů v obou dnech před závodem.";
 "First Kilo" = "První kilo";
 "Weigh in 1 kg from your start weight, toward your goal." = "Zvaž se o 1 kg od startovní váhy směrem k cíli.";
-"Halfway There" = "V půli cesty";
+"Halfway to Target" = "V půli k cílové váze";
 "Weigh in halfway from your start weight to your target." = "Zvaž se v půli cesty od startovní k cílové váze.";
 "Target Reached" = "Cíl dosažen";
 "Weigh in at your target weight." = "Zvaž se na cílové váze.";
@@ -485,7 +486,7 @@
 "%@ defeated!" = "Poražen: %@!";
 "You earned a streak freeze." = "Získáváš zamrazení série.";
 "Streak frozen" = "Série zamrazena";
-"A freeze covered %@ — your %lld-day streak lives on." = "Zamrazení zachránilo %@ – tvoje série %lld dní žije dál.";
+"A freeze covered %@ — your %lld-day streak lives on." = "Zamrazení zachránilo %@ – tvoje %llddenní série žije dál.";
 
 /* add-localization 4.1: názvy nutričních cílů (GoalMacro.displayName). */
 "Calories" = "Kalorie";
@@ -499,7 +500,7 @@
 "Supplement streak frozen" = "Série doplňků zamrazena";
 
 /* Moment message: which missed supplement day a freeze covered and the supplement streak it saved. First value is a weekday name, second a number of days (always 3 or more). */
-"A freeze covered %@ — your %lld-day supplement streak lives on." = "Zamrazení zachránilo %@ – tvoje série doplňků %lld dní žije dál.";
+"A freeze covered %@ — your %lld-day supplement streak lives on." = "Zamrazení zachránilo %@ – tvoje %llddenní série doplňků žije dál.";
 
 /* add-supplements 6.3: supplement badges, the vitamin alphabet, the creatine journey and the hub card. */
 

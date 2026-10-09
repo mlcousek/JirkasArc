@@ -150,7 +150,7 @@ public enum XPBudget {
             source: JourneysFeature.id,
             expectedDailyXP: Double(XPAward.journeyMilestone) * 40 / threeYears + badgeXP(8)
         ),
-        // personalRecord (20): ~3 PRs a month; 3 badges.
+        // personalRecord (20): ~3 PRs a month; 3 of the 4 badges in three years.
         XPBudgetLine(
             source: PersonalRecordsFeature.id,
             expectedDailyXP: Double(XPAward.personalRecord) * 3 / month + badgeXP(3)

@@ -22,7 +22,7 @@ extension ChallengeCatalog {
     static let signalTemplates: [ChallengeTemplate] = [
         ChallengeTemplate(
             id: "sig-something-fishy",
-            title: String(localized: "Something Fishy", bundle: .module, comment: "Challenge title: eat fish on 2 days."),
+            title: String(localized: "Two Fish Days", bundle: .module, comment: "Challenge title: eat fish on 2 days."),
             subtitle: String(localized: "Log fish on 2 different days.", bundle: .module, comment: "Challenge description."),
             category: .varietySeeking, windowDays: 7, xpReward: 80,
             kind: .signalDays(.hasTag(.fish), minDays: 2)

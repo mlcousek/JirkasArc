@@ -24,6 +24,7 @@
 "Legendary" = "Legendary";
 
 /* add-gamification-signals: creative real-world challenges (ChallengeTemplates+Signals.swift). */
+"Two Fish Days" = "Two Fish Days";
 "Something Fishy" = "Something Fishy";
 "Log fish on 2 different days." = "Log fish on 2 different days.";
 "Five-a-Day Week" = "Five-a-Day Week";
@@ -303,7 +304,7 @@
 "Meet your carb goal on both days before a race." = "Meet your carb goal on both days before a race.";
 "First Kilo" = "First Kilo";
 "Weigh in 1 kg from your start weight, toward your goal." = "Weigh in 1 kg from your start weight, toward your goal.";
-"Halfway There" = "Halfway There";
+"Halfway to Target" = "Halfway to Target";
 "Weigh in halfway from your start weight to your target." = "Weigh in halfway from your start weight to your target.";
 "Target Reached" = "Target Reached";
 "Weigh in at your target weight." = "Weigh in at your target weight.";

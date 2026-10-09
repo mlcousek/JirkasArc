@@ -14,7 +14,7 @@
 //     Hydration Station).
 // That makes creative templates ~57 % of picks, ladders ~22 %.
 //
-// "Complete every challenge" (`achv-all-challenges`) now counts only the
+// "Complete every challenge" (`achv-challenges-all`) now counts only the
 // templates with a static weight > 0 (`allChallengesProgress`), otherwise
 // the trim would make it impossible.
 //

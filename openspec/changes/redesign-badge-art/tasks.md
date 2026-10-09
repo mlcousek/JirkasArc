@@ -36,4 +36,4 @@ Each has a default; unanswered ones are built as the default.
 
 - [ ] 4.1 CI green; `openspec validate redesign-badge-art --strict` passes.
 - [ ] 4.2 On device: Achievements grid and detail, the unlock moment, level tiers, sport and body, seasonal, supplements; light and dark; every theme. No empty or misdrawn badge.
-- [ ] 4.3 App size before and after noted here (budget: under 400 KB added).
+- [ ] 4.3 App size before and after noted here (budget: under 400 KB added). *2026-10-09, from the CI artifact `GarminFood-unsigned-ipa` (zipped): 7,875,618 bytes before the imagesets (fe72414) -> 8,986,156 after (#125, fc29da4): **+1,110,538 bytes, over the budget.** This wave adds 11,520 more (9,877,867 on main 43b1db0 -> 9,889,387). Nothing else changed in #125, so it is the 116 imagesets (557 KB of SVG source); likely cause: with `preserves-vector-representation` Xcode also writes @1x/@2x/@3x bitmaps of every image. Not fixed here -- the owner decides (keep, drop the vector flag and compare, or ship single-scale PDFs).*

@@ -298,7 +298,7 @@ function ruleText(c) {
     case 'perfectCalendarMonth': return 'Every day of one full calendar month logged';
     case 'loggedOnLeapDay': return 'Something logged on 29 February';
     case 'loggedOnNewYearsDay': return 'Something logged on 1 January';
-    case 'loggedAtMidnight': return 'Something logged at exactly midnight';
+    case 'loggedAtMidnight': return 'Something logged between 00:00 and 00:59';
     case 'anniversaryYears': return `${c.value} year(s) since the first log`;
     case 'unlockedFractionOfOthers': return `≥ ${Math.round(c.fraction * 100)}% of all other core (non-meta, non-feature) achievements unlocked`;
     default: return c.kind;
@@ -335,8 +335,10 @@ const coreAchievements = [];
     const b = fam('goalHitDaysFamily');
     const th = localArray(b, 'thresholds');
     const sf = localArray(b, 'suffixes');
+    const goalName = { calories: 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat' };
+    expectIn(b, '"\\(goalNames[macro] ?? macroDisplayName(macro)): \\(suffixes[i])"', rel(achFile));
     expectIn(b, '"Hit your \\(macro.rawValue) goal on \\(n) days, total."', rel(achFile));
-    for (const macro of macros) th.forEach((n, i) => coreAchievements.push(coreBadge(`achv-goal-${macro}-${n}`, `${macroName[macro]} ${sf[i]}`, `Hit your ${macro} goal on ${n} days, total.`, 'goalHitting', 'checkmark.seal.fill', { kind: 'goalHitDaysAtLeast', macro, value: n })));
+    for (const macro of macros) th.forEach((n, i) => coreAchievements.push(coreBadge(`achv-goal-${macro}-${n}`, `${goalName[macro]}: ${sf[i]}`, `Hit your ${macro} goal on ${n} days, total.`, 'goalHitting', 'checkmark.seal.fill', { kind: 'goalHitDaysAtLeast', macro, value: n })));
   }
   expectIn(achSrc, '"Log \\(n)+ kcal in a single day. Every feast deserves a badge."', rel(achFile));
   simple('extremeFamily', 'achv-extreme-', 'extreme', 'bolt.fill', 'singleDayCaloriesAtLeast', (n) => `Log ${n}+ kcal in a single day. Every feast deserves a badge.`);

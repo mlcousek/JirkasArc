@@ -80,9 +80,9 @@ aggregate within the challenge window, counting a day only when the
 challenge's rule holds for that day, and SHALL show progress as days
 satisfied out of days required.
 
-#### Scenario: Something Fishy
+#### Scenario: Two Fish Days
 
-- **WHEN** "Something Fishy" (fish on 2 days within 7) is active and the owner logs "Losos na grilu" on Tuesday and "Tuňákový salát" on Friday
+- **WHEN** "Two Fish Days" (fish on 2 days within 7) is active and the owner logs "Losos na grilu" on Tuesday and "Tuňákový salát" on Friday
 - **THEN** the challenge completes on Friday and awards its XP once
 
 #### Scenario: A day without macro data

@@ -379,7 +379,7 @@ public enum ChallengeCatalog {
 
     private static let extendStreakFamily: [ChallengeTemplate] = {
         let days = [1, 2, 3, 5, 7, 10, 12, 14, 18, 21, 25, 30, 45, 60]
-        let titles = ["Spark Starter", "Ember Grower", "Flame Fanner", "High Five Streak", "Week of Fire", "Double Digits", "Dozen of Days", "Fortnight Flame", "Eighteen Embers", "Three-Week Blaze", "Twenty-Five Alight", "Monthlong Inferno", "Six-Week Wildfire", "Two-Month Bonfire"]
+        let titles = ["Spark Starter", "Ember Grower", "Flame Fanner", "High Five Streak", "Week of Fire", "Ten-Day Flame", "Dozen of Days", "Fortnight Flame", "Eighteen Embers", "Three-Week Blaze", "Twenty-Five Alight", "Monthlong Inferno", "Six-Week Wildfire", "Two-Month Bonfire"]
         return days.indices.map { i in
             let day = days[i]
             return ChallengeTemplate(
@@ -451,7 +451,7 @@ public enum ChallengeCatalog {
 
     private static let newFoodsFamily: [ChallengeTemplate] = {
         let counts = [1, 2, 3, 4, 6, 8, 10, 12, 15, 20, 25, 30]
-        let titles = ["First Taste", "Curious Palate", "Culinary Wanderer", "Flavor Scout", "Menu Explorer", "Globe Trotter", "Flavor Hunter", "Palate Pioneer", "Menu Maverick", "Connoisseur", "Gastronaut", "Omnivore Extraordinaire"]
+        let titles = ["First Taste", "Curious Palate", "Culinary Wanderer", "Flavor Scout", "Menu Explorer", "Globe Trotter", "Flavor Hunter", "Palate Pioneer", "Menu Maverick", "Taste Collector", "Gastronaut", "Omnivore Extraordinaire"]
         return counts.indices.map { i in
             let count = counts[i]
             return ChallengeTemplate(
@@ -490,7 +490,7 @@ public enum ChallengeCatalog {
         ChallengeTemplate(id: "multi-meal-2-7", title: CatalogL10n.title("multi-meal-2-7", "Two-a-Day Week"), subtitle: CatalogL10n.subtitle("multi-meal-2-7", "Log 2 different times of day, on 7 separate days."), category: .varietySeeking, windowDays: 10, xpReward: 90, kind: .multiMealDays(minBucketsPerDay: 2, minDays: 7)),
         ChallengeTemplate(id: "multi-meal-3-5", title: CatalogL10n.title("multi-meal-3-5", "Full Plate Plus"), subtitle: CatalogL10n.subtitle("multi-meal-3-5", "Log 3 different times of day, on 5 separate days."), category: .varietySeeking, windowDays: 8, xpReward: 100, kind: .multiMealDays(minBucketsPerDay: 3, minDays: 5)),
         ChallengeTemplate(id: "multi-meal-3-7", title: CatalogL10n.title("multi-meal-3-7", "Full Plate Week"), subtitle: CatalogL10n.subtitle("multi-meal-3-7", "Log 3 different times of day, on 7 separate days."), category: .varietySeeking, windowDays: 10, xpReward: 130, kind: .multiMealDays(minBucketsPerDay: 3, minDays: 7)),
-        ChallengeTemplate(id: "multi-meal-4-3", title: CatalogL10n.title("multi-meal-4-3", "Full House"), subtitle: CatalogL10n.subtitle("multi-meal-4-3", "Log all 4 times of day in one day, on 3 separate days."), category: .varietySeeking, windowDays: 6, xpReward: 110, kind: .multiMealDays(minBucketsPerDay: 4, minDays: 3)),
+        ChallengeTemplate(id: "multi-meal-4-3", title: CatalogL10n.title("multi-meal-4-3", "Four Slots, Three Days"), subtitle: CatalogL10n.subtitle("multi-meal-4-3", "Log all 4 times of day in one day, on 3 separate days."), category: .varietySeeking, windowDays: 6, xpReward: 110, kind: .multiMealDays(minBucketsPerDay: 4, minDays: 3)),
         ChallengeTemplate(id: "multi-meal-4-7", title: CatalogL10n.title("multi-meal-4-7", "Full House Week"), subtitle: CatalogL10n.subtitle("multi-meal-4-7", "Log all 4 times of day in one day, on 7 separate days."), category: .varietySeeking, windowDays: 10, xpReward: 180, kind: .multiMealDays(minBucketsPerDay: 4, minDays: 7))
     ]
 

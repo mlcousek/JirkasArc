@@ -1635,7 +1635,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "common",
    "title": {
-    "en": "Calorie Getting Started",
+    "en": "Calories: Getting Started",
     "cs": "Kalorie: začátky"
    },
    "subtitle": {
@@ -1662,7 +1662,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "uncommon",
    "title": {
-    "en": "Calorie Building Habits",
+    "en": "Calories: Building Habits",
     "cs": "Kalorie: budování návyku"
    },
    "subtitle": {
@@ -1689,7 +1689,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "rare",
    "title": {
-    "en": "Calorie Century Club",
+    "en": "Calories: Century Club",
     "cs": "Kalorie: klub stovky"
    },
    "subtitle": {
@@ -1716,7 +1716,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "epic",
    "title": {
-    "en": "Calorie One Full Year",
+    "en": "Calories: One Full Year",
     "cs": "Kalorie: celý rok"
    },
    "subtitle": {
@@ -1743,7 +1743,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "legendary",
    "title": {
-    "en": "Calorie Two Full Years",
+    "en": "Calories: Two Full Years",
     "cs": "Kalorie: celé dva roky"
    },
    "subtitle": {
@@ -1770,7 +1770,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "common",
    "title": {
-    "en": "Protein Getting Started",
+    "en": "Protein: Getting Started",
     "cs": "Bílkoviny: začátky"
    },
    "subtitle": {
@@ -1797,7 +1797,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "uncommon",
    "title": {
-    "en": "Protein Building Habits",
+    "en": "Protein: Building Habits",
     "cs": "Bílkoviny: budování návyku"
    },
    "subtitle": {
@@ -1824,7 +1824,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "rare",
    "title": {
-    "en": "Protein Century Club",
+    "en": "Protein: Century Club",
     "cs": "Bílkoviny: klub stovky"
    },
    "subtitle": {
@@ -1851,7 +1851,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "epic",
    "title": {
-    "en": "Protein One Full Year",
+    "en": "Protein: One Full Year",
     "cs": "Bílkoviny: celý rok"
    },
    "subtitle": {
@@ -1878,7 +1878,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "legendary",
    "title": {
-    "en": "Protein Two Full Years",
+    "en": "Protein: Two Full Years",
     "cs": "Bílkoviny: celé dva roky"
    },
    "subtitle": {
@@ -1905,7 +1905,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "common",
    "title": {
-    "en": "Carb Getting Started",
+    "en": "Carbs: Getting Started",
     "cs": "Sacharidy: začátky"
    },
    "subtitle": {
@@ -1932,7 +1932,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "uncommon",
    "title": {
-    "en": "Carb Building Habits",
+    "en": "Carbs: Building Habits",
     "cs": "Sacharidy: budování návyku"
    },
    "subtitle": {
@@ -1959,7 +1959,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "rare",
    "title": {
-    "en": "Carb Century Club",
+    "en": "Carbs: Century Club",
     "cs": "Sacharidy: klub stovky"
    },
    "subtitle": {
@@ -1986,7 +1986,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "epic",
    "title": {
-    "en": "Carb One Full Year",
+    "en": "Carbs: One Full Year",
     "cs": "Sacharidy: celý rok"
    },
    "subtitle": {
@@ -2013,7 +2013,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "legendary",
    "title": {
-    "en": "Carb Two Full Years",
+    "en": "Carbs: Two Full Years",
     "cs": "Sacharidy: celé dva roky"
    },
    "subtitle": {
@@ -2040,7 +2040,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "common",
    "title": {
-    "en": "Fat Getting Started",
+    "en": "Fat: Getting Started",
     "cs": "Tuky: začátky"
    },
    "subtitle": {
@@ -2067,7 +2067,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "uncommon",
    "title": {
-    "en": "Fat Building Habits",
+    "en": "Fat: Building Habits",
     "cs": "Tuky: budování návyku"
    },
    "subtitle": {
@@ -2094,7 +2094,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "rare",
    "title": {
-    "en": "Fat Century Club",
+    "en": "Fat: Century Club",
     "cs": "Tuky: klub stovky"
    },
    "subtitle": {
@@ -2121,7 +2121,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "epic",
    "title": {
-    "en": "Fat One Full Year",
+    "en": "Fat: One Full Year",
     "cs": "Tuky: celý rok"
    },
    "subtitle": {
@@ -2148,7 +2148,7 @@
    "symbol": "checkmark.seal.fill",
    "rarity": "legendary",
    "title": {
-    "en": "Fat Two Full Years",
+    "en": "Fat: Two Full Years",
     "cs": "Tuky: celé dva roky"
    },
    "subtitle": {
@@ -2685,7 +2685,7 @@
     "cs": "Jako 5 maratonů"
    },
    "subtitle": {
-    "en": "You've logged about 5 marathons' worth of energy burned (very roughly) in total calories.",
+    "en": "You've logged about as much energy as 5 marathons burn (very roughly) in total calories.",
     "cs": "Tvoje zapsané kalorie dohromady odpovídají zhruba energii spálené za 5 maratonů (hodně zhruba)."
    },
    "condition": {
@@ -2712,7 +2712,7 @@
     "cs": "Jako 20 maratonů"
    },
    "subtitle": {
-    "en": "You've logged about 20 marathons' worth of energy burned (very roughly) in total calories.",
+    "en": "You've logged about as much energy as 20 marathons burn (very roughly) in total calories.",
     "cs": "Tvoje zapsané kalorie dohromady odpovídají zhruba energii spálené za 20 maratonů (hodně zhruba)."
    },
    "condition": {
@@ -2739,7 +2739,7 @@
     "cs": "Jako 100 maratonů"
    },
    "subtitle": {
-    "en": "You've logged about 100 marathons' worth of energy burned (very roughly) in total calories.",
+    "en": "You've logged about as much energy as 100 marathons burn (very roughly) in total calories.",
     "cs": "Tvoje zapsané kalorie dohromady odpovídají zhruba energii spálené za 100 maratonů (hodně zhruba)."
    },
    "condition": {
@@ -2766,7 +2766,7 @@
     "cs": "Jako 500 maratonů"
    },
    "subtitle": {
-    "en": "You've logged about 500 marathons' worth of energy burned (very roughly) in total calories.",
+    "en": "You've logged about as much energy as 500 marathons burn (very roughly) in total calories.",
     "cs": "Tvoje zapsané kalorie dohromady odpovídají zhruba energii spálené za 500 maratonů (hodně zhruba)."
    },
    "condition": {
@@ -3084,13 +3084,13 @@
     "cs": "Klub půlnočních svačin"
    },
    "subtitle": {
-    "en": "Log something at exactly midnight.",
-    "cs": "Zapiš něco přesně o půlnoci."
+    "en": "Log something between midnight and 1 a.m.",
+    "cs": "Zapiš něco mezi půlnocí a jednou hodinou ráno."
    },
    "condition": {
     "kind": "loggedAtMidnight"
    },
-   "rule": "Something logged at exactly midnight",
+   "rule": "Something logged between 00:00 and 00:59",
    "secret": false,
    "source": "mirrored",
    "file": "ios/Gamification/Sources/Gamification/Achievements.swift",
@@ -5450,8 +5450,8 @@
    "symbol": "flag.fill",
    "rarity": "rare",
    "title": {
-    "en": "Halfway There",
-    "cs": "V půli cesty"
+    "en": "Halfway to Target",
+    "cs": "V půli k cílové váze"
    },
    "subtitle": {
     "en": "Weigh in halfway from your start weight to your target.",

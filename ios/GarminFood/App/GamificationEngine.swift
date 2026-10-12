@@ -234,7 +234,13 @@ final class GamificationEngine {
     /// through to `LifetimeStatsStore`, which is the only thing in this
     /// engine that needs it (achievements spec's lifetime-calories ledger,
     /// design.md D4); nothing else here reads it.
-    func handleLogConfirmed(now: Date = Date(), calories: Double? = nil) async {
+    /// `nutritionDay` is the day the entry was logged FOR (`yyyy-MM-dd`,
+    /// the confirm screen's date), so a backdated log's calories land on
+    /// that day; `nil` means today. `entries` is how many durable food
+    /// entries it made -- one per ingredient for a meal preset -- for the
+    /// lifetime log count (harden-gamification-data-integrity 1.3, 2.1,
+    /// 2.2). XP is unchanged: one award per confirm, on today.
+    func handleLogConfirmed(now: Date = Date(), calories: Double? = nil, nutritionDay: String? = nil, entries: Int = 1) async {
         let events = await usageHistory.all() // already includes the entry that was just confirmed
         // add-supplements D9: the supplement digest is rebuilt on refresh
         // (and after every tick); only a day change since then needs a new
@@ -254,7 +260,7 @@ final class GamificationEngine {
         let today = NutritionDayBoundary.dayString(for: now, boundaryHour: boundaryHour)
         let goalMetToday = goalStatuses.first(where: { $0.date == today })?.anyGoalMet ?? false
         signals = await featureHost?.buildSnapshot(goalStatuses: goalStatuses, now: now)
-        try? await lifetimeStatsStore.recordLog(nutritionDay: today, calories: calories, now: now)
+        try? await lifetimeStatsStore.recordLog(nutritionDay: nutritionDay ?? today, calories: calories, now: now, entries: entries)
 
         streakStatus = newStreak
         lastKnownEvents = events

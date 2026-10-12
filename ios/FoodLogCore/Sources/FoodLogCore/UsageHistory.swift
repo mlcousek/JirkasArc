@@ -25,6 +25,17 @@
 //   reason: files written before it existed lack the key, and it is omitted
 //   (not written as null) when unknown. Events without it simply don't
 //   count toward any meal's "Usual for <meal>" shelf (MealUsualRanker).
+//   `entryId` and `garminLogId` (added 2026-10-08, harden-gamification-
+//   data-integrity 1.1) are the event's identity -- which logged entry it
+//   records, so deleting or cancelling THAT entry removes exactly this event
+//   and never an identical food logged separately. `entryId` is the
+//   app-owned id of the committed entry (the `OutboxEntry.id` in Garmin
+//   mode, the `LocalLogEntry.id` in standalone mode, as `uuidString`);
+//   `garminLogId` is Garmin's own `logId` for it, linked after
+//   Reconciliation confirms the delivery (`linkGarminLogIds`), because a
+//   delivered row is deleted by that id once its outbox entry is gone.
+//   Both optional and omitted when unknown: events written before they
+//   existed have neither, and such an event is never removed by identity.
 //   Nothing else is in this file -- no wrapper object, no metadata header.
 //   Encoded with `JSONEncoder.dateEncodingStrategy = .iso8601` specifically
 //   so a non-Swift reader (or a Swift reader that doesn't want to import
@@ -52,6 +63,12 @@ public struct UsageEvent: Codable, Sendable, Equatable {
     /// before the field existed (2026-09-23) -- those never count toward a
     /// per-meal ranking, rather than being guessed from the clock.
     public let mealType: MealType?
+    /// The committed entry this event records (see the header). `nil` for
+    /// events recorded before the field existed (2026-10-08).
+    public let entryId: String?
+    /// Garmin's `logId` for that entry, once a delivery is confirmed. `nil`
+    /// before that, in standalone mode, and for older events.
+    public let garminLogId: String?
 
     public init(
         foodId: String,
@@ -59,7 +76,9 @@ public struct UsageEvent: Codable, Sendable, Equatable {
         numberOfUnits: Double,
         timestamp: Date,
         nutritionDay: String? = nil,
-        mealType: MealType? = nil
+        mealType: MealType? = nil,
+        entryId: String? = nil,
+        garminLogId: String? = nil
     ) {
         self.foodId = foodId
         self.servingId = servingId
@@ -67,6 +86,37 @@ public struct UsageEvent: Codable, Sendable, Equatable {
         self.timestamp = timestamp
         self.nutritionDay = nutritionDay
         self.mealType = mealType
+        self.entryId = entryId
+        self.garminLogId = garminLogId
+    }
+
+    /// This event with its identity changed and everything else kept.
+    func with(entryId: String?, garminLogId: String?) -> UsageEvent {
+        UsageEvent(
+            foodId: foodId,
+            servingId: servingId,
+            numberOfUnits: numberOfUnits,
+            timestamp: timestamp,
+            nutritionDay: nutritionDay,
+            mealType: mealType,
+            entryId: entryId,
+            garminLogId: garminLogId
+        )
+    }
+}
+
+/// Which logged entry a usage event belongs to: the way a delete names it.
+/// A queued (not yet delivered) row and every standalone row are named by
+/// the app's own entry id; a row Garmin has confirmed by Garmin's `logId`.
+public enum UsageEventIdentity: Sendable, Equatable {
+    case entry(String)
+    case garminLog(String)
+
+    func matches(_ event: UsageEvent) -> Bool {
+        switch self {
+        case .entry(let id): return !id.isEmpty && event.entryId == id
+        case .garminLog(let id): return !id.isEmpty && event.garminLogId == id
+        }
     }
 }
 
@@ -125,7 +175,8 @@ public actor UsageHistoryStore {
         numberOfUnits: Double,
         timestamp: Date = Date(),
         nutritionDay: String? = nil,
-        mealType: MealType? = nil
+        mealType: MealType? = nil,
+        entryId: String? = nil
     ) throws {
         loadIfNeeded()
         events.append(UsageEvent(
@@ -134,12 +185,70 @@ public actor UsageHistoryStore {
             numberOfUnits: numberOfUnits,
             timestamp: timestamp,
             nutritionDay: nutritionDay,
-            mealType: mealType
+            mealType: mealType,
+            entryId: entryId
         ))
         if events.count > Self.maxStoredEvents {
             events.removeFirst(events.count - Self.maxStoredEvents)
         }
         try persist()
+    }
+
+    /// Removes the event of exactly one deleted or cancelled entry
+    /// (harden-gamification-data-integrity 1.2). Matches by identity only:
+    /// an identical food logged separately, and any event recorded before
+    /// identities existed, is left alone. Returns how many were removed
+    /// (0 or 1 in practice); writes only when that is more than zero.
+    @discardableResult
+    public func remove(_ identity: UsageEventIdentity) throws -> Int {
+        loadIfNeeded()
+        let before = events.count
+        events.removeAll { identity.matches($0) }
+        let removed = before - events.count
+        guard removed > 0 else { return 0 }
+        try persist()
+        return removed
+    }
+
+    /// Records Garmin's `logId` on the events of confirmed deliveries
+    /// (`entryId` -> `logId`, see `UsageLogLinks`), so the delivered row
+    /// can still be found once its outbox entry is gone. Returns how many
+    /// were linked; writes only when that is more than zero.
+    @discardableResult
+    public func linkGarminLogIds(_ links: [String: String]) throws -> Int {
+        loadIfNeeded()
+        guard !links.isEmpty else { return 0 }
+        var linked = 0
+        events = events.map { event in
+            guard let entryId = event.entryId, let logId = links[entryId], !logId.isEmpty,
+                  event.garminLogId != logId else { return event }
+            linked += 1
+            return event.with(entryId: entryId, garminLogId: logId)
+        }
+        guard linked > 0 else { return 0 }
+        try persist()
+        return linked
+    }
+
+    /// Moves an event to the entry that now stands for it: an edit doesn't
+    /// record a new event (it isn't another thing eaten), but it replaces
+    /// the entry -- a queued entry is swapped for a new one, a delivered one
+    /// is superseded by a new outbox entry -- and deleting the edited row
+    /// must still remove the original event. The Garmin link is cleared:
+    /// the new entry gets its own once delivered. Returns how many moved.
+    @discardableResult
+    public func reassign(_ identity: UsageEventIdentity, toEntryId newEntryId: String) throws -> Int {
+        loadIfNeeded()
+        guard !newEntryId.isEmpty else { return 0 }
+        var moved = 0
+        events = events.map { event in
+            guard identity.matches(event) else { return event }
+            moved += 1
+            return event.with(entryId: newEntryId, garminLogId: nil)
+        }
+        guard moved > 0 else { return 0 }
+        try persist()
+        return moved
     }
 
     /// Fills in the meal of events recorded before `mealType` existed, from
@@ -155,6 +264,33 @@ public actor UsageHistoryStore {
         events = result.events
         try persist()
         return result.filled
+    }
+}
+
+/// Which usage events Reconciliation's verdicts let us link to Garmin's
+/// `logId` (`UsageHistoryStore.linkGarminLogIds`): an entry confirmed 1:1,
+/// or matched to a kept copy after a duplicate was cleaned up. A verdict
+/// without a known `logId` links nothing -- that row is then deleted by the
+/// id the dashboard shows, which is still the outbox id until it is read
+/// back. Pure, so the mapping is tested without a drain.
+public enum UsageLogLinks {
+    public static func from(_ outcomes: [ReconciliationOutcome]) -> [String: String] {
+        from(verdicts: outcomes.map { (entryId: $0.entryId, verdict: $0.verdict) })
+    }
+
+    public static func from(verdicts: [(entryId: UUID, verdict: ReconciliationOutcome.Verdict)]) -> [String: String] {
+        var links: [String: String] = [:]
+        for outcome in verdicts {
+            let logId: String?
+            switch outcome.verdict {
+            case .confirmed(let confirmed): logId = confirmed
+            case .duplicateResolved(let kept, _): logId = kept
+            case .missingRequeued, .missingGaveUp, .reconciliationSkipped: logId = nil
+            }
+            guard let logId, !logId.isEmpty else { continue }
+            links[outcome.entryId.uuidString] = logId
+        }
+        return links
     }
 }
 

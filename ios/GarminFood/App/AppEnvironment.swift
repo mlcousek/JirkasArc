@@ -805,7 +805,10 @@ final class AppEnvironment {
         // has `.sent` state by the time this line runs, so it's a subset.
         let sentEntries = await outbox.allEntries().filter { $0.state == .sent }
         if !sentEntries.isEmpty {
-            _ = await reconciliation.reconcile(delivered: sentEntries, using: garminClient)
+            let outcomes = await reconciliation.reconcile(delivered: sentEntries, using: garminClient)
+            // harden-gamification-data-integrity 1.1: a confirmed delivery's
+            // usage event learns Garmin's logId, the id its row is deleted by.
+            try? await usageHistory.linkGarminLogIds(UsageLogLinks.from(outcomes))
             // Totals are read back from Garmin, so a delivery only shows
             // once the day is re-read.
             await dayLog.refresh()
@@ -866,6 +869,10 @@ final class AppEnvironment {
         await donations.entryDeleted(foodId: entry.foodId, date: date)
         await refreshQueueState()
         await foodDayChanged(day: date)
+        // Its usage event is gone (the coordinator removed it), so the
+        // streak, challenges and variety are recomputed without it. Earned
+        // achievements and XP stay (harden-gamification-data-integrity).
+        await gamificationEngine.refresh()
         // A synced entry's delete was queued -- and so was the original's
         // when a queued EDIT of a Garmin entry was deleted.
         if entry.isSynced || entry.replacesLogId != nil {
@@ -1002,7 +1009,7 @@ final class AppEnvironment {
             regionCode: profile.settings?.regionCode,
             languageCode: profile.settings?.languageCode
         )
-        await gamificationEngine.handleLogConfirmed(calories: entry.calories)
+        await gamificationEngine.handleLogConfirmed(calories: entry.calories, nutritionDay: date)
         await logConfirmed(food: nil, date: date)
     }
 
@@ -1031,7 +1038,7 @@ final class AppEnvironment {
     func copyMeal(_ items: [CopyableMealItem], to mealType: MealType) async throws {
         guard !items.isEmpty else { return }
         let date = dayLog.dateString
-        _ = try await logEntryCoordinator.copyMeal(
+        let copied = try await logEntryCoordinator.copyMeal(
             items,
             to: mealType,
             date: date,
@@ -1039,7 +1046,7 @@ final class AppEnvironment {
             languageCode: profile.settings?.languageCode
         )
         let calories = items.compactMap(\.calories).reduce(0, +)
-        await gamificationEngine.handleLogConfirmed(calories: calories)
+        await gamificationEngine.handleLogConfirmed(calories: calories, nutritionDay: date, entries: copied.count)
         await logConfirmed(food: nil, date: date)
     }
 

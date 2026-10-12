@@ -83,3 +83,35 @@ last-date value.
   deleted entry.
 - Add food to a past day and verify its calorie/day displays and future
   achievement eligibility use that past date.
+
+## Decisions (2026-10-09)
+
+- **D1 Two ids per usage event.** `UsageEvent.entryId` is the app's own entry
+  id (the outbox id in Garmin mode, the local entry id in standalone mode);
+  `garminLogId` is linked from Reconciliation's `confirmed` /
+  `duplicateResolved` verdicts (`UsageLogLinks`, foreground and background).
+  A queued row is deleted by `.entry(outboxId)`, a delivered row by
+  `.garminLog(logId)`. Both fields are optional and omitted when unknown;
+  older events have neither and are never removed by identity.
+- **D2 An edit moves the event.** An edit replaces its entry (a swapped queued
+  entry, or a new outbox entry superseding a delivered one); `reassign` moves
+  the event to the new entry id and clears the Garmin link, so deleting the
+  edited row still finds it. Standalone edits keep the entry id.
+- **D3 Removal is best-effort, at the coordinator.** `deletePending` (after
+  the cancel succeeds) and `deleteCommitted` (after the delete is queued)
+  remove the event; standalone `deleteStored` likewise. A queued Garmin
+  delete that later gives up and is kept does not restore the event: an
+  accepted gap, it then counts as missing for streaks until relogged.
+  `AppEnvironment.delete` refreshes the engine afterwards.
+- **D4 Per-date goal days.** `countedGoalDays` keeps every counted day per
+  macro, unbounded (about 4 KB a year per macro). A ledger written before it
+  is seeded from `lastCountedGoalDay`, which is still written.
+- **D5 The selected day and the entry count reach the ledger.**
+  `handleLogConfirmed(nutritionDay:entries:)`; the confirm screen, a preset,
+  duplicate and copy pass them. XP stays one award per confirm, on today (the
+  existing product rule). Intents and Quick Pick log for today, so their
+  default is right.
+- **D6 Not done: the app-target integration suite (3.4).** The app target has
+  no test bundle (`project.yml`); the behaviour is covered at the package
+  level (`UsageEventIdentityTests`, `LifetimeStatsStoreTests`,
+  `AchievementTests`), and the manual scenarios stay with the owner (4.3).

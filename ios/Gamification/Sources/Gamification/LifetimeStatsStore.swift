@@ -36,6 +36,15 @@ public actor LifetimeStatsStore {
         /// never double-counts. Mirrors `XPStore`'s `lastStreakBonusDay`/
         /// `lastGoalBonusDay` idempotency pattern.
         public var lastCountedGoalDay: [String: String] = [:]
+        /// Keyed by `GoalMacro.rawValue` -- EVERY day already counted for
+        /// that macro (harden-gamification-data-integrity 2.3), so
+        /// re-fetching an older day after a newer one never counts it
+        /// again. `lastCountedGoalDay` alone only caught an immediate
+        /// repeat. Unbounded on purpose: one short string per goal-hit day
+        /// is about 4 KB a year per macro, and dropping old days would let
+        /// a re-fetch of one of them count twice. Absent in a file written
+        /// before it existed; `lastCountedGoalDay` seeds it then.
+        public var countedGoalDays: [String: Set<String>]?
         /// Running calorie totals for the most recently touched handful of
         /// days (bounded by `maxTrackedDays`, evicted oldest-first) -- lets
         /// a day's total build up correctly across multiple logs, INCLUDING
@@ -100,9 +109,12 @@ public actor LifetimeStatsStore {
     /// `calories` is whatever the confirm screen already computed for that
     /// entry -- `nil` for anything without a known calorie value, in which
     /// case the calorie-dependent fields simply don't advance for that log.
-    public func recordLog(nutritionDay: String, calories: Double?, now: Date) throws {
+    /// `entries` is how many durable food entries the log made (a meal
+    /// preset makes one per ingredient, harden-gamification-data-integrity
+    /// 2.2); `calories` is their total.
+    public func recordLog(nutritionDay: String, calories: Double?, now: Date, entries: Int = 1) throws {
         loadIfNeeded()
-        snapshot.totalLogsEver += 1
+        snapshot.totalLogsEver += max(1, entries)
         if let existing = snapshot.firstLogDate {
             snapshot.firstLogDate = min(existing, now)
         } else {
@@ -130,12 +142,22 @@ public actor LifetimeStatsStore {
     /// `GamificationEngine.refreshGoalStatus(for:)`.
     public func recordGoalStatus(_ status: DailyGoalStatus) throws {
         loadIfNeeded()
+        countGoalDays(status)
+        try persist()
+    }
+
+    /// Counts each met macro of `status`'s day at most once, ever.
+    private func countGoalDays(_ status: DailyGoalStatus) {
+        // A ledger written before every counted day was kept knows only the
+        // last one per macro, which is what it guarded.
+        var counted = snapshot.countedGoalDays ?? snapshot.lastCountedGoalDay.mapValues { Set([$0]) }
         for macro in GoalMacro.allCases where status.met(macro) {
-            guard snapshot.lastCountedGoalDay[macro.rawValue] != status.date else { continue }
+            guard !counted[macro.rawValue, default: []].contains(status.date) else { continue }
+            counted[macro.rawValue, default: []].insert(status.date)
             snapshot.goalHitDaysEver[macro.rawValue, default: 0] += 1
             snapshot.lastCountedGoalDay[macro.rawValue] = status.date
         }
-        try persist()
+        snapshot.countedGoalDays = counted
     }
 
     /// design.md's accepted Risk: a device that already has real usage
@@ -155,11 +177,7 @@ public actor LifetimeStatsStore {
             snapshot.firstLogDate = earliest
         }
         for status in goalStatuses {
-            for macro in GoalMacro.allCases where status.met(macro) {
-                guard snapshot.lastCountedGoalDay[macro.rawValue] != status.date else { continue }
-                snapshot.goalHitDaysEver[macro.rawValue, default: 0] += 1
-                snapshot.lastCountedGoalDay[macro.rawValue] = status.date
-            }
+            countGoalDays(status)
         }
         try persist()
     }

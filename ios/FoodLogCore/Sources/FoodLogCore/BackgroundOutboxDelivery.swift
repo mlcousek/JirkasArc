@@ -87,7 +87,8 @@ public enum BackgroundOutboxDelivery {
         reconciliation: Reconciliation,
         weightOutbox: WeightOutbox,
         hydrationOutbox: HydrationOutbox,
-        client: Client
+        client: Client,
+        usageHistory: UsageHistoryStore? = nil
     ) async -> Outcome where Client: FoodLogDelivering & FoodLogReconciling & WeighInDelivering & HydrationDelivering {
         let food = await outbox.drain(using: client)
         // Every `.sent` entry, not just this pass's deliveries (finding 8):
@@ -96,7 +97,10 @@ public enum BackgroundOutboxDelivery {
         // already `.sent`, so they are included.
         let sent = await outbox.allEntries().filter { $0.state == .sent }
         if !sent.isEmpty {
-            _ = await reconciliation.reconcile(delivered: sent, using: client)
+            let outcomes = await reconciliation.reconcile(delivered: sent, using: client)
+            // harden-gamification-data-integrity 1.1: a confirmed delivery's
+            // usage event learns Garmin's logId, the id its row is deleted by.
+            try? await usageHistory?.linkGarminLogIds(UsageLogLinks.from(outcomes))
         }
         // improve-food-day-flow (E2): after the creates and their re-read.
         let deletions = await outbox.drainDeletions(using: client)

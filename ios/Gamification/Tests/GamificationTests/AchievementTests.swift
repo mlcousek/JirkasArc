@@ -195,4 +195,24 @@ final class AchievementTests: XCTestCase {
         let dateForA = await store.unlockDate(for: "a")
         XCTAssertEqual(dateForA, TestClock.date(2026, 1, 1), "the unlock date must never change once recorded")
     }
+
+    /// harden-gamification-data-integrity 3.5: deleting the food that
+    /// earned a streak badge takes it out of the streak, but the badge and
+    /// its date stay -- achievements are permanent.
+    func testABadgeEarnedByADeletedFoodStaysUnlocked() async throws {
+        let store = makeStore()
+        let def = AchievementDefinition(id: "t", title: "t", subtitle: "t", category: .streak, badgeSymbol: "flame.fill", condition: .streakAtLeast(days: 7))
+        let earned = AchievementEngine.evaluate(context: context(longestStreak: 7), catalog: [def], alreadyUnlocked: [])
+        try await store.unlock(ids: earned.map(\.id), now: TestClock.date(2026, 1, 7))
+
+        // The day's only food is deleted: the streak is now 6.
+        let alreadyUnlocked = await store.unlockedIds()
+        let afterDelete = AchievementEngine.evaluate(context: context(longestStreak: 6), catalog: [def], alreadyUnlocked: alreadyUnlocked)
+        try await store.unlock(ids: afterDelete.map(\.id), now: TestClock.date(2026, 1, 8))
+
+        let unlocked = await store.unlockedIds()
+        let date = await store.unlockDate(for: "t")
+        XCTAssertEqual(unlocked, ["t"])
+        XCTAssertEqual(date, TestClock.date(2026, 1, 7))
+    }
 }

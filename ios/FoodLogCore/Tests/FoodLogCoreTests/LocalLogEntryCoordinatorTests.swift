@@ -397,7 +397,9 @@ final class LocalLogEntryCoordinatorTests: XCTestCase {
 
         let localUsage = await local.usage.all()
         let garminUsage = await garmin.usage.all()
-        XCTAssertEqual(localUsage, garminUsage)
+        // Each mode mints its own entry ids; everything else must match.
+        XCTAssertEqual(localUsage.map { $0.with(entryId: nil, garminLogId: nil) }, garminUsage.map { $0.with(entryId: nil, garminLogId: nil) })
+        XCTAssertTrue((localUsage + garminUsage).allSatisfy { $0.entryId != nil }, "every event knows its entry in both modes")
         XCTAssertEqual(localUsage.count, 6, "confirm, custom, 2 preset ingredients, duplicate, copy -- not the edit")
 
         let localDefaults = await local.servings.all().sorted { $0.foodId < $1.foodId }

@@ -104,7 +104,9 @@ public enum UsageMealBackfill {
                 numberOfUnits: event.numberOfUnits,
                 timestamp: event.timestamp,
                 nutritionDay: event.nutritionDay,
-                mealType: mealType
+                mealType: mealType,
+                entryId: event.entryId,
+                garminLogId: event.garminLogId
             )
         }
         return (updated, filled)

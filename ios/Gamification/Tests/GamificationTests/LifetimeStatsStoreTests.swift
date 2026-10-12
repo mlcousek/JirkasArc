@@ -81,6 +81,75 @@ final class LifetimeStatsStoreTests: XCTestCase {
         XCTAssertEqual(count, 2, "re-recording the same day must not double-count")
     }
 
+    /// harden-gamification-data-integrity 2.3, 3.2: the app re-fetches a
+    /// selected older day, so A, B, then A again is a real order -- A must
+    /// not count twice.
+    func testAnOlderDayRefetchedAfterANewerOneIsNotCountedAgain() async throws {
+        let store = makeStore()
+        try await store.recordGoalStatus(goalStatus(day: 1, protein: true))
+        try await store.recordGoalStatus(goalStatus(day: 2, protein: true))
+        try await store.recordGoalStatus(goalStatus(day: 1, protein: true))
+
+        let count = await store.goalHitDays(.protein)
+        XCTAssertEqual(count, 2)
+    }
+
+    func testCountedGoalDaysSurviveAReload() async throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gamification-lifetime-\(UUID().uuidString).json")
+        let first = LifetimeStatsStore(fileURL: fileURL)
+        try await first.recordGoalStatus(goalStatus(day: 1, protein: true))
+        try await first.recordGoalStatus(goalStatus(day: 2, protein: true))
+
+        let reloaded = LifetimeStatsStore(fileURL: fileURL)
+        try await reloaded.recordGoalStatus(goalStatus(day: 1, protein: true))
+
+        let count = await reloaded.goalHitDays(.protein)
+        XCTAssertEqual(count, 2)
+    }
+
+    /// A ledger written before every counted day was kept knows only the
+    /// last day per macro; that day must still not count again.
+    func testALedgerFromBeforeTheDaySetStillGuardsItsLastCountedDay() async throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gamification-lifetime-\(UUID().uuidString).json")
+        let olderFile = #"{"totalLogsEver":3,"totalCaloriesEver":0,"maxSingleDayCalories":0,"goalHitDaysEver":{"protein":4},"lastCountedGoalDay":{"protein":"2026-01-02"},"recentDayCalories":{},"recentDayOrder":[]}"#
+        try Data(olderFile.utf8).write(to: fileURL)
+        let store = LifetimeStatsStore(fileURL: fileURL)
+
+        try await store.recordGoalStatus(goalStatus(day: 2, protein: true))
+        let unchanged = await store.goalHitDays(.protein)
+        XCTAssertEqual(unchanged, 4)
+
+        try await store.recordGoalStatus(goalStatus(day: 3, protein: true))
+        let counted = await store.goalHitDays(.protein)
+        XCTAssertEqual(counted, 5)
+    }
+
+    /// harden-gamification-data-integrity 2.2: a meal preset of N
+    /// ingredients is N lifetime logs; its calories are the total.
+    func testAPresetCountsOneLifetimeLogPerIngredient() async throws {
+        let store = makeStore()
+        try await store.recordLog(nutritionDay: "2026-01-01", calories: 600, now: TestClock.date(2026, 1, 1), entries: 3)
+
+        let snapshot = await store.current()
+        XCTAssertEqual(snapshot.totalLogsEver, 3)
+        XCTAssertEqual(snapshot.totalCaloriesEver, 600)
+    }
+
+    /// harden-gamification-data-integrity 2.1: a backdated log's calories
+    /// build up the day it was logged FOR, not the day of the tap.
+    func testABackdatedLogAddsToTheSelectedDayNotTheTapDay() async throws {
+        let store = makeStore()
+        try await store.recordLog(nutritionDay: "2026-01-01", calories: 2000, now: TestClock.date(2026, 1, 1))
+        try await store.recordLog(nutritionDay: "2026-01-02", calories: 1500, now: TestClock.date(2026, 1, 2))
+        // On the 2nd, a forgotten dinner is added to the 1st.
+        try await store.recordLog(nutritionDay: "2026-01-01", calories: 900, now: TestClock.date(2026, 1, 2, hour: 20))
+
+        let snapshot = await store.current()
+        XCTAssertEqual(snapshot.maxSingleDayCalories, 2900, "the 1st's total, not 1500 + 900 on the 2nd")
+    }
+
     func testBackfillSeedsFromRetainedHistoryOnlyWhenTheLedgerIsEmpty() async throws {
         let store = makeStore()
         let events = [event("a", day: 1), event("b", day: 3)]

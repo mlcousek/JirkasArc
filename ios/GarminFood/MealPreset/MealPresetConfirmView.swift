@@ -197,7 +197,7 @@ struct MealPresetConfirmView: View {
             defer { isSaving = false }
             let dateString = NutritionDate.string(from: date)
             do {
-                try await environment.logEntryCoordinator.confirmMealPreset(
+                let logged = try await environment.logEntryCoordinator.confirmMealPreset(
                     preset,
                     servingsMultiplier: portions,
                     mealType: mealType,
@@ -210,7 +210,7 @@ struct MealPresetConfirmView: View {
                 // own zero-network-wait contract -- every ingredient is
                 // already a durable local commit by the time this runs.
                 didConfirm = true
-                await environment.gamificationEngine.handleLogConfirmed(calories: totals.calories)
+                await environment.gamificationEngine.handleLogConfirmed(calories: totals.calories, nutritionDay: dateString, entries: logged.count)
                 await environment.logConfirmed(food: nil, date: dateString)
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 dismiss()

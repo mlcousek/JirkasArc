@@ -208,7 +208,7 @@ public enum DailyChallengeCatalog {
     }()
 
     private static let hitAllGoalsFamily: [DailyChallengeTemplate] = {
-        let titles = ["Everything Aligned", "Full Goal Sweep", "Perfectly Balanced", "All Four Hit", "Nutrition Grand Slam", "Goals: Complete", "Clean Sweep", "Four for Four"]
+        let titles = ["Everything Aligned", "Full Goal Sweep", "Perfectly Balanced", "All Four Hit", "Nutrition Grand Slam", "Goals: Complete", "Every Goal Met", "Four for Four"]
         return titles.enumerated().map { index, title in
             DailyChallengeTemplate(
                 id: "daily-all-goals-\(index)",
@@ -220,7 +220,7 @@ public enum DailyChallengeCatalog {
     }()
 
     private static let tryNewFoodFamily: [DailyChallengeTemplate] = {
-        let titles = ["Something New", "First Taste Today", "Fresh Find", "New on the Menu", "Try Something Different", "Uncharted Bite", "Novelty Bite", "Unexplored Plate"]
+        let titles = ["New Food Today", "First Taste Today", "Fresh Find", "New on the Menu", "Try Something Different", "Uncharted Bite", "Novelty Bite", "Unexplored Plate"]
         return titles.enumerated().map { index, title in
             DailyChallengeTemplate(
                 id: "daily-new-food-\(index)",
@@ -246,7 +246,7 @@ public enum DailyChallengeCatalog {
     private static let earlyLogFamily: [DailyChallengeTemplate] = {
         let tiers: [(hour: Int, variants: [String])] = [
             (8, ["Early Riser", "Morning Momentum", "Up and At It"]),
-            (7, ["Sunrise Logger", "Before-7 Bonus", "Dawn Patrol"]),
+            (7, ["Sunrise Logger", "Before-7 Bonus", "Up Before Seven"]),
             (6, ["Before-6 Club", "Ultra Early Bird", "First Light Log"])
         ]
         return tiers.flatMap { tier -> [DailyChallengeTemplate] in

@@ -436,8 +436,8 @@ private struct HydrationSummaryCard: View {
 /// same "card summarizes, tap opens the detail screen" shape as
 /// `WeightSummaryCard`/`HydrationSummaryCard` above. Shows the hydration
 /// streak, not a macro-trend preview: it's the one number this card can
-/// show for free -- purely local, already computed from
-/// `environment.hydrationLoader.entries`, which the Progress tab already
+/// show for free -- already computed from
+/// `environment.hydrationLoader.dayTotals`, which the Progress tab already
 /// keeps fresh. The macro trend itself needs `environment.trendsLoader`'s
 /// own Garmin read, which -- per that loader's header -- only happens once
 /// `TrendsView` is actually opened, so this card doesn't fetch it just to

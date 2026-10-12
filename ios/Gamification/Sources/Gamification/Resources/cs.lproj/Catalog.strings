@@ -238,7 +238,7 @@
 "achv-new-year.title" = "Nový rok, nový zápis";
 "achv-new-year.subtitle" = "Zapiš něco na Nový rok.";
 "achv-midnight.title" = "Klub půlnočních svačin";
-"achv-midnight.subtitle" = "Zapiš něco přesně o půlnoci.";
+"achv-midnight.subtitle" = "Zapiš něco mezi půlnocí a jednou hodinou ráno.";
 "achv-anniversary-1.title" = "První rok";
 "achv-anniversary-1.subtitle" = "Tuhle aplikaci používáš už celý rok.";
 "achv-anniversary-2.title" = "Dva silné roky";
@@ -319,7 +319,7 @@
 "extend-streak-5.subtitle" = "Prodluž svou sérii o dalších 5 dní.";
 "extend-streak-7.title" = "Týden v plamenech";
 "extend-streak-7.subtitle" = "Prodluž svou sérii o dalších 7 dní.";
-"extend-streak-10.title" = "Dvojciferná série";
+"extend-streak-10.title" = "Deset dní v plamenech";
 "extend-streak-10.subtitle" = "Prodluž svou sérii o dalších 10 dní.";
 "extend-streak-12.title" = "Tucet dní v plamenech";
 "extend-streak-12.subtitle" = "Prodluž svou sérii o dalších 12 dní.";
@@ -507,7 +507,7 @@
 "new-foods-12.subtitle" = "Zapiš 12 jídel, která v deníku ještě nemáš.";
 "new-foods-15.title" = "Rebel jídelníčku";
 "new-foods-15.subtitle" = "Zapiš 15 jídel, která v deníku ještě nemáš.";
-"new-foods-20.title" = "Znalec";
+"new-foods-20.title" = "Sběratel chutí";
 "new-foods-20.subtitle" = "Zapiš 20 jídel, která v deníku ještě nemáš.";
 "new-foods-25.title" = "Gastronaut";
 "new-foods-25.subtitle" = "Zapiš 25 jídel, která v deníku ještě nemáš.";
@@ -586,7 +586,7 @@
 "multi-meal-3-5.subtitle" = "Zapisuj ve 3 různých časech dne, a to v 5 různých dnech.";
 "multi-meal-3-7.title" = "Týden plného talíře";
 "multi-meal-3-7.subtitle" = "Zapisuj ve 3 různých časech dne, a to v 7 různých dnech.";
-"multi-meal-4-3.title" = "Plný dům";
+"multi-meal-4-3.title" = "Čtyři jídla třikrát";
 "multi-meal-4-3.subtitle" = "Zapiš za jeden den ve všech 4 časech dne, a to ve 3 různých dnech.";
 "multi-meal-4-7.title" = "Týden plného domu";
 "multi-meal-4-7.subtitle" = "Zapiš za jeden den ve všech 4 časech dne, a to v 7 různých dnech.";
@@ -890,11 +890,11 @@
 "daily-all-goals-4.subtitle" = "Splň dnes cíl kalorií, bílkovin, sacharidů i tuků.";
 "daily-all-goals-5.title" = "Cíle: splněno";
 "daily-all-goals-5.subtitle" = "Splň dnes cíl kalorií, bílkovin, sacharidů i tuků.";
-"daily-all-goals-6.title" = "Čistý stůl";
+"daily-all-goals-6.title" = "Každý cíl splněn";
 "daily-all-goals-6.subtitle" = "Splň dnes cíl kalorií, bílkovin, sacharidů i tuků.";
 "daily-all-goals-7.title" = "Čtyři ze čtyř";
 "daily-all-goals-7.subtitle" = "Splň dnes cíl kalorií, bílkovin, sacharidů i tuků.";
-"daily-new-food-0.title" = "Něco nového";
+"daily-new-food-0.title" = "Dnes něco nového";
 "daily-new-food-0.subtitle" = "Zapiš jídlo, které v deníku ještě nemáš.";
 "daily-new-food-1.title" = "Dnešní první ochutnávka";
 "daily-new-food-1.subtitle" = "Zapiš jídlo, které v deníku ještě nemáš.";
@@ -932,7 +932,7 @@
 "daily-early-7-0.subtitle" = "Zapiš dnes něco před 7:00.";
 "daily-early-7-1.title" = "Bonus před sedmou";
 "daily-early-7-1.subtitle" = "Zapiš dnes něco před 7:00.";
-"daily-early-7-2.title" = "Ranní hlídka";
+"daily-early-7-2.title" = "Vzhůru před sedmou";
 "daily-early-7-2.subtitle" = "Zapiš dnes něco před 7:00.";
 "daily-early-6-0.title" = "Klub před šestou";
 "daily-early-6-0.subtitle" = "Zapiš dnes něco před 6:00.";
@@ -1002,7 +1002,7 @@
 "tier.150.flavor" = "Strop je dosažen. Opravdu.";
 
 /* Supplement challenges (Features/Supplements/ChallengeTemplates+Supplements.swift), in the rotation only while supplements are on. */
-"supp-stack-5.title" = "Týden s doplňky";
+"supp-stack-5.title" = "Pět dní s doplňky";
 "supp-stack-5.subtitle" = "Vezmi si všechny naplánované doplňky v 5 dnech.";
 "supp-stack-10.title" = "Doplňky bez výmluv";
 "supp-stack-10.subtitle" = "Vezmi si všechny naplánované doplňky v 10 dnech.";

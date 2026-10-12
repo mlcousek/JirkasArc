@@ -250,7 +250,7 @@ public enum SportBodyCatalog {
         ),
         define(
             halfwayId,
-            String(localized: "Halfway There", bundle: .module, comment: "Body badge title: halfway to the weight goal."),
+            String(localized: "Halfway to Target", bundle: .module, comment: "Body badge title: halfway to the weight goal."),
             String(localized: "Weigh in halfway from your start weight to your target.", bundle: .module, comment: "Body badge description."),
             symbol: "flag.fill",
             rarity: .rare

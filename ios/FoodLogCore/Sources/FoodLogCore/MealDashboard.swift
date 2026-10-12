@@ -30,8 +30,9 @@ import GarminKit
 // MARK: - Progress against a target
 
 /// Consumed versus target for one nutrient. `state` uses the same +/-10%
-/// band as `TodaySummary.GoalState`, so a meal and the day never disagree
-/// about what "on target" means.
+/// band as `TodaySummary.GoalState`, so the meal cards and macro bars agree.
+/// The day's calorie ring and the goal rewards use `CalorieBand`'s
+/// narrower 95-105% instead (see its header).
 public struct MacroProgress: Sendable, Equatable {
     public let consumed: Double
     public let goal: Double?

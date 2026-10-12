@@ -858,8 +858,8 @@
    "windowDays": 22,
    "xp": 95,
    "title": {
-    "en": "Double Digits",
-    "cs": "Dvojciferná série"
+    "en": "Ten-Day Flame",
+    "cs": "Deset dní v plamenech"
    },
    "subtitle": {
     "en": "Extend your streak by 10 more days.",
@@ -3114,8 +3114,8 @@
    "windowDays": 43,
    "xp": 180,
    "title": {
-    "en": "Connoisseur",
-    "cs": "Znalec"
+    "en": "Taste Collector",
+    "cs": "Sběratel chutí"
    },
    "subtitle": {
     "en": "Log 20 foods you haven't logged before.",
@@ -4054,8 +4054,8 @@
    "windowDays": 6,
    "xp": 110,
    "title": {
-    "en": "Full House",
-    "cs": "Plný dům"
+    "en": "Four Slots, Three Days",
+    "cs": "Čtyři jídla třikrát"
    },
    "subtitle": {
     "en": "Log all 4 times of day in one day, on 3 separate days.",
@@ -5526,8 +5526,8 @@
    "windowDays": 7,
    "xp": 80,
    "title": {
-    "en": "Something Fishy",
-    "cs": "Něco rybího"
+    "en": "Two Fish Days",
+    "cs": "Dva rybí dny"
    },
    "subtitle": {
     "en": "Log fish on 2 different days.",
@@ -6140,8 +6140,8 @@
    "windowDays": 7,
    "xp": 90,
    "title": {
-    "en": "Stack Week",
-    "cs": "Týden s doplňky"
+    "en": "Stack Five",
+    "cs": "Pět dní s doplňky"
    },
    "subtitle": {
     "en": "Take every planned supplement on 5 days.",
@@ -7769,8 +7769,8 @@
    "id": "daily-all-goals-6",
    "family": "all-goals",
    "title": {
-    "en": "Clean Sweep",
-    "cs": "Čistý stůl"
+    "en": "Every Goal Met",
+    "cs": "Každý cíl splněn"
    },
    "subtitle": {
     "en": "Hit calories, protein, carbs AND fat today.",
@@ -7803,8 +7803,8 @@
    "id": "daily-new-food-0",
    "family": "new-food",
    "title": {
-    "en": "Something New",
-    "cs": "Něco nového"
+    "en": "New Food Today",
+    "cs": "Dnes něco nového"
    },
    "subtitle": {
     "en": "Log a food you haven't logged before.",
@@ -8126,8 +8126,8 @@
    "id": "daily-early-7-2",
    "family": "early",
    "title": {
-    "en": "Dawn Patrol",
-    "cs": "Ranní hlídka"
+    "en": "Up Before Seven",
+    "cs": "Vzhůru před sedmou"
    },
    "subtitle": {
     "en": "Log something before 7:00 today.",

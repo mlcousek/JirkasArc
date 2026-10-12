@@ -1,7 +1,7 @@
 // SignalChallengeTests.swift
 //
 // add-gamification-signals 6.5: signal-kind challenge progress (spec
-// scenarios "Something Fishy" and "A day without macro data"), the
+// scenarios "Two Fish Days" and "A day without macro data"), the
 // no-signals fallback, and back-compat decode of a pre-change
 // ChallengeStore file.
 
@@ -31,7 +31,7 @@ final class SignalChallengeTests: XCTestCase {
                 at: TestClock.date(2026, 9, day, hour: hour), fiber: fiber)
     }
 
-    // MARK: - Something Fishy: fish on 2 days within 7
+    // MARK: - Two Fish Days: fish on 2 days within 7
 
     func testSomethingFishyCompletesOnFriday() throws {
         let tuesday = F.day(2026, 9, 22, entries: [tagged("Losos na grilu", day: 22)])

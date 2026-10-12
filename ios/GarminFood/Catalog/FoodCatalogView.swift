@@ -558,7 +558,8 @@ struct FoodCatalogView: View {
             Task {
                 let remembered = await environment.servingDefaults.defaultServing(forFoodId: food.id)
                 if let serving = ServingResolution.resolve(remembered, in: food) {
-                    logTarget = .catalog(food: food, initialServing: serving)
+                    // The remembered amount too, like a shelf card and Siri (review note 11).
+                    logTarget = .catalog(food: food, initialServing: serving, initialQuantity: remembered?.numberOfUnits)
                 } else {
                     foodAwaitingServingPick = food
                 }
@@ -594,7 +595,10 @@ struct FoodCatalogView: View {
             // must be a real Garmin food), and a picker tap must never log.
             return
         case .logFood:
-            logTarget = .custom(draft)
+            Task {
+                let remembered = await environment.servingDefaults.defaultServing(forFoodId: draft.id.uuidString)
+                logTarget = .custom(draft, initialQuantity: remembered?.numberOfUnits)
+            }
         }
     }
 

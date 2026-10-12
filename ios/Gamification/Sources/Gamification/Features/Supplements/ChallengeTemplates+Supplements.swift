@@ -61,7 +61,7 @@ extension ChallengeCatalog {
     static let supplementTemplates: [ChallengeTemplate] = [
         ChallengeTemplate(
             id: "supp-stack-5",
-            title: CatalogL10n.title("supp-stack-5", "Stack Week"),
+            title: CatalogL10n.title("supp-stack-5", "Stack Five"),
             subtitle: CatalogL10n.subtitle("supp-stack-5", "Take every planned supplement on 5 days."),
             category: .streakExtension, windowDays: 7, xpReward: 90,
             kind: .supplementDays(.stackComplete, minDays: 5)

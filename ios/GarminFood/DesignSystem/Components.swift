@@ -580,8 +580,8 @@ struct DaySwitcher: View {
 
     private var title: String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        if calendar.isDateInToday(date) { return String(localized: "Today", comment: "Today's day switcher: the selected day is today.") }
+        if calendar.isDateInYesterday(date) { return String(localized: "Yesterday", comment: "Today's day switcher: the selected day is yesterday.") }
         if calendar.isDateInTomorrow(date) { return String(localized: "Tomorrow", comment: "Today's day switcher: the selected day is tomorrow (training experience).") }
         return date.formatted(.dateTime.weekday(.wide).day().month())
     }

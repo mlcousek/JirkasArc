@@ -137,7 +137,7 @@ private struct MomentCard: View {
         case .streakMilestone: return "flame.fill"
         case .challengeCompleted: return "target"
         case .dailyChallengeCompleted: return "checkmark.circle.fill"
-        case .achievementUnlocked(_, let badgeSymbol, _): return badgeSymbol
+        case .achievementUnlocked(_, let badgeSymbol, _, _): return badgeSymbol
         case .feature(let feature): return feature.symbol
         }
     }
@@ -150,7 +150,8 @@ private struct MomentCard: View {
         case .levelUp: return .levels
         case .streakMilestone: return .streak
         case .challengeCompleted, .dailyChallengeCompleted: return .bingo
-        case .achievementUnlocked, .feature: return nil
+        case .achievementUnlocked(_, _, _, let family): return family
+        case .feature: return nil
         }
     }
 
@@ -167,7 +168,7 @@ private struct MomentCard: View {
         case .levelUp(let level): return LevelTiers.tier(forLevel: level).rarity
         case .streakMilestone(let days): return AchievementRarity.derive(from: .streakAtLeast(days: days))
         case .challengeCompleted, .dailyChallengeCompleted: return .uncommon
-        case .achievementUnlocked(_, _, let rarity): return rarity
+        case .achievementUnlocked(_, _, let rarity, _): return rarity
         case .feature(let feature): return Self.rarity(for: feature.style)
         }
     }
@@ -178,7 +179,7 @@ private struct MomentCard: View {
         case .streakMilestone(let days): return String(localized: "\(days)-day streak", comment: "Celebration title: a streak milestone (a multiple of 7 days). Plural.")
         case .challengeCompleted(let name, _): return name
         case .dailyChallengeCompleted(let name, _): return name
-        case .achievementUnlocked(let name, _, _): return name
+        case .achievementUnlocked(let name, _, _, _): return name
         case .feature(let feature): return feature.title
         }
     }
@@ -223,7 +224,7 @@ private struct MomentCard: View {
 }
 
 #Preview("MomentCard -- achievement") {
-    MomentCard(moment: .achievementUnlocked(title: "Century Club", badgeSymbol: "fork.knife", rarity: .epic), animated: true, onDone: {})
+    MomentCard(moment: .achievementUnlocked(title: "Century Club", badgeSymbol: "fork.knife", rarity: .epic, family: .logging), animated: true, onDone: {})
 }
 
 /// The secret reveal's flip: the card turns about its vertical axis.

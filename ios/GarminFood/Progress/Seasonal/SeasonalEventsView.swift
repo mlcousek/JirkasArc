@@ -108,7 +108,7 @@ private struct SeasonalBadgeCell: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: badge.title))
+        .accessibilityLabel(Text("\(badge.title), \(badge.rarity.displayName) badge", comment: "VoiceOver: a badge tile's name. Title, then its rarity (adjective; Czech agrees with \"odznak\"). Locked or unlocked is read as the value."))
         .accessibilityValue(isUnlocked
             ? (years.isEmpty ? Text("Unlocked") : Text("Earned \(yearsText)"))
             : Text("Locked"))

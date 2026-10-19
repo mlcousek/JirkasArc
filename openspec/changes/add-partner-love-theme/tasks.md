@@ -83,6 +83,6 @@ Section 9 stays open until CI and her phone have said so.
 
 ## 9. Ship to her phone (S)
 
-- [ ] 9.1 `docs/partner-phone-setup.md`: AltStore or SideStore under her Apple ID, the 7-day refresh, standalone onboarding, Czech, notifications on, pack import, the export-backup reminder.
+- [x] 9.1 `docs/partner-phone-setup.md` (installing points to `install-second-phone.md`): standalone onboarding, Czech, building and AirDropping the pack, notifications, day to day, backups, removing.
 - [ ] 9.2 CI green on the PR.
 - [ ] 9.3 Sideloaded on her phone: pack imported, theme on, the first love notification observed between 08:00 and 13:00, still notified after 2 days with the app closed. Record dates and minutes, without the text.

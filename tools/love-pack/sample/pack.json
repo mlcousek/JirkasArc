@@ -1,0 +1,27 @@
+{
+  "format": "love-pack",
+  "version": 1,
+  "packId": "sample-pack-0001",
+  "nickname": "Ninja",
+  "signature": "Tvůj J.",
+  "startDate": "2030-01-01",
+  "seed": "sample-seed-0001",
+  "daily": [
+    { "id": "d001", "text": "Ukázkový vzkaz číslo jedna ❤️" },
+    { "id": "d002", "text": "Ukázkový vzkaz číslo dvě – ramen počká 🍜", "lore": ["ramen"] },
+    { "id": "d003", "text": "Ukázkový vzkaz číslo tři 🥷" },
+    { "id": "d004", "text": "Ukázkový vzkaz číslo čtyři – Dattebayo!", "lore": ["dattebayo"] },
+    { "id": "d005", "text": "Ukázkový vzkaz číslo pět 💌" }
+  ],
+  "openWhen": [
+    { "id": "o-sad", "title": "Otevři, až jsi smutná", "text": "Ukázkový text svitku." }
+  ],
+  "coupons": [
+    { "id": "c001", "title": "Ukázkový kupón", "price": 40 }
+  ],
+  "countdown": { "date": "2031-06-20", "title": "Ukázkový den" },
+  "images": [
+    { "id": "i001", "file": "heart-gradient.png", "slots": ["loveCard", "pictureOfDay"], "lore": [] },
+    { "id": "i002", "file": "heart-cream.png", "slots": ["pictureOfDay", "badge:p.firstnote"], "lore": [] }
+  ]
+}

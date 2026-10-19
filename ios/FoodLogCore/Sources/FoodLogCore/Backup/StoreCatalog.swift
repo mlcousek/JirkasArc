@@ -130,6 +130,11 @@ public enum StoreCatalog {
         StoreCatalogEntry(id: "foodlog.supplement-intake", location: .directory("FoodLogCore/SupplementIntake", fileNames: []), schemaVersion: 1, area: .supplements),
         // add-supplements 5.3: barcode lookups already made (offline rescans).
         StoreCatalogEntry(id: "foodlog.supplement-barcode-cache", location: .file("FoodLogCore/supplement-barcode-cache.json"), schemaVersion: 1, area: .supplements),
+        // add-partner-love-theme D1: the love pack's texts and the partner's
+        // state travel (her export is the only off-phone copy of the
+        // message history); the pack's pictures under Love/Images are not
+        // JSON, so BackupExclusions leaves them out by itself.
+        StoreCatalogEntry(id: "foodlog.love", location: .directory("FoodLogCore/Love", fileNames: ["love-pack.json", "love-state.json"]), schemaVersion: 1, area: .other),
 
         // Gamification
         StoreCatalogEntry(id: "gamification.xp-ledger", location: .file("Gamification/xp-ledger.json"), schemaVersion: 1, area: .progress),

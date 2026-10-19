@@ -1,0 +1,48 @@
+{
+  "assignments" : {
+    "2030-03-14" : "d002",
+    "2030-03-15" : "d001",
+    "2030-03-16" : "d003"
+  },
+  "favorites" : [
+    "d002"
+  ],
+  "hearts" : [
+    {
+      "amount" : 5,
+      "at" : "2030-03-14T10:12:00Z",
+      "id" : "achievement:p.firstnote"
+    },
+    {
+      "amount" : 40,
+      "at" : "2030-03-15T09:00:00Z",
+      "id" : "achievement:p.jonin"
+    },
+    {
+      "amount" : -40,
+      "at" : "2030-03-15T19:30:00Z",
+      "id" : "coupon:c001"
+    }
+  ],
+  "importDay" : "2030-03-14",
+  "openedScrolls" : {
+    "o-sad" : "2030-03-15T21:05:00Z"
+  },
+  "packId" : "sample-pack-0001",
+  "revealed" : {
+    "2030-03-14" : {
+      "day" : "2030-03-14",
+      "isRepeat" : false,
+      "messageId" : "d002",
+      "revealedAt" : "2030-03-14T10:12:00Z",
+      "text" : "Ukázkový vzkaz číslo dvě 🍜"
+    },
+    "2030-03-15" : {
+      "day" : "2030-03-15",
+      "isRepeat" : false,
+      "messageId" : "d001",
+      "revealedAt" : "2030-03-15T08:47:00Z",
+      "text" : "Ukázkový vzkaz číslo jedna ❤️"
+    }
+  }
+}

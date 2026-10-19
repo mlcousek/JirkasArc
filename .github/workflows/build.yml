@@ -30,6 +30,7 @@ on:
       - "tools/check-localizations.mjs"
       - "tools/lint-design-tokens.sh"
       - "tools/design-token-allowlist.txt"
+      - "tools/love-pack/**"
   pull_request:
     paths:
       - "ios/**"
@@ -37,6 +38,7 @@ on:
       - "tools/check-localizations.mjs"
       - "tools/lint-design-tokens.sh"
       - "tools/design-token-allowlist.txt"
+      - "tools/love-pack/**"
   workflow_dispatch:
     inputs:
       pseudo_czech:
@@ -66,6 +68,12 @@ jobs:
 
       - name: Check translations
         run: node tools/check-localizations.mjs --scan
+
+      # add-partner-love-theme D1/D11: the love pack builder applies the
+      # phone's rules plus the spoiler allow-list; its self-test also checks
+      # the committed sample.arclove that FoodLogCore's LovePackTests read.
+      - name: Check the love pack builder
+        run: node tools/love-pack/test.mjs
 
       # redesign-badge-art D3: badge art stays inside a small SVG subset,
       # because how Xcode draws it is only seen after a sideload.

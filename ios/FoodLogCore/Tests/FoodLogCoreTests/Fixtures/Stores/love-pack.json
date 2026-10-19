@@ -1,0 +1,62 @@
+{
+  "countdown" : {
+    "date" : "2031-06-20",
+    "title" : "Svatba"
+  },
+  "coupons" : [
+    {
+      "id" : "c001",
+      "price" : 40,
+      "title" : "Večeře podle tvého výběru"
+    }
+  ],
+  "daily" : [
+    {
+      "id" : "d001",
+      "text" : "Ukázkový vzkaz číslo jedna ❤️"
+    },
+    {
+      "id" : "d002",
+      "text" : "Ukázkový vzkaz číslo dvě 🍜"
+    },
+    {
+      "id" : "d003",
+      "text" : "Ukázkový vzkaz číslo tři"
+    }
+  ],
+  "format" : "love-pack",
+  "images" : [
+    {
+      "format" : "png",
+      "id" : "i001",
+      "lore" : [
+        "ramen"
+      ],
+      "slots" : [
+        "loveCard",
+        "pictureOfDay"
+      ]
+    },
+    {
+      "format" : "jpeg",
+      "id" : "i002",
+      "lore" : [],
+      "slots" : [
+        "badge:p.genin"
+      ]
+    }
+  ],
+  "nickname" : "Ninja",
+  "openWhen" : [
+    {
+      "id" : "o-sad",
+      "text" : "Ukázkový text svitku.",
+      "title" : "Otevři, až jsi smutná"
+    }
+  ],
+  "packId" : "sample-pack-0001",
+  "seed" : "sample-seed-0001",
+  "signature" : "Tvůj J.",
+  "startDate" : "2030-01-01",
+  "version" : 1
+}

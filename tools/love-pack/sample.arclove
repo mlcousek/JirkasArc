@@ -1,0 +1,75 @@
+{
+ "format": "love-pack",
+ "version": 1,
+ "packId": "sample-pack-0001",
+ "nickname": "Ninja",
+ "signature": "Tvůj J.",
+ "startDate": "2030-01-01",
+ "seed": "sample-seed-0001",
+ "daily": [
+  {
+   "id": "d001",
+   "text": "Ukázkový vzkaz číslo jedna ❤️"
+  },
+  {
+   "id": "d002",
+   "text": "Ukázkový vzkaz číslo dvě – ramen počká 🍜",
+   "lore": [
+    "ramen"
+   ]
+  },
+  {
+   "id": "d003",
+   "text": "Ukázkový vzkaz číslo tři 🥷"
+  },
+  {
+   "id": "d004",
+   "text": "Ukázkový vzkaz číslo čtyři – Dattebayo!",
+   "lore": [
+    "dattebayo"
+   ]
+  },
+  {
+   "id": "d005",
+   "text": "Ukázkový vzkaz číslo pět 💌"
+  }
+ ],
+ "openWhen": [
+  {
+   "id": "o-sad",
+   "title": "Otevři, až jsi smutná",
+   "text": "Ukázkový text svitku."
+  }
+ ],
+ "coupons": [
+  {
+   "id": "c001",
+   "title": "Ukázkový kupón",
+   "price": 40
+  }
+ ],
+ "countdown": {
+  "date": "2031-06-20",
+  "title": "Ukázkový den"
+ },
+ "images": [
+  {
+   "id": "i001",
+   "slots": [
+    "loveCard",
+    "pictureOfDay"
+   ],
+   "lore": [],
+   "data": "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAE70lEQVR42u3cV3fTQBCG4f0n9N577713CAQILZ30Hjr8WdLAkmzlcjijXZUcbGm1Wnkley6+e+d5ORyIpWG/r8yDt6tzYrPw+xpuBhZw16fFpmDhBm6S7+aE2Dgs3MKNeVu8PSo2Aot3/A3D4l3cEN+9j2KDsHQfNyDWD0sPcH18D3vFemDpEa7b2/LjD2LvYfmJv3ew/BT3lu/ZG7EuWO7ogpWO13zPX4m9hJUXuE6+zhdiz2HlJa4D/uBe4Z7xvX4q9gT+dOEe8715JPYQ/r7FPeB7d1/sHvx9j7vL9+GO2G1ghG8Ov9KNAQjfGH4kAOGbwK9038IAhG8KnwcgfGP4lZ6bGIDwTeF7AQjfHH6l5wYwwjeHX+kNAhC+CfxK73UMQPim8HmAnPHBtVIvT3yVz5MXfqXvGgbIB1/lB60bQwO+rs+iGz8MoBFf1w9bN0YK/Dw/hy78St9VYLrw8/yBozONvyZERnyrPwhQDvw1Iergm/gcWfCt/isYoHz4QQTD+P5U8XmAkuKHEToL8TlU8K2ByxigvPhegCb+nZ8YISV+EKCs+EVcGnxr4BKwov1Ts/wB5PGtwSAA4WuNIIlvDV7EAGb+h9v6AZLxeQDCz2Uy+NbHC36A/H6x1r4BkvFFAMLPLUICPg8g+ft8AlUN0BjfGjqPAeS+TCFQlQDx+HYQQOKbLAJVCJCAbw+dAyb7NSKBqgSIx7eHgwCEn1uEGHx7+CwGSP4CnSA1BKiD7wWQeXqBIDMGaIBvj5zBAMmPjhBkhgAx+JEA8c/tEKT64vDtkdMYIPmhKYLMEqAxvj2KASSeWCPIDAFi8O3RUxgg+XFBgswSoDF+GCDhWU2CzBigAb49dhKY7IOyhKkfPxIg+SllAlUIkIDvjJ3AAHKPiBOoaoDG+M44BpB8Pp9AVQLE4zvjxzGA3MsRBKoQIAE/CCD7Zgqh6sV3Jo4BS/NaEMGmCZCMHwkg904WwaYMkIDvTBzFAPIvxBFsigAS+M4kBkj5Qhzh6sN3Jo/4AeTfRiRguQAy+CJA+ldBCVkPvjOFARTewyXoxkuD70wdxgBq7+ESdnb8MIDCS9AEXidASvzq9CFgRXgDvV3xIwHUbi8QfDRAevzq9EEMkO3qCOGr41dnMEDGky8UwFLGr84cAKbj3g7hq+GHATQcOyL89PjV2f3AdF2aassAGfEjAfSc+SL8dPjV2X0YQO+NNcKXx6/OYYAcDtwRvhx+dW4vBtB/XbD1A+jBDwPkcNqR8JPxa/N7gOV5V5Pw4/EjAfI7akr4jfFr87sxQP4XZQm/Pj4P0KRzvoT/P37t0y4M0LxbyoS/Ft8L0OxD1oQf4tc+7QRm4oo44XP82mcvgJkT7oQfDWDwfn4r/npBFr/2eQcwk/j+dcF2xa99CQKYw/evC7Yjfu3LdgxgHt8/cNdu+DxAQfCjB+6K/jWiLnz36zYMUCx8/8xXO+CHAQqGHz3zZfq5nTzx3a9bgRUZ3z921Kr47rcgQHHxo/d2mvGsZjPx3W9bMEA58P2rI62E7wUoE75/e6FV8N3vmzFAufCjr/9nfTnCNH4YoIT4/nu4ZcZ3v28CVmb8IEBJ8d0fQYBy4pf5Tz7iuz82YgDCN4XPAxC+MXz35wYMQPim8FeDAIRvBH/153pghG8Of/VXEIDwTeCv/lqHAQjfFD7uH6hNGKPCk16eAAAAAElFTkSuQmCC"
+  },
+  {
+   "id": "i002",
+   "slots": [
+    "pictureOfDay",
+    "badge:p.firstnote"
+   ],
+   "lore": [],
+   "data": "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACiklEQVR42u3dSVcaQRSGYf+NiZnMqIkaMw9GEVQUR5xARAWjxsz5wd0KPahb3agLzul0V3lr/hbPvg7vCqi6t+v8LDwHdbrwISAAAgACIAAgAAIAAiAAIAACUPJGm8xcOo+wAN5Yk4RtZxEewMs1hDHxHNICeLkdKUw7i5QA3vi2dDqfQ2oAP7+ljI7nkBrAz9eV0+kcUgP4hU0t6HYWKQH8Qg0SyAkwsQEJhAfwJ6uQQnCACqQQFuBoah0yEhOguAYZkQc4Kq4CI9oA0yvAiDbAzDIwIg5QBkakAY5LS8CILMDx7CJwIgqwAJxoAszNAyeaAPNzwIkowCxwogmwUAJOJAFaiyXgRBRgBjjRBFiaBk5k34Rb5SIwIv0polWeAka0AZYngRFpgPbKBDAiDlAARuT/CbdX85CRkD/l22vjkJGgADnISEyA9THISNjNuKAyCimEXk0MKl8ghfDb0UF1BBJIuZ4eVD9DAmkvZIKNT9BB6hOloPYROkh/pBfUPsAlJa8kw833cEnZO+Gw/s55Sh9qh/W3zlM+qiDceuMsbYZ1hNuvnaPVtBQE0GBeULTzyhnaDmyKGsPW035kWdR4aS0jZsZFzSFrGTO0L9odtI5xYyuj3QFrGDs3NPr6wnjGT86N954by5rRxfFev3Gsmx0d7/cZw9rh3fHBM+1ZPz09PniqLWfG18ffnmjHyf0BJ4ePlXN+gcPJ4SNlsEHjKsL3h9JhhUlnhB+90mCHzH9DPBAGS3yyRvh5nxy2KHE4/XXvxrDG6sYR7nLDHjHKEL/vZIY9YsIi9KTCIjfREf70JMImPZkh/t6+hlWGyiLcwi5Jlc7+dSMAIAACAAIgACAAAgACGOUCfqKQKnxJ5H4AAAAASUVORK5CYII="
+  }
+ ]
+}

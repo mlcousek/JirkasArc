@@ -81,6 +81,8 @@ final class StoreFixtureTests: XCTestCase {
         "supplement-barcode-cache.json",
         "SupplementIntake-2026-09.json",
         "food-day-closes.json",
+        "love-pack.json",
+        "love-state.json",
     ]
 
     /// Store files whose names are interpolated, which the literal-name
@@ -995,6 +997,52 @@ final class StoreFixtureTests: XCTestCase {
         XCTAssertEqual(late.slot, .custom(name: "Po tréninku", minute: 1260))
         XCTAssertEqual(late.servings, 2)
         XCTAssertEqual(late.recordedOn, "2026-09-29")
+    }
+
+    // MARK: - love-pack.json + love-state.json (LoveStore, .iso8601)
+
+    // add-partner-love-theme D1: the two files of FoodLogCore/Love/, read
+    // together because the store hands out a state only for its own pack.
+    func testLovePackAndStateFixturesDecodeThroughTheRealStore() async throws {
+        let copy = try copyFixture("love-pack.json", to: "Love/love-pack.json")
+        let loveDirectory = copy.file.deletingLastPathComponent()
+        try FileManager.default.copyItem(
+            at: Self.fixturesDirectory.appendingPathComponent("love-state.json"),
+            to: loveDirectory.appendingPathComponent("love-state.json")
+        )
+
+        let store = LoveStore(directory: loveDirectory)
+        let pack = await store.pack()
+        let state = await store.state()
+
+        assertNotQuarantined(copy)
+        XCTAssertEqual(pack?.packId, "sample-pack-0001")
+        XCTAssertEqual(pack?.nickname, "Ninja")
+        XCTAssertEqual(pack?.signature, "Tvůj J.")
+        XCTAssertEqual(pack?.startDate, "2030-01-01")
+        XCTAssertEqual(pack?.daily.map { $0.id }, ["d001", "d002", "d003"])
+        XCTAssertEqual(pack?.daily.first?.text, "Ukázkový vzkaz číslo jedna ❤️")
+        XCTAssertEqual(pack?.openWhen.first?.title, "Otevři, až jsi smutná")
+        XCTAssertEqual(pack?.coupons, [LovePackCoupon(id: "c001", title: "Večeře podle tvého výběru", price: 40)])
+        XCTAssertEqual(pack?.countdown, LovePackCountdown(date: "2031-06-20", title: "Svatba"))
+        XCTAssertEqual(pack?.images.map { $0.format }, [.png, .jpeg])
+        XCTAssertEqual(pack?.images.first?.slots, ["loveCard", "pictureOfDay"])
+        XCTAssertEqual(pack?.images.last?.slots, ["badge:p.genin"])
+
+        XCTAssertEqual(state?.importDay, "2030-03-14")
+        XCTAssertEqual(state?.assignments["2030-03-16"], "d003")
+        XCTAssertEqual(state?.revealedCount, 2)
+        XCTAssertEqual(state?.messageBox.map { $0.day }, ["2030-03-15", "2030-03-14"])
+        XCTAssertEqual(state?.revealed["2030-03-14"]?.text, "Ukázkový vzkaz číslo dvě 🍜")
+        XCTAssertEqual(state?.revealed["2030-03-15"]?.revealedAt, iso("2030-03-15T08:47:00Z"))
+        XCTAssertEqual(state?.favorites, ["d002"])
+        XCTAssertEqual(state?.openedScrolls["o-sad"], iso("2030-03-15T21:05:00Z"))
+        XCTAssertEqual(state?.heartBalance, 5)
+        XCTAssertEqual(state?.isRedeemed(couponId: "c001"), true)
+
+        // The fixture has no picture files: a restored phone.
+        let missing = await store.isMissingPictures()
+        XCTAssertTrue(missing)
     }
 
     // MARK: - Coverage of the fixture set itself

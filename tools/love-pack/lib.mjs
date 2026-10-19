@@ -130,6 +130,7 @@ export function buildPack(pack, readPicture, allowlist) {
   if (!isValidId(pack.packId)) fail(`packId "${pack.packId}" may only use letters, digits, ".", "_" and "-"`);
   if (length(pack.nickname) > LIMITS.maxShortTextLength) fail('nickname is too long');
   if (pack.signature !== undefined && (typeof pack.signature !== 'string' || length(pack.signature) > LIMITS.maxShortTextLength)) fail('signature is too long');
+  if (pack.themeName !== undefined && (typeof pack.themeName !== 'string' || length(pack.themeName) > LIMITS.maxShortTextLength)) fail('themeName is too long');
   if (!isValidDay(pack.startDate)) fail(`startDate "${pack.startDate}" is not a yyyy-MM-dd date`);
   if (length(pack.seed) > LIMITS.maxShortTextLength) fail('seed is too long');
   if (pack.daily === undefined) fail('daily is missing');
@@ -193,6 +194,7 @@ export function buildPack(pack, readPicture, allowlist) {
     packId: pack.packId,
     nickname: pack.nickname,
     signature: pack.signature ?? '',
+    ...(nonEmpty(pack.themeName) ? { themeName: pack.themeName } : {}),
     startDate: pack.startDate,
     seed: pack.seed,
     daily: pack.daily,

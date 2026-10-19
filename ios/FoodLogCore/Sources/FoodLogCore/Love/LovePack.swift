@@ -114,6 +114,10 @@ public struct LovePack: Codable, Sendable, Equatable {
     public let packId: String
     public let nickname: String
     public let signature: String
+    /// The theme's name as she sees it (Settings, the icon grid). Optional:
+    /// without it the theme table's own name is used. In the pack, not the
+    /// code, because the repository is public.
+    public let themeName: String?
     /// Day 0 of the daily sequence (`yyyy-MM-dd`).
     public let startDate: String
     /// Decides each day's minute and the order of the messages (design D6).
@@ -128,6 +132,7 @@ public struct LovePack: Codable, Sendable, Equatable {
         packId: String,
         nickname: String,
         signature: String,
+        themeName: String? = nil,
         startDate: String,
         seed: String,
         daily: [LovePackDaily],
@@ -139,6 +144,7 @@ public struct LovePack: Codable, Sendable, Equatable {
         self.packId = packId
         self.nickname = nickname
         self.signature = signature
+        self.themeName = themeName
         self.startDate = startDate
         self.seed = seed
         self.daily = daily
@@ -149,7 +155,7 @@ public struct LovePack: Codable, Sendable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case format, version, packId, nickname, signature, startDate, seed, daily, openWhen, coupons, countdown, images
+        case format, version, packId, nickname, signature, themeName, startDate, seed, daily, openWhen, coupons, countdown, images
     }
 
     /// The stored file is written by this code; the optional lists are
@@ -159,6 +165,7 @@ public struct LovePack: Codable, Sendable, Equatable {
         packId = try container.decode(String.self, forKey: .packId)
         nickname = try container.decode(String.self, forKey: .nickname)
         signature = try container.decodeIfPresent(String.self, forKey: .signature) ?? ""
+        themeName = try container.decodeIfPresent(String.self, forKey: .themeName)
         startDate = try container.decode(String.self, forKey: .startDate)
         seed = try container.decode(String.self, forKey: .seed)
         daily = try container.decode([LovePackDaily].self, forKey: .daily)
@@ -175,6 +182,7 @@ public struct LovePack: Codable, Sendable, Equatable {
         try container.encode(packId, forKey: .packId)
         try container.encode(nickname, forKey: .nickname)
         try container.encode(signature, forKey: .signature)
+        try container.encodeIfPresent(themeName, forKey: .themeName)
         try container.encode(startDate, forKey: .startDate)
         try container.encode(seed, forKey: .seed)
         try container.encode(daily, forKey: .daily)
@@ -327,6 +335,8 @@ public enum LovePackReader {
         guard nickname.count <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "nickname", id: "")) }
         let signature = wire.signature ?? ""
         guard signature.count <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "signature", id: "")) }
+        let themeName = nonEmpty(wire.themeName)
+        guard (themeName?.count ?? 0) <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "themeName", id: "")) }
         guard let startDate = nonEmpty(wire.startDate) else { return .failure(.missingField("startDate")) }
         guard LoveDay.isValid(startDate) else { return .failure(.invalidDate(field: "startDate")) }
         guard let seed = nonEmpty(wire.seed) else { return .failure(.missingField("seed")) }
@@ -418,6 +428,7 @@ public enum LovePackReader {
             packId: packId,
             nickname: nickname,
             signature: signature,
+            themeName: themeName,
             startDate: startDate,
             seed: seed,
             daily: daily,
@@ -457,6 +468,7 @@ public enum LovePackReader {
         var version: Int?
         var packId: String?
         var nickname: String?
+        var themeName: String?
         var signature: String?
         var startDate: String?
         var seed: String?

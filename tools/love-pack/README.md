@@ -29,6 +29,7 @@ my-pack/
 | `packId` | yes | Never change it: a new id is a new pack and starts her history over. |
 | `nickname` | yes | How the app greets her. |
 | `signature` | no | How messages are signed. |
+| `themeName` | no | The theme's name in Settings and the icon grid. Without it, the app's own name for the theme is used. |
 | `startDate` | yes | `yyyy-MM-dd`. Messages start on this day, or on the import day if that is later. |
 | `seed` | yes | Any text. Decides each day's minute (08:00–12:59) and the order of the messages. Never change it. |
 | `daily` | yes | `[{ "id", "text", "lore"? }]`: one per day, none repeated until all are used. |

@@ -43,8 +43,10 @@ enum LovePackImportFailure: Error, Equatable {
 @MainActor
 @Observable
 final class PartnerThemeModel {
-    static let packInstalledKey = "partner.packInstalled"
-    static let partnerThemeID = UnlockedTheme.partner.rawValue
+    nonisolated static let packInstalledKey = "partner.packInstalled"
+    /// The pack's `themeName`, kept so Settings shows it from launch.
+    nonisolated static let themeNameKey = "partner.themeName"
+    nonisolated static let partnerThemeID = "partner"
 
     private(set) var pack: LovePack?
     private(set) var state: LoveState?
@@ -78,6 +80,11 @@ final class PartnerThemeModel {
 
     var content: PartnerThemeContent? { PartnerText.content }
 
+    /// The theme's name: the pack's `themeName`, else the table's.
+    nonisolated static func displayName(defaults: UserDefaults = .standard) -> String {
+        defaults.string(forKey: themeNameKey) ?? PartnerText.content?.themeName ?? partnerThemeID
+    }
+
     // MARK: Loading
 
     func reload() async {
@@ -86,6 +93,11 @@ final class PartnerThemeModel {
         isMissingPictures = await store.isMissingPictures()
         let installed = pack != nil
         defaults.set(installed, forKey: Self.packInstalledKey)
+        if let name = pack?.themeName {
+            defaults.set(name, forKey: Self.themeNameKey)
+        } else {
+            defaults.removeObject(forKey: Self.themeNameKey)
+        }
         themeStore.setUnlockedThemes(installed ? [Self.partnerThemeID] : [])
     }
 

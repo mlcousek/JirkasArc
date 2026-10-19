@@ -69,7 +69,7 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .pastel: return String(localized: "Pastel")
         case .citrus: return String(localized: "Citrus")
         // The partner theme's name, Czech in every language like the theme.
-        case .partner: return PartnerText.content?.themeName ?? rawValue
+        case .partner: return PartnerThemeModel.displayName()
         }
     }
 

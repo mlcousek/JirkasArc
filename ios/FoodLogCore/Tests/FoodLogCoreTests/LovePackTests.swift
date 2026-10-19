@@ -61,6 +61,16 @@ final class LovePackTests: XCTestCase {
         XCTAssertNil(pack.countdown)
         XCTAssertEqual(pack.images, [])
         XCTAssertEqual(pack.signature, "")
+        XCTAssertNil(pack.themeName)
+    }
+
+    func testTheThemeNameComesFromThePack() throws {
+        var object = Support.wirePack()
+        object["themeName"] = "Ukázkový motiv"
+        XCTAssertEqual(try read(object).get().pack.themeName, "Ukázkový motiv")
+
+        object["themeName"] = String(repeating: "x", count: LovePackLimits.maxShortTextLength + 1)
+        XCTAssertEqual(problem(object), .textTooLong(list: "themeName", id: ""))
     }
 
     // MARK: Refusals

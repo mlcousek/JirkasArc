@@ -38,7 +38,7 @@ extension ThemeSpec {
         if let builtIn = BuiltInTheme(rawValue: id) { return builtIn.displayName }
         // add-partner-love-theme D5: the partner theme's name is Czech in
         // every language, like all of its text.
-        if UnlockedTheme(rawValue: id) == .partner { return PartnerText.content?.themeName ?? id }
+        if UnlockedTheme(rawValue: id) == .partner { return PartnerThemeModel.displayName() }
         return id
     }
 }

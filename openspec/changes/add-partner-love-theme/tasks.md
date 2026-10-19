@@ -46,15 +46,15 @@ Section 9 stays open until CI and her phone have said so.
 - [x] 4.1 The text seam: `NotificationPlanning.themed(_:today:texts:)` (and its fasting overload) applied after planning; `texts: nil` returns the plan unchanged (existing tests unchanged). `Love/LoveNotifications.swift`.
 - [x] 4.2 The love kind (`love.daily.<date>`, `LoveNotificationPlanning.plan`) for days 0–6, its minute kept away from the CONFIGURED reminder times (`clashMinutes`) so logging a meal never moves it, and `NotificationBudget.foodWindowDays` (the 60-request cap shrinks the food window); tests with every kind on.
 - [x] 4.3 `ThemedNotificationTexts`: variants per kind, chosen by `stableHash(seed, day, kind)` (stable per day; repeating fasting requests keep one), `{nickname}`/`{signature}` filled, a `nil` body keeps the standard body (supplements). The Czech wording itself is task 5.3.
-- [ ] 4.4 App: `NotificationScheduler` feeds `PartnerMode`; picture attachment ≤ 1 MiB; deep link `garminfood://love/day/<date>` (`GarminFoodDeepLink`).
+- [x] 4.4 App: `NotificationScheduler.syncLoveNotifications` (calendar trigger at the wall-clock minute, picture ≤ 1 MiB copied and attached, the `love.` namespace diffed like every cycle), themed food and fasting texts, the budget computed from what is already pending; `AppEnvironment.syncNotifications` runs love first and food last. A tap goes through the existing delegate (`onLoveNotificationOpened`, parked until launch finishes) instead of a URL: it reveals the day and opens Today.
 
 ## 5. Theme (M)
 
 - [x] 5.1 AppearanceKit `UnlockedTheme.partner` (`UnlockedThemes.swift`): pink/orange palettes checked against D5 (no new token: the existing `accentSecondary` and header-gradient roles carry the orange and the pink→orange gradient), `over` moved to violet; `AppearanceEnvironment.unlockedThemeIDs` (without it a stored partner theme resolves as GF Teal); `ThemeCatalog.available(unlocked:)` for the picker; `ThemeShareCode.isShareable` and `.unshareableTheme` (the app shows "This theme can't be shared." and words the failure, en + cs). `PartnerThemeTests`.
-- [ ] 5.2 `PartnerMode.isActive`: one place, observed by Today, the scheduler, Gamification and the art resolver.
-- [ ] 5.3 `PartnerTheme/Resources/partner-theme.cs.json` and the `PartnerText` table (placeholders, lore tags): greeting, rank names over the 20 tiers, notification variants, achievement texts, empty states.
-- [ ] 5.4 `check-localizations.mjs`: the `PartnerTheme/` `Text(verbatim:)` exemption; the lore lint (tags on the allow-list, untagged capitalised words); tests for the lint.
-- [ ] 5.5 `Info.plist`: exported UTI and document type for `.arclove` (no entitlement).
+- [x] 5.2 `PartnerThemeModel.isActive` (PartnerTheme/PartnerThemeModel.swift): pack stored AND partner theme selected; the stored `partner.packInstalled` bit unlocks the theme at launch (no flash), `reload()` corrects it.
+- [x] 5.3 `PartnerTheme/Resources/partner-theme.cs.json` (decoded by FoodLogCore `PartnerThemeContent`, checked by `PartnerThemeContentTests`) and the `PartnerText` table (placeholders, lore tags): greeting, rank names over the 20 tiers, notification variants, achievement texts, empty states.
+- [x] 5.4 The lore lint as its own script, `tools/love-pack/lint-theme-content.mjs` (tags on the allow-list, untagged mid-sentence capitals), with tests in `tools/love-pack/test.mjs`, in the localization job. No scanner exemption needed: the table is not SwiftUI literals, and `Text(verbatim:)` is already accepted.
+- [x] 5.5 `Info.plist` (project.yml): exported UTI `com.mlcousek.garminfood.arclove` and its document type, not opened in place; `AppRouter.handle(url:)` sends the file to the import sheet.
 
 ## 6. Art (L)
 
@@ -68,7 +68,7 @@ Section 9 stays open until CI and her phone have said so.
 
 ## 7. Screens (L)
 
-- [ ] 7.1 Settings > Appearance: "Import love pack…" (file importer), the import preview with the diff, remove with confirmation (en + cs).
+- [x] 7.1 Settings > Appearance > Love pack (`LovePackSection`): "Import love pack…" (file importer), `LovePackImportSheet` (the diff, "Replace the current love pack?", every problem worded), remove with confirmation, the missing-pictures note (en + cs); the theme in the gallery once unlocked.
 - [ ] 7.2 Today: the greeting header (with the evening sky); the love card (gradient border, message or "dorazí dopoledne", picture of the day, optional countdown) as a layout card id.
 - [ ] 7.3 Message box: revealed list, favourites filter, deep-link scroll target, header art.
 - [ ] 7.4 "Otevři, až…" scrolls (only with pack content): sealed and opened states, unrolling animation (Reduce Motion: fade).

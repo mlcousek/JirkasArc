@@ -13129,6 +13129,306 @@
         }
       }
     },
+    "Couldn't read the love pack": {
+      "comment": "Love pack import: title when the file can't be used (add-partner-love-theme).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky nejde přečíst"
+          }
+        }
+      }
+    },
+    "Love pack": {
+      "comment": "Settings > Appearance section and the import sheet's title: the file that unlocks the partner theme (add-partner-love-theme).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky"
+          }
+        }
+      }
+    },
+    "Messages": {
+      "comment": "Love pack import: how many daily messages the pack holds.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzkazy"
+          }
+        }
+      }
+    },
+    "Pictures": {
+      "comment": "Love pack import: how many pictures the pack holds.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrázky"
+          }
+        }
+      }
+    },
+    "Added messages": {
+      "comment": "Love pack import: messages a re-import adds.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidané vzkazy"
+          }
+        }
+      }
+    },
+    "Removed messages": {
+      "comment": "Love pack import: messages a re-import removes.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odebrané vzkazy"
+          }
+        }
+      }
+    },
+    "Added pictures": {
+      "comment": "Love pack import: pictures a re-import adds.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidané obrázky"
+          }
+        }
+      }
+    },
+    "Removed pictures": {
+      "comment": "Love pack import: pictures a re-import removes.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odebrané obrázky"
+          }
+        }
+      }
+    },
+    "Every message already revealed stays as it is.": {
+      "comment": "Love pack import footer for an update of the same pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všechny už odhalené vzkazy zůstanou, jak jsou."
+          }
+        }
+      }
+    },
+    "Replace the current love pack?": {
+      "comment": "Love pack import: the file is a different pack than the stored one.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahradit současný balíček lásky?"
+          }
+        }
+      }
+    },
+    "This is a different pack. Its history starts today; the current pack's history stays on this phone.": {
+      "comment": "Love pack import footer when replacing with a different pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tohle je jiný balíček. Jeho historie začne dneškem; historie toho současného zůstane v tomto telefonu."
+          }
+        }
+      }
+    },
+    "Couldn't save the love pack. Try again.": {
+      "comment": "Love pack import: storing the pack failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky se nepodařilo uložit. Zkus to znovu."
+          }
+        }
+      }
+    },
+    "Replace": {
+      "comment": "Button: replace the stored love pack with the opened one.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahradit"
+          }
+        }
+      }
+    },
+    "The file couldn't be opened. Nothing was changed.": {
+      "comment": "Love pack import: the picked file can't be read.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soubor nejde otevřít. Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "This isn't a love pack. Nothing was changed.": {
+      "comment": "Love pack import: the file is not a love pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tohle není balíček lásky. Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "This love pack comes from a newer version of Jirka's Arc. Update the app first. Nothing was changed.": {
+      "comment": "Love pack import: the pack's format version is newer than this build.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenhle balíček lásky je z novější verze Jirka's Arc. Nejdřív aktualizuj aplikaci. Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "The love pack is too large. Nothing was changed.": {
+      "comment": "Love pack import: the file is over 40 MiB.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky je moc velký. Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "The love pack has a problem (%@). Nothing was changed.": {
+      "comment": "Love pack import: the first problem found; %@ is a technical detail (a field or an id) for whoever built the pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky má chybu (%@). Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "Import love pack…": {
+      "comment": "Settings > Appearance: pick a love pack file from Files.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importovat balíček lásky…"
+          }
+        }
+      }
+    },
+    "Remove love pack": {
+      "comment": "Settings > Appearance: remove the stored love pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odebrat balíček lásky"
+          }
+        }
+      }
+    },
+    "Pictures are missing. Import the love pack again.": {
+      "comment": "Settings > Appearance: after a restore the pack's pictures are not on the phone.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrázky chybí. Importuj balíček lásky znovu."
+          }
+        }
+      }
+    },
+    "Couldn't remove the love pack. Try again.": {
+      "comment": "Settings > Appearance: removing the pack failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky se nepodařilo odebrat. Zkus to znovu."
+          }
+        }
+      }
+    },
+    "A love pack unlocks a theme made for one person. Open it from Files or AirDrop.": {
+      "comment": "Settings > Appearance: footer of the Love pack section.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balíček lásky odemkne motiv pro jednoho člověka. Otevři ho ze Souborů nebo přes AirDrop."
+          }
+        }
+      }
+    },
+    "Remove the love pack?": {
+      "comment": "Confirmation title before removing the love pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odebrat balíček lásky?"
+          }
+        }
+      }
+    },
+    "Its messages and pictures leave this phone. What was already revealed is kept and comes back when the same pack is imported again.": {
+      "comment": "Confirmation message before removing the love pack.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzkazy a obrázky z balíčku zmizí z tohoto telefonu. Co už bylo odhaleno, zůstane a vrátí se, až se stejný balíček znovu importuje."
+          }
+        }
+      }
+    },
     "That isn't a Jirka's Arc theme code. Nothing was changed.": {
       "comment": "Import theme: the pasted text is not a theme code.",
       "extractionState": "manual",

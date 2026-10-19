@@ -106,6 +106,7 @@ final class NotificationScheduler {
         let preferences: NotificationPreferences
         let mealsLoggedToday: Set<MealType>
         let isStreakAtRiskToday: Bool
+        let texts: ThemedNotificationTexts?
         let now: Date
     }
 
@@ -117,12 +118,14 @@ final class NotificationScheduler {
         preferences: NotificationPreferences,
         mealsLoggedToday: Set<MealType>,
         isStreakAtRiskToday: Bool,
+        texts: ThemedNotificationTexts? = nil,
         now: Date = Date()
     ) async {
         pendingSync = SyncRequest(
             preferences: preferences,
             mealsLoggedToday: mealsLoggedToday,
             isStreakAtRiskToday: isStreakAtRiskToday,
+            texts: texts,
             now: now
         )
         guard !isSyncing else { return }
@@ -135,6 +138,7 @@ final class NotificationScheduler {
                 preferences: request.preferences,
                 mealsLoggedToday: request.mealsLoggedToday,
                 isStreakAtRiskToday: request.isStreakAtRiskToday,
+                texts: request.texts,
                 now: request.now
             )
         }
@@ -145,20 +149,37 @@ final class NotificationScheduler {
         preferences: NotificationPreferences,
         mealsLoggedToday: Set<MealType>,
         isStreakAtRiskToday: Bool,
+        texts: ThemedNotificationTexts?,
         now: Date
     ) async {
         let status = await center.notificationSettings().authorizationStatus
         guard status == .authorized || status == .provisional else { return }
 
+        // add-partner-love-theme D7: iOS keeps 64 pending requests. The
+        // food window runs last (AppEnvironment.syncNotifications) and keeps
+        // only as many days as fit beside everything else already pending
+        // -- the love messages above all.
+        let otherPending = await center.pendingNotificationRequests()
+            .filter { !$0.identifier.hasPrefix(Self.identifierPrefix) }
+            .count
+        let perDay = NotificationPlanning.plan(preferences: preferences, mealsLoggedToday: [], isStreakAtRiskToday: false).count
+        let days = NotificationBudget.foodWindowDays(foodRequestsPerDay: perDay, otherPending: otherPending)
+
         // fix-review-findings-2026-09 finding 11: today AND the next days
         // (`NotificationPlanning.planWindow`), each still its own dated
         // one-shot request -- so reminders keep firing after midnight on a
         // phone where the app isn't opened, and the diff below still drops
-        // any that a later replan no longer wants.
-        let planned = NotificationPlanning.planWindow(
-            preferences: preferences,
-            mealsLoggedToday: mealsLoggedToday,
-            isStreakAtRiskToday: isStreakAtRiskToday
+        // any that a later replan no longer wants. add-partner-love-theme
+        // D8: with the theme on, the same plan in the theme's words.
+        let planned = NotificationPlanning.themed(
+            NotificationPlanning.planWindow(
+                preferences: preferences,
+                mealsLoggedToday: mealsLoggedToday,
+                isStreakAtRiskToday: isStreakAtRiskToday,
+                days: days
+            ),
+            today: NutritionDate.string(from: now),
+            texts: texts
         )
         var plannedByIdentifier: [String: NotificationPlanning.PlannedNotification] = [:]
         var dayByIdentifier: [String: Date] = [:]
@@ -253,23 +274,26 @@ final class NotificationScheduler {
         let schedule: FastingSchedule?
         let endsSoon: FastingReminderSetting
         let startsSoon: FastingReminderSetting
+        let texts: ThemedNotificationTexts?
     }
 
     /// - Parameter schedule: the ACTIVE fasting window (`nil` while fasting
     ///   is off, which removes both reminders).
+    /// - Parameter texts: the partner theme's wording, or `nil`.
     func syncFastingReminders(
         schedule: FastingSchedule?,
         endsSoon: FastingReminderSetting,
-        startsSoon: FastingReminderSetting
+        startsSoon: FastingReminderSetting,
+        texts: ThemedNotificationTexts? = nil
     ) async {
-        pendingFastingSync = FastingSyncRequest(schedule: schedule, endsSoon: endsSoon, startsSoon: startsSoon)
+        pendingFastingSync = FastingSyncRequest(schedule: schedule, endsSoon: endsSoon, startsSoon: startsSoon, texts: texts)
         guard !isSyncingFasting else { return }
         isSyncingFasting = true
         defer { isSyncingFasting = false }
 
         while let request = pendingFastingSync {
             pendingFastingSync = nil
-            await performFastingSync(schedule: request.schedule, endsSoon: request.endsSoon, startsSoon: request.startsSoon)
+            await performFastingSync(schedule: request.schedule, endsSoon: request.endsSoon, startsSoon: request.startsSoon, texts: request.texts)
         }
     }
 
@@ -278,12 +302,16 @@ final class NotificationScheduler {
     private func performFastingSync(
         schedule: FastingSchedule?,
         endsSoon: FastingReminderSetting,
-        startsSoon: FastingReminderSetting
+        startsSoon: FastingReminderSetting,
+        texts: ThemedNotificationTexts?
     ) async {
         let status = await center.notificationSettings().authorizationStatus
         guard status == .authorized || status == .provisional else { return }
 
-        let planned = NotificationPlanning.planFastingReminders(schedule: schedule, endsSoon: endsSoon, startsSoon: startsSoon)
+        let planned = NotificationPlanning.themed(
+            NotificationPlanning.planFastingReminders(schedule: schedule, endsSoon: endsSoon, startsSoon: startsSoon),
+            texts: texts
+        )
         var plannedByIdentifier: [String: NotificationPlanning.PlannedFastingReminder] = [:]
         for item in planned {
             plannedByIdentifier[Self.fastingIdentifierPrefix + item.id] = item
@@ -538,6 +566,66 @@ extension NotificationScheduler {
             content.sound = .default
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(fireDate.timeIntervalSince(now), 1), repeats: false)
             await add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+        }
+    }
+
+    // MARK: - Love messages (add-partner-love-theme D7)
+
+    /// The partner theme's daily love message, one dated request per day
+    /// (`love.daily.<yyyy-MM-dd>`, a calendar trigger at that wall-clock
+    /// minute), diffed like every cycle here. An empty plan -- the theme
+    /// off, or no pack -- removes them all. A planned day's text is final
+    /// (DailyLoveMessage), so the text diff never rewrites one; the day's
+    /// pack picture is attached when its file is there and is 1 MiB or less.
+    func syncLoveNotifications(
+        _ planned: [PlannedLoveNotification],
+        pictureURL: (String) async -> URL?
+    ) async {
+        let status = await center.notificationSettings().authorizationStatus
+        let authorized = status == .authorized || status == .provisional
+        let byIdentifier = Dictionary(planned.map { ($0.identifier, $0) }, uniquingKeysWith: { first, _ in first })
+        let pending = await pendingTexts()
+        let diff = NotificationPlanning.diff(
+            planned: authorized ? byIdentifier.mapValues { $0.text } : [:],
+            pending: pending,
+            ownedPrefix: PlannedLoveNotification.identifierPrefix
+        )
+        if !diff.toRemove.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: diff.toRemove)
+        }
+        guard authorized else { return }
+        for identifier in diff.toAdd {
+            guard let item = byIdentifier[identifier],
+                  let components = LoveDay.triggerComponents(day: item.day, minute: item.minute)
+            else { continue }
+            let content = UNMutableNotificationContent()
+            content.title = item.title
+            content.body = item.body
+            content.sound = .default
+            content.threadIdentifier = PlannedLoveNotification.threadIdentifier
+            if let pictureId = item.pictureId, let source = await pictureURL(pictureId),
+               let attachment = Self.loveAttachment(from: source, day: item.day) {
+                content.attachments = [attachment]
+            }
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            await add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+        }
+    }
+
+    /// The system MOVES an attachment's file into its own store, so the
+    /// pack's picture is copied to a temporary file first. Pictures over
+    /// 1 MiB are not attached (the message still arrives).
+    private static func loveAttachment(from source: URL, day: String) -> UNNotificationAttachment? {
+        let size = (try? source.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? .max
+        guard size <= 1_048_576 else { return nil }
+        let copy = FileManager.default.temporaryDirectory
+            .appendingPathComponent("love-\(day)-\(UUID().uuidString).\(source.pathExtension)")
+        do {
+            try FileManager.default.copyItem(at: source, to: copy)
+            return try UNNotificationAttachment(identifier: "love-picture", url: copy)
+        } catch {
+            DiagnosticsLog.log(.warning, category: "NotificationScheduler", "couldn't attach the love picture: \(error)")
+            return nil
         }
     }
 }

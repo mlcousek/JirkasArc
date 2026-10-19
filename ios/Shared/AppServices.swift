@@ -122,6 +122,9 @@ final class AppServices {
     let supplementPlanStore: SupplementPlanStore
     let supplementIntakeStore: SupplementIntakeStore
     let supplementLimitsStore: SupplementLimitsStore
+    /// add-partner-love-theme D1: the love pack and the partner's state
+    /// (FoodLogCore/Love). Created on every phone; empty without a pack.
+    let loveStore: LoveStore
 
     /// Set by the app at launch. Stays `nil` in the widget extension.
     weak var logObserver: LogObserving?
@@ -202,6 +205,7 @@ final class AppServices {
         self.supplementPlanStore = SupplementPlanStore()
         self.supplementIntakeStore = SupplementIntakeStore()
         self.supplementLimitsStore = SupplementLimitsStore()
+        self.loveStore = LoveStore()
         self.logRewards = ConfirmedLogRelay()
     }
 

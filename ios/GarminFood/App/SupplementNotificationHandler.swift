@@ -34,6 +34,10 @@ final class SupplementNotificationHandler: NSObject, UNUserNotificationCenterDel
     /// reminders after a background tick.
     @MainActor var onTaken: (() async -> Void)?
 
+    /// add-partner-love-theme D7: set by AppEnvironment -- a love
+    /// notification for this day was opened: reveal it and show it.
+    @MainActor var onLoveNotificationOpened: ((String) async -> Void)?
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
@@ -45,10 +49,34 @@ final class SupplementNotificationHandler: NSObject, UNUserNotificationCenterDel
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
+        if response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+           let day = PlannedLoveNotification.day(fromIdentifier: response.notification.request.identifier) {
+            await openLoveNotification(day: day)
+            return
+        }
         guard response.actionIdentifier == NotificationPlanning.supplementTakenAction,
               let target = SupplementSlotTaking.parse(response.notification.request.content.userInfo)
         else { return }
         await take(slotKey: target.slotKey, day: target.day)
+    }
+
+    /// A love notification opened before AppEnvironment set its hook (the
+    /// tap launched the app); taken on the first foreground.
+    @MainActor private var pendingLoveDay: String?
+
+    @MainActor
+    func consumePendingLoveDay() -> String? {
+        defer { pendingLoveDay = nil }
+        return pendingLoveDay
+    }
+
+    @MainActor
+    private func openLoveNotification(day: String) async {
+        if let hook = onLoveNotificationOpened {
+            await hook(day)
+        } else {
+            pendingLoveDay = day
+        }
     }
 
     @MainActor

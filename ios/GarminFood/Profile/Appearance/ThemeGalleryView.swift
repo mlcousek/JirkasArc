@@ -29,7 +29,7 @@ struct ThemeGalleryView: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: Theme.Spacing.md) {
-            ForEach(ThemeCatalog.all) { spec in
+            ForEach(store.availableThemes) { spec in
                 let isSelected = spec.id == store.theme.id
                 Button {
                     store.selectTheme(spec.id)

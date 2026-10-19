@@ -128,9 +128,18 @@ final class AppRouter {
     /// Nothing is applied until the user taps Apply there (design D11).
     var pendingThemeImport: ThemeImportRequest?
 
+    /// add-partner-love-theme D1: an `.arclove` file opened from AirDrop
+    /// or Files, waiting for ContentView's import sheet. Nothing is stored
+    /// until the user confirms there.
+    var pendingLovePackImport: LovePackImportRequest?
+
     /// A `garminfood://` link: a widget tap, a `plan` or `habits` link, or
     /// a shared theme.
     func handle(url: URL) {
+        if url.isFileURL, url.pathExtension.lowercased() == "arclove" {
+            pendingLovePackImport = LovePackImportRequest(url: url)
+            return
+        }
         if let code = ThemeShareCode.code(fromLink: url, scheme: GarminFoodDeepLink.scheme) {
             pendingThemeImport = ThemeImportRequest(code: code)
             return

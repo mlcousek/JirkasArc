@@ -35,6 +35,10 @@ extension ThemeSpec {
     /// The localized name, or the raw id for a theme this build doesn't
     /// know (never shown for built-ins).
     var displayName: String {
-        BuiltInTheme(rawValue: id)?.displayName ?? id
+        if let builtIn = BuiltInTheme(rawValue: id) { return builtIn.displayName }
+        // add-partner-love-theme D5: the partner theme's name is Czech in
+        // every language, like all of its text.
+        if UnlockedTheme(rawValue: id) == .partner { return PartnerText.content?.themeName ?? id }
+        return id
     }
 }

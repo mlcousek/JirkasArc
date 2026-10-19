@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPack, buildFolder, pictureHeader, PackError, readAllowlist } from './lib.mjs';
+import { midSentenceCapitals } from './lint-theme-content.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const allowlist = readAllowlist();
@@ -87,6 +88,13 @@ test('an impossible date is refused', () => {
 test('every allow-list term is a lowercase slug', () => {
   for (const term of Object.keys(allowlist.terms)) assert.match(term, /^[a-z0-9-]+$/);
   assert.equal(typeof allowlist.seenThrough, 'string');
+});
+
+test('the theme lint flags a mid-sentence name and lets sentence starts through', () => {
+  assert.deepEqual(midSentenceCapitals('Dnes jsme viděli Kakashi a Iruka.'), ['Kakashi', 'Iruka']);
+  assert.deepEqual(midSentenceCapitals('Ramen se taky počítá 😄 Zapiš oběd'), []);
+  assert.deepEqual(midSentenceCapitals('Otevři svitek „Otevři, až…“.'), []);
+  assert.deepEqual(midSentenceCapitals('Dobré ráno, {nickname} ☀️'), []);
 });
 
 if (failures > 0) {

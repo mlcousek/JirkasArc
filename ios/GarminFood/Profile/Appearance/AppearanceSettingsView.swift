@@ -69,6 +69,8 @@ struct AppearanceSettingsView: View {
 
             ThemeShareSection(store: store)
 
+            LovePackSection()
+
             Section {
                 Button("Reset all appearance", role: .destructive) {
                     confirmsReset = true

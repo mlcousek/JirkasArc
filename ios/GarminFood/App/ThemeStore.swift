@@ -28,6 +28,10 @@ final class ThemeStore {
     private(set) var showsResetNotice: Bool
     private(set) var increasedContrast = false
     private(set) var differentiateWithoutColor = false
+    /// add-partner-love-theme D2: the unlockable themes this phone may show
+    /// (the partner theme, once a love pack is stored). Seeded at launch
+    /// from PartnerThemeModel's stored bit, corrected by its reload.
+    private(set) var unlockedThemeIDs: Set<String>
 
     /// Default on (design R5).
     var matchesAppIcon: Bool {
@@ -47,13 +51,19 @@ final class ThemeStore {
         settings = AppPreferences.loadAppearance(from: defaults)
         showsResetNotice = defaults.bool(forKey: AppPreferences.Key.appearanceResetNotice)
         storedMatchesAppIcon = defaults.object(forKey: Self.matchIconKey) as? Bool ?? true
+        unlockedThemeIDs = PartnerThemeModel.launchUnlockedThemes(defaults: defaults)
         applyToRuntime()
     }
 
     // MARK: Reading
 
     var theme: ThemeSpec {
-        ThemeCatalog.themeOrDefault(id: settings.themeID)
+        ThemeCatalog.themeOrDefault(id: settings.themeID, unlocked: unlockedThemeIDs)
+    }
+
+    /// The picker's themes: the built-in ones, then the unlocked ones.
+    var availableThemes: [ThemeSpec] {
+        ThemeCatalog.available(unlocked: unlockedThemeIDs)
     }
 
     /// The scheme the root must force, or `nil` to follow the system:
@@ -132,6 +142,13 @@ final class ThemeStore {
             settings.style = imported.style
         }
         selectTheme(imported.themeID)
+    }
+
+    /// add-partner-love-theme D2: from PartnerThemeModel.reload().
+    func setUnlockedThemes(_ ids: Set<String>) {
+        guard ids != unlockedThemeIDs else { return }
+        unlockedThemeIDs = ids
+        applyToRuntime()
     }
 
     func dismissResetNotice() {

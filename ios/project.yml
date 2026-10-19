@@ -177,6 +177,25 @@ targets:
           - CFBundleURLName: com.mlcousek.garminfood
             CFBundleURLSchemes:
               - garminfood
+        # add-partner-love-theme D1: the love pack file (`.arclove`), so
+        # AirDrop and Files open it in the app (AppRouter.handle(url:)). The
+        # file is copied into the app's Inbox, not edited in place.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.mlcousek.garminfood.arclove
+            UTTypeDescription: Jirka's Arc love pack
+            UTTypeConformsTo:
+              - public.data
+              - public.content
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - arclove
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Jirka's Arc love pack
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.mlcousek.garminfood.arclove
+        LSSupportsOpeningDocumentsInPlace: false
         CFBundleIconName: AppIcon
         # add-app-icon-picker (2026-09-22), replaced by add-themes-and-layout
         # (2026-09-24, design.md R5: 11 "GF / by Jirka" gradient icons, one per

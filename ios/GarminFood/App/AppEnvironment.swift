@@ -114,6 +114,9 @@ final class AppEnvironment {
     /// add-themes-and-layout: the look (theme, style, custom accent) and
     /// the root that pushes it into `ThemeRuntime` (ThemeStore.swift).
     let themeStore: ThemeStore
+    /// add-partner-love-theme D2: the love pack, the partner's state and
+    /// THE "theme is on" switch (PartnerTheme/PartnerThemeModel.swift).
+    let partner: PartnerThemeModel
     /// add-themes-and-layout D8: the Today (and later Log Food / Progress)
     /// card order, visibility and variants (Layout/LayoutStore.swift).
     let layoutStore: LayoutStore
@@ -272,7 +275,9 @@ final class AppEnvironment {
         )
         self.foodDayClose = FoodDayCloseController(store: services.foodDayCloseStore)
         self.preferences = preferences
-        self.themeStore = ThemeStore()
+        let themeStore = ThemeStore()
+        self.themeStore = themeStore
+        self.partner = PartnerThemeModel(store: services.loveStore, themeStore: themeStore)
         let vault = VaultController(services: VaultServices.shared)
         self.vault = vault
         let training = TrainingModel(store: VaultServices.shared.projectionStore, vault: vault, events: TrainingEventsService.shared)
@@ -334,6 +339,12 @@ final class AppEnvironment {
         }
         // A slot ticked from its reminder's "Taken" button while the app
         // runs: show it, and drop that slot's other pending reminder.
+        // add-partner-love-theme D7: a love notification was opened.
+        SupplementNotificationHandler.shared.onLoveNotificationOpened = { [weak self] day in
+            guard let self else { return }
+            await self.partner.openedNotification(day: day, clashMinutes: self.loveClashMinutes)
+            self.router.selectedTab = .today
+        }
         SupplementNotificationHandler.shared.onTaken = { [weak self] in
             await self?.supplements.reload()
             await self?.syncSupplementReminders()
@@ -395,6 +406,13 @@ final class AppEnvironment {
         Task { await offlineIndexLoader.loadAndCheckIfDue() }
         await classifyDataModeIfNeeded()
         await migrateLegacyFastingIfNeeded()
+        // add-partner-love-theme: the pack (unlocks the theme) and today's
+        // message once its minute has come; local only, every mode.
+        await partner.reload()
+        if let day = SupplementNotificationHandler.shared.consumePendingLoveDay() {
+            await partner.openedNotification(day: day, clashMinutes: loveClashMinutes)
+        }
+        await partner.revealDue(clashMinutes: loveClashMinutes)
         // improve-food-day-flow: the closed days (a local file), before the
         // training reminders are planned from them below.
         await foodDayClose.reload()
@@ -1172,25 +1190,50 @@ final class AppEnvironment {
     /// the daily fasting schedule, not by which day's food log is on
     /// screen), so it always runs.
     func syncNotifications() async {
-        if dayLog.isToday {
-            let mealsLoggedToday = Set(dayLog.dashboard.sections.filter { !$0.entries.isEmpty }.map(\.mealType))
-            await NotificationScheduler.shared.sync(
-                preferences: notificationPreferences.preferences,
-                mealsLoggedToday: mealsLoggedToday,
-                isStreakAtRiskToday: gamificationEngine.streakStatus.isAtRiskToday
-            )
+        // add-partner-love-theme D7: the love messages first, then every
+        // other cycle, and the food reminders last -- their window of days
+        // shrinks to whatever room the others leave (NotificationBudget).
+        // While the theme is off the love cycle removes its requests and
+        // `texts` is nil, so every reminder keeps its standard words.
+        let texts = partner.notificationTexts
+        let loveNotifications = await partner.plannedNotifications(clashMinutes: loveClashMinutes)
+        await NotificationScheduler.shared.syncLoveNotifications(loveNotifications) { id in
+            await self.partner.pictureURL(id: id)
         }
         await NotificationScheduler.shared.syncFastingReminders(
             // add-winter-arc-nutrition-and-rewards: none on a day the
             // training plan paused fasting.
             schedule: fastingScheduleForReminders,
             endsSoon: notificationPreferences.preferences.fastingReminder,
-            startsSoon: notificationPreferences.preferences.fastingStartReminder
+            startsSoon: notificationPreferences.preferences.fastingStartReminder,
+            texts: texts
         )
         await syncSupplementReminders()
         // add-training-checkins D8: morning check-in and evening habits;
         // none unless the vault connection can record.
         await training.syncReminders()
+        if dayLog.isToday {
+            let mealsLoggedToday = Set(dayLog.dashboard.sections.filter { !$0.entries.isEmpty }.map(\.mealType))
+            await NotificationScheduler.shared.sync(
+                preferences: notificationPreferences.preferences,
+                mealsLoggedToday: mealsLoggedToday,
+                isStreakAtRiskToday: gamificationEngine.streakStatus.isAtRiskToday,
+                texts: texts
+            )
+        }
+    }
+
+    /// add-partner-love-theme D6/D7: the reminder times the love message
+    /// keeps away from -- the CONFIGURED ones, so logging a meal never moves
+    /// it. The planning and Today's reveal use the same list.
+    var loveClashMinutes: [Int] {
+        let preferences = notificationPreferences.preferences
+        let fasting = NotificationPlanning.planFastingReminders(
+            schedule: fastingScheduleForReminders,
+            endsSoon: preferences.fastingReminder,
+            startsSoon: preferences.fastingStartReminder
+        )
+        return LoveNotificationPlanning.clashMinutes(preferences: preferences, fasting: fasting)
     }
 
     /// add-training-checkins D4: one unstructured delivery of the phone's

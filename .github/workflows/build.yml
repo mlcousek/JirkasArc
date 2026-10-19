@@ -75,6 +75,11 @@ jobs:
       - name: Check the love pack builder
         run: node tools/love-pack/test.mjs
 
+      # add-partner-love-theme D11: the theme's Czech table uses only
+      # allow-listed Naruto references (no spoilers past Shippuden 30).
+      - name: Check the partner theme content for spoilers
+        run: node tools/love-pack/lint-theme-content.mjs
+
       # redesign-badge-art D3: badge art stays inside a small SVG subset,
       # because how Xcode draws it is only seen after a sideload.
       - name: Lint badge art

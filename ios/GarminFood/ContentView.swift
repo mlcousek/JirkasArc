@@ -73,6 +73,10 @@ struct ContentView: View {
         .sheet(item: $router.pendingThemeImport) { request in
             ThemeImportPreviewSheet(code: request.code)
         }
+        // add-partner-love-theme D1: an AirDropped or opened love pack.
+        .sheet(item: $router.pendingLovePackImport) { request in
+            LovePackImportSheet(url: request.url)
+        }
         // add-training-shortcuts-and-widgets (review fix): a widget button
         // can't show that its check-in recorded nothing, so the app says
         // it, once, when it comes forward (MorningCheckInWidgetIntent).

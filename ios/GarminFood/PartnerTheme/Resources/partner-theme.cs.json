@@ -1,0 +1,93 @@
+{
+  "about": "add-partner-love-theme D5: the partner theme's own Czech text. Czech only, never translated. Every series reference is tagged in lore and must be on tools/love-pack/lore-allowlist.json (CI: tools/love-pack/lint-theme-content.mjs). No plot, no pairings, no fates. Placeholders: {nickname}, {signature}, {count}, {title}.",
+  "themeName": "Srdce ninji",
+  "loveNotificationTitle": { "text": "Pro {nickname} ❤️", "lore": [] },
+  "notifications": {
+    "mealReminder.breakfast": [
+      { "title": "Ninja potřebuje snídani 🍙", "body": "Co sis dala dobrého, {nickname}? Zapiš to ❤️", "lore": [] },
+      { "title": "Ranní mise: snídaně 🍳", "body": "Každá kunoichi začíná den snídaní. Zapiš ji, {nickname}.", "lore": [] },
+      { "title": "Dobré ráno, {nickname} ☀️", "body": "Snídaně čeká na zápis. Mám tě rád ❤️", "lore": [] }
+    ],
+    "mealReminder.lunch": [
+      { "title": "Polední mise: oběd 🍜", "body": "Ramen se taky počítá 😄 Zapiš oběd, {nickname}.", "lore": ["ramen"] },
+      { "title": "Čas na oběd, {nickname}", "body": "Doplň čakru a zapiš, co sis dala ❤️", "lore": [] },
+      { "title": "Oběd, šampionko! 🥷", "body": "Pár ťuknutí a máš ho zapsaný.", "lore": [] }
+    ],
+    "mealReminder.dinner": [
+      { "title": "Večerní mise: večeře 🌙", "body": "Zapiš večeři a odpočiň si, {nickname} ❤️", "lore": [] },
+      { "title": "Co bylo k večeři? 🍽️", "body": "Ať je dnešní svitek kompletní.", "lore": ["scroll"] },
+      { "title": "Dobrou chuť, {nickname}", "body": "Večeře čeká na zápis. Jsi skvělá ❤️", "lore": [] }
+    ],
+    "streakReminder": [
+      { "title": "Tvoje cesta ninji je v ohrožení 🔥", "body": "Stačí zapsat jedno jídlo a série žije dál ❤️", "lore": ["ninja-way"] },
+      { "title": "Nevzdávej to, {nickname}!", "body": "Dnes ještě nic zapsaného – jedno jídlo a jsi v bezpečí.", "lore": [] },
+      { "title": "Série tě potřebuje 🥷", "body": "Dattebayo! Zapiš aspoň jedno jídlo.", "lore": ["dattebayo"] }
+    ],
+    "dailyChallengeReminder": [
+      { "title": "Nové mise na dnešek 📜", "body": "Čekají na tebe dnešní výzvy, {nickname}.", "lore": ["scroll"] },
+      { "title": "Dnešní svitek misí je tu", "body": "Mrkni na výzvy – zvládneš je ❤️", "lore": ["scroll"] },
+      { "title": "Mise pro nejlepší kunoichi 🥷", "body": "Dnešní výzvy jsou připravené.", "lore": [] }
+    ],
+    "fasting.ends": [
+      { "title": "Půst brzy končí 🥷", "body": null, "lore": [] },
+      { "title": "Ještě chvilku, {nickname} ❤️", "body": null, "lore": [] }
+    ],
+    "fasting.starts": [
+      { "title": "Půst brzy začíná 🌙", "body": null, "lore": [] },
+      { "title": "Brzy začíná půst, {nickname}", "body": null, "lore": [] }
+    ],
+    "supplement.slot": [
+      { "title": "Čas na doplňky, {nickname} 💊", "body": null, "lore": [] },
+      { "title": "Malá mise: doplňky ❤️", "body": null, "lore": [] }
+    ]
+  },
+  "texts": {
+    "greeting.morning": { "text": "Dobré ráno, {nickname} ❤️", "lore": [] },
+    "greeting.afternoon": { "text": "Dobré odpoledne, {nickname} ❤️", "lore": [] },
+    "greeting.evening": { "text": "Dobrý večer, {nickname} ❤️", "lore": [] },
+    "love.arrives": { "text": "Dnešní vzkaz dorazí dopoledne 💌", "lore": [] },
+    "love.allKnown": { "text": "Všechny vzkazy už znáš – tady je jeden z tvých oblíbených ❤️", "lore": [] },
+    "love.picturesMissing": { "text": "Obrázky chybí – importuj balíček znovu.", "lore": [] },
+    "box.title": { "text": "Krabička vzkazů", "lore": [] },
+    "box.empty": { "text": "Tvůj první vzkaz dorazí dopoledne 💌", "lore": [] },
+    "box.favorites": { "text": "Oblíbené", "lore": [] },
+    "countdown.today": { "text": "{title}: dnes! ❤️", "lore": [] },
+    "countdown.days": { "text": "{title}: za {count}", "lore": [] },
+    "hearts.balance": { "text": "Máš {count} ❤️", "lore": [] },
+    "coupon.missing": { "text": "Chybí {count}", "lore": [] }
+  },
+  "plurals": {
+    "days": { "one": "den", "few": "dny", "many": "dní" },
+    "hearts": { "one": "srdíčko", "few": "srdíčka", "many": "srdíček" }
+  },
+  "ranks": [
+    { "id": "akademie", "name": "Akademie", "fromTier": 1, "lore": ["akademie", "academy"] },
+    { "id": "genin", "name": "Genin", "fromTier": 3, "lore": ["genin"] },
+    { "id": "chunin", "name": "Chunin", "fromTier": 6, "lore": ["chunin"] },
+    { "id": "jonin", "name": "Jonin", "fromTier": 9, "lore": ["jonin"] },
+    { "id": "anbu", "name": "ANBU", "fromTier": 12, "lore": ["anbu"] },
+    { "id": "sannin", "name": "Sannin", "fromTier": 15, "lore": ["sannin"] },
+    { "id": "kage", "name": "Kage", "fromTier": 18, "lore": ["kage"] }
+  ],
+  "achievements": {
+    "p.firstnote": { "title": "První svitek", "description": "Přečti svůj první vzkaz.", "lore": ["scroll"] },
+    "p.week": { "title": "Týden lásky", "description": "Přečti vzkaz sedm dní po sobě.", "lore": [] },
+    "p.box30": { "title": "Sběratelka vzkazů", "description": "Přečti třicet vzkazů.", "lore": [] },
+    "p.box100": { "title": "Knihovna lásky", "description": "Přečti sto vzkazů.", "lore": [] },
+    "p.box365": { "title": "Rok vzkazů", "description": "Přečti tři sta šedesát pět vzkazů.", "lore": [] },
+    "p.morning": { "title": "Ranní ninja", "description": "Otevři vzkaz do čtvrt hodiny od jeho příchodu – pětkrát.", "lore": [] },
+    "p.genin": { "title": "Genin", "description": "Zapiš jídlo tři dny po sobě.", "lore": ["genin"] },
+    "p.chunin": { "title": "Chuninská zkouška", "description": "Zapiš snídani, oběd i večeři v sedmi dnech.", "lore": ["chunin"] },
+    "p.jonin": { "title": "Jonin", "description": "Udrž sérii třicet dní.", "lore": ["jonin"] },
+    "p.kage": { "title": "Kage", "description": "Udrž sérii sto dní.", "lore": ["kage"] },
+    "p.ramen": { "title": "Ichiraku s láskou", "description": "Zapiš ramen nebo nudle.", "lore": ["ichiraku", "ramen"] },
+    "p.water": { "title": "Živá voda", "description": "Splň cíl pitného režimu v sedmi dnech.", "lore": [] },
+    "p.clone": { "title": "Technika stínových klonů", "description": "Zapiš stejné jídlo z předvolby v pěti dnech.", "lore": ["shadow-clone"] },
+    "p.active": { "title": "Ohnivá vůle", "description": "Splň cíl aktivních kalorií v pěti dnech.", "lore": ["will-of-fire"] },
+    "p.scroll": { "title": "Otevřený svitek", "description": "Otevři svitek „Otevři, až…“.", "lore": ["scroll"] },
+    "p.coupon": { "title": "První kupón", "description": "Uplatni svůj první kupón.", "lore": [] },
+    "p.heart10": { "title": "Dattebayo!", "description": "Ťukni na srdíčko desetkrát za sebou.", "lore": ["dattebayo"] },
+    "p.night": { "title": "Noční hlídka", "description": "Otevři krabičku vzkazů po jedenácté večer.", "lore": [] },
+    "p.allfav": { "title": "Srdce na dlani", "description": "Měj dvacet oblíbených vzkazů.", "lore": [] }
+  }
+}

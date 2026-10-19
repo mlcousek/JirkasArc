@@ -431,13 +431,17 @@ public enum MealDashboard {
     ///   - foods: cached foods by id, to name and size queued entries.
     ///   - deletions: every queued delete (improve-food-day-flow E2); only
     ///     those for `date` are applied -- see this file's header.
+    ///   - activeKilocalories: the day's active kcal from Garmin, added to
+    ///     the day's calorie Target (`ActiveCalorieGoal`); `nil` = not
+    ///     known, the base goal alone. Meal targets and macros don't move.
     public static func build(
         date: String,
         log: DailyFoodLog?,
         meals: [Meal] = [],
         outboxEntries: [OutboxEntry],
         foods: [String: Food],
-        deletions: [FoodLogDeletion] = []
+        deletions: [FoodLogDeletion] = [],
+        activeKilocalories: Double? = nil
     ) -> DayDashboard {
         let details = log?.mealDetails ?? []
         var detailByType: [MealType: MealDetail] = [:]
@@ -519,7 +523,7 @@ public enum MealDashboard {
         let dayGoals = log?.dailyNutritionGoals
         let pendingAll = sections.flatMap(\.entries).filter { !$0.isSynced }
         let totals = NutrientTotals(
-            calories: MacroProgress(consumed: (dayContent?.calories ?? 0) - sum(hiddenAll, \.calories) + sum(pendingAll, \.calories), goal: target(dayGoals?.adjustedCalories, dayGoals?.calories)),
+            calories: MacroProgress(consumed: (dayContent?.calories ?? 0) - sum(hiddenAll, \.calories) + sum(pendingAll, \.calories), goal: ActiveCalorieGoal.target(adjusted: dayGoals?.adjustedCalories, base: dayGoals?.calories, activeKcal: activeKilocalories)),
             carbs: MacroProgress(consumed: (dayContent?.carbs ?? 0) - sum(hiddenAll, \.carbs) + sum(pendingAll, \.carbs), goal: target(dayGoals?.adjustedCarbs, dayGoals?.carbs)),
             protein: MacroProgress(consumed: (dayContent?.protein ?? 0) - sum(hiddenAll, \.protein) + sum(pendingAll, \.protein), goal: target(dayGoals?.adjustedProtein, dayGoals?.protein)),
             fat: MacroProgress(consumed: (dayContent?.fat ?? 0) - sum(hiddenAll, \.fat) + sum(pendingAll, \.fat), goal: target(dayGoals?.adjustedFat, dayGoals?.fat))
@@ -820,13 +824,12 @@ public enum MealDashboard {
 
     /// The fixed, base goal (Garmin `calorieGoal` and its macro split), NOT
     /// the `adjusted*` value -- owner decision 2026-09-23 (fix-testing-
-    /// feedback-quick-wins, today-dashboard spec "The home Target is the
-    /// fixed calorie goal"): `adjusted*` is the goal PLUS burned calories,
-    /// which silently moved the Target after every run. Burned calories are
-    /// shown separately, for information only ("Active today"). Macros
-    /// follow the same rule so their bars stay consistent with the calorie
-    /// Target. The adjusted value is only a fallback for a payload that
-    /// somehow carries no base value at all.
+    /// feedback-quick-wins): `adjusted*` is Garmin's goal PLUS burned
+    /// calories, computed its own way. Since 2026-10-19 the DAY's calorie
+    /// Target adds the active kcal the app reads itself, the same figure
+    /// the card shows (`ActiveCalorieGoal`); macros and meal targets keep
+    /// this base rule. The adjusted value is only a fallback for a payload
+    /// that somehow carries no base value at all.
     static func target(_ adjusted: Double?, _ base: Double?) -> Double? {
         base ?? adjusted
     }

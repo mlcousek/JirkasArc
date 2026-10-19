@@ -1645,6 +1645,30 @@
         }
       }
     },
+    "Active calories burned that day: %@ kilocalories, added to the target.": {
+      "comment": "VoiceOver for the line under the calorie Target for a past day: that day's active calories, already added to the Target; %@ = kcal.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivní kalorie spálené ten den: %@ kilokalorií, přičtené k cíli."
+          }
+        }
+      }
+    },
+    "Active calories burned today: %@ kilocalories, added to the target.": {
+      "comment": "VoiceOver for the line under the calorie Target: today's active calories, already added to the Target; %@ = kcal.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dnes spálené aktivní kalorie: %@ kilokalorií, přičtené k cíli."
+          }
+        }
+      }
+    },
     "Active calories burned that day: %@ kilocalories. For information only, not added to the target.": {
       "comment": "VoiceOver label for a past day's active-calories line; %@ = kcal.",
       "extractionState": "manual",
@@ -8571,6 +8595,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Probíhá"
+          }
+        }
+      }
+    },
+    "Includes %@ kcal burned that day": {
+      "comment": "Line under the calorie Target for a past day: that day's active calories, already added to the Target; %@ = kcal.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Včetně %@ kcal spálených ten den"
+          }
+        }
+      }
+    },
+    "Includes %@ kcal burned today": {
+      "comment": "Line under the calorie Target: the active calories Garmin reports for today, already added to the Target; %@ = kcal.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Včetně %@ kcal dnes spálených"
           }
         }
       }

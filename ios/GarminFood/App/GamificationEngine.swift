@@ -54,6 +54,11 @@ final class GamificationEngine {
     /// waiting to be sent, or just confirmed) -- left out of the goal
     /// judgement. Set by AppEnvironment from the delete queue.
     @ObservationIgnored var removedLogIdsProvider: @MainActor (String) async -> Set<String> = { _ in [] }
+    /// The active kcal Garmin reported for a nutrition day (`yyyy-MM-dd`),
+    /// added to the calorie goal the day is judged by -- the same Target
+    /// the Today ring shows (`ActiveCalorieGoal`). Set by AppEnvironment
+    /// from the activity cache; `nil` judges the base goal alone.
+    @ObservationIgnored var activeKcalProvider: @MainActor (String) async -> Double? = { _ in nil }
     /// add-gamification-signals D7: runs the registered gamification
     /// features and builds the day signals they (and the signal-based
     /// challenges) read. `nil` only where no app stores exist (previews).
@@ -298,7 +303,7 @@ final class GamificationEngine {
         guard let log = try? await garminClient.dailyFoodLog(date: dateString) else { return }
         // add-gamification-signals 7.2: cache the day log already fetched.
         try? await dayLogDigestStore?.save(DayLogDigest(log: log, day: dateString, fetchedAt: Date()))
-        // The judgement itself (fixed goal, adjusted only as a fallback;
+        // The judgement itself (base goal, adjusted only as a fallback;
         // CalorieBand for calories, at-least for macros) lives in
         // FoodLogCore's pure `GoalStatusEvaluator` (add-standalone-mode 2.4),
         // unchanged, so a local day is judged by the same code. `nil` = no
@@ -309,7 +314,9 @@ final class GamificationEngine {
         // improve-food-day-flow: Garmin's totals still contain an entry
         // whose delete is queued; it must not make the day "met".
         let removedLogIds = await removedLogIdsProvider(dateString)
-        guard let judgement = GoalStatusEvaluator.evaluate(log, fuel: fuel, excludingLogIds: removedLogIds) else { return }
+        // 2026-10-19: the calorie goal includes the day's active kcal.
+        let activeKcal = await activeKcalProvider(dateString)
+        guard let judgement = GoalStatusEvaluator.evaluate(log, fuel: fuel, excludingLogIds: removedLogIds, activeKcal: activeKcal) else { return }
         let status = DailyGoalStatus(
             date: dateString,
             metCalorieGoal: judgement.metCalorieGoal,

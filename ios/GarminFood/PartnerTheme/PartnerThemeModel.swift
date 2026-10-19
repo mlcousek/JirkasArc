@@ -25,6 +25,7 @@ import Foundation
 import Observation
 import AppearanceKit
 import FoodLogCore
+import Gamification
 import GarminKit
 
 /// A love pack file waiting for the import sheet (AirDrop, Files).
@@ -170,6 +171,16 @@ final class PartnerThemeModel {
         }
         state = await store.state()
         return planned
+    }
+
+    /// spec partner-theme "level titles become ninja ranks": the tier's
+    /// rank name while the theme is on, its own title otherwise. Display
+    /// only -- no tier's level range changes.
+    func levelTitle(_ tier: LevelTier) -> String {
+        guard isActive, let content,
+              let index = LevelTiers.all.firstIndex(of: tier),
+              let rank = content.rank(forTier: index + 1) else { return tier.title }
+        return rank.name
     }
 
     /// The theme's reminder wording, or `nil` while the theme is off.

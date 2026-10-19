@@ -69,8 +69,9 @@ Section 9 stays open until CI and her phone have said so.
 ## 7. Screens (L)
 
 - [x] 7.1 Settings > Appearance > Love pack (`LovePackSection`): "Import love pack…" (file importer), `LovePackImportSheet` (the diff, "Replace the current love pack?", every problem worded), remove with confirmation, the missing-pictures note (en + cs); the theme in the gallery once unlocked.
-- [ ] 7.2 Today: the greeting header (with the evening sky); the love card (gradient border, message or "dorazí dopoledne", picture of the day, optional countdown) as a layout card id.
-- [ ] 7.3 Message box: revealed list, favourites filter, deep-link scroll target, header art.
+- [x] 7.2 Today: `LoveCardView` -- the greeting by time of day, the love card (pink→orange gradient border, the message or "dorazí dopoledne" and nothing of its text before the minute, the favourite heart, the signature, the picture of the day, the optional countdown, the way into the message box), revealing by itself when the minute comes while Today is open. Level titles become ninja ranks (`PartnerThemeModel.levelTitle`: the level card, the level detail, the level-up moment). **Deviation:** pinned at the top of Today rather than a layout card id (a new id would appear in every layout editor); the evening sky waits for the art (section 6).
+- [ ] 7.2b The love card as a movable layout card id, shown in the layout editor only while the theme is on.
+- [x] 7.3 `MessageBoxView` ("Krabička vzkazů"): revealed messages newest first with Czech dates, the favourites filter, scrolled to a tapped notification's day. Header art waits for section 6.
 - [ ] 7.4 "Otevři, až…" scrolls (only with pack content): sealed and opened states, unrolling animation (Reduce Motion: fade).
 - [ ] 7.5 Heart burst with petals and shuriken on confirm, `heartbeat` haptic, the rank emblem on level-up; Reduce Motion static frames; VoiceOver labels.
 

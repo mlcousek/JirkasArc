@@ -257,8 +257,11 @@ private struct StreakSummaryCard: View {
 
 private struct LevelSummaryCard: View {
     let progress: LevelCurve.Progress
+    @Environment(AppEnvironment.self) private var environment
 
     private var tier: LevelTier { LevelTiers.tier(forLevel: progress.level) }
+    /// add-partner-love-theme: the ninja rank while the partner theme is on.
+    private var tierTitle: String { environment.partner.levelTitle(tier) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
@@ -268,7 +271,7 @@ private struct LevelSummaryCard: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Level \(progress.level)")
                         .font(.system(.title, design: .rounded).weight(.bold))
-                    Text(tier.title)
+                    Text(tierTitle)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
@@ -294,7 +297,7 @@ private struct LevelSummaryCard: View {
         }
         .card()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Level \(progress.level), \(tier.title), \(tier.rarity.displayName) tier, \(progress.totalXP) XP", comment: "VoiceOver: the level card. Level number, tier name, tier grade (an adjective, Czech: agrees with \"stupeň\"), total XP."))
+        .accessibilityLabel(Text("Level \(progress.level), \(tierTitle), \(tier.rarity.displayName) tier, \(progress.totalXP) XP", comment: "VoiceOver: the level card. Level number, tier name, tier grade (an adjective, Czech: agrees with \"stupeň\"), total XP."))
         .accessibilityHint(Text("Opens level details"))
     }
 }
@@ -721,6 +724,8 @@ struct LevelDetailView: View {
     var body: some View {
         let progress = environment.gamificationEngine.levelProgress
         let tier = LevelTiers.tier(forLevel: progress.level)
+        // add-partner-love-theme: the ninja rank while the partner theme is on.
+        let tierTitle = environment.partner.levelTitle(tier)
 
         List {
             Section {
@@ -740,11 +745,11 @@ struct LevelDetailView: View {
                     }
                     .frame(width: ringSize, height: ringSize)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text("Level \(progress.level), \(tier.title), \(tier.rarity.displayName) tier", comment: "VoiceOver: the level ring. Level number, tier name, tier grade (adjective; Czech agrees with \"stupeň\")."))
+                    .accessibilityLabel(Text("Level \(progress.level), \(tierTitle), \(tier.rarity.displayName) tier", comment: "VoiceOver: the level ring. Level number, tier name, tier grade (adjective; Czech agrees with \"stupeň\")."))
                     .accessibilityValue(Text("\(Int((progress.fractionToNextLevel * 100).rounded())) percent to the next level", comment: "VoiceOver: progress through the current level, in percent."))
 
                     VStack(spacing: 2) {
-                        Text(tier.title)
+                        Text(tierTitle)
                             .font(.headline)
                         Text(tier.flavor)
                             .font(.caption)

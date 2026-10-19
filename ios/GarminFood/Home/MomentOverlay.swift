@@ -89,6 +89,7 @@ private struct MomentCard: View {
     let moment: GamificationMoment
     let animated: Bool
     let onDone: () -> Void
+    @Environment(AppEnvironment.self) private var environment
 
     @ScaledMetric(relativeTo: .largeTitle) private var medallionSize: CGFloat = 84
 
@@ -190,7 +191,8 @@ private struct MomentCard: View {
     /// concept of its own.
     private var tierTitle: String? {
         guard case .levelUp(let level) = moment else { return nil }
-        return LevelTiers.tier(forLevel: level).title
+        // add-partner-love-theme: the ninja rank while the partner theme is on.
+        return environment.partner.levelTitle(LevelTiers.tier(forLevel: level))
     }
 
     private var detail: String {

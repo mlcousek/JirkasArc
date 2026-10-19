@@ -88,6 +88,9 @@ struct TodayView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Density.stackSpacing) {
+                // add-partner-love-theme D10: her greeting and the love card,
+                // only while the partner theme is on (nothing otherwise).
+                LoveCardView()
                 // Each card is a direct child of this stack (a ForEach
                 // element's views flatten into it), so spacing is exactly
                 // what the fixed stack had.

@@ -85,14 +85,14 @@ public enum ThemeCatalog {
 
     // MARK: - Builders
 
-    private struct Surfaces {
+    struct Surfaces {
         let background: UInt32
         let surface: UInt32
         let raised: UInt32
         let stroke: UInt32
     }
 
-    private static func brand(
+    static func brand(
         accent: UInt32,
         deep: UInt32,
         secondary: UInt32,
@@ -124,7 +124,7 @@ public enum ThemeCatalog {
     }
 
     /// Classic -> Legible(scheme) -> theme values.
-    private static func legibleTable(_ scheme: ThemeColorScheme, _ overrides: [ThemeRole: TokenValue]) -> ThemeTable {
+    static func legibleTable(_ scheme: ThemeColorScheme, _ overrides: [ThemeRole: TokenValue]) -> ThemeTable {
         ClassicTheme.table
             .overriding(MacroStateSets.legible(scheme))
             .overriding(overrides)

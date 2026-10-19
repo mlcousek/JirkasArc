@@ -25,13 +25,19 @@ struct ThemeShareSection: View {
 
     var body: some View {
         Section {
-            Button {
-                isSharing = true
-            } label: {
-                Label("Share theme", systemImage: "square.and.arrow.up")
-            }
-            .sheet(isPresented: $isSharing) {
-                ThemeShareSheet(code: ThemeShareCode.encode(store.settings))
+            // add-partner-love-theme D2: an unlockable theme is never shared.
+            if ThemeShareCode.isShareable(store.settings) {
+                Button {
+                    isSharing = true
+                } label: {
+                    Label("Share theme", systemImage: "square.and.arrow.up")
+                }
+                .sheet(isPresented: $isSharing) {
+                    ThemeShareSheet(code: ThemeShareCode.encode(store.settings))
+                }
+            } else {
+                Label("This theme can't be shared.", systemImage: "heart")
+                    .foregroundStyle(.secondary)
             }
 
             HStack {

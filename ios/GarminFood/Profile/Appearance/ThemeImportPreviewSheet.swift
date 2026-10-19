@@ -144,6 +144,8 @@ struct ThemeImportPreviewSheet: View {
             return String(localized: "This code comes from a newer version of Jirka's Arc. Update the app to import it. Nothing was changed.")
         case .tooLong, .corrupted:
             return String(localized: "The code is incomplete or damaged. Copy it again. Nothing was changed.")
+        case .unshareableTheme:
+            return String(localized: "This code names a theme that can't be shared. Nothing was changed.")
         }
     }
 }

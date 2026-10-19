@@ -29,11 +29,21 @@ public struct AppearanceEnvironment: Hashable, Sendable {
     public var systemScheme: ThemeColorScheme
     public var increasedContrast: Bool
     public var differentiateWithoutColor: Bool
+    /// add-partner-love-theme D2: the unlockable themes this phone may show
+    /// (`UnlockedTheme` ids). Without its id here, a stored unlockable
+    /// theme resolves as the default theme.
+    public var unlockedThemeIDs: Set<String>
 
-    public init(systemScheme: ThemeColorScheme, increasedContrast: Bool = false, differentiateWithoutColor: Bool = false) {
+    public init(
+        systemScheme: ThemeColorScheme,
+        increasedContrast: Bool = false,
+        differentiateWithoutColor: Bool = false,
+        unlockedThemeIDs: Set<String> = []
+    ) {
         self.systemScheme = systemScheme
         self.increasedContrast = increasedContrast
         self.differentiateWithoutColor = differentiateWithoutColor
+        self.unlockedThemeIDs = unlockedThemeIDs
     }
 }
 
@@ -84,9 +94,10 @@ public struct ResolvedPalette: Hashable, Sendable {
 public enum PaletteResolver {
 
     /// Resolve the user's settings against the current system state. An
-    /// unknown theme id (from a newer build) resolves as the default theme.
+    /// unknown theme id (from a newer build), or an unlockable theme that
+    /// is not unlocked on this phone, resolves as the default theme.
     public static func resolve(settings: AppearanceSettings, environment: AppearanceEnvironment) -> ResolvedPalette {
-        let theme = ThemeCatalog.themeOrDefault(id: settings.themeID)
+        let theme = ThemeCatalog.themeOrDefault(id: settings.themeID, unlocked: environment.unlockedThemeIDs)
         let requested: ThemeColorScheme
         switch settings.appearance {
         case .system: requested = environment.systemScheme

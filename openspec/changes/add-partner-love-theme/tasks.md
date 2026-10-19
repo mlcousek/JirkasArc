@@ -43,14 +43,14 @@ Section 9 stays open until CI and her phone have said so.
 
 ## 4. Notifications (M)
 
-- [ ] 4.1 `NotificationTextProvider` seam in `NotificationPlanning`; the default provider returns today's texts (existing tests unchanged).
-- [ ] 4.2 The love kind (`love.daily.<date>`) for days 0–6, its priority and the 60-request cap; a test with every kind on.
-- [ ] 4.3 Partner text provider: 3–7 variants per kind from the content table, stable per day.
+- [x] 4.1 The text seam: `NotificationPlanning.themed(_:today:texts:)` (and its fasting overload) applied after planning; `texts: nil` returns the plan unchanged (existing tests unchanged). `Love/LoveNotifications.swift`.
+- [x] 4.2 The love kind (`love.daily.<date>`, `LoveNotificationPlanning.plan`) for days 0–6, its minute kept away from the CONFIGURED reminder times (`clashMinutes`) so logging a meal never moves it, and `NotificationBudget.foodWindowDays` (the 60-request cap shrinks the food window); tests with every kind on.
+- [x] 4.3 `ThemedNotificationTexts`: variants per kind, chosen by `stableHash(seed, day, kind)` (stable per day; repeating fasting requests keep one), `{nickname}`/`{signature}` filled, a `nil` body keeps the standard body (supplements). The Czech wording itself is task 5.3.
 - [ ] 4.4 App: `NotificationScheduler` feeds `PartnerMode`; picture attachment ≤ 1 MiB; deep link `garminfood://love/day/<date>` (`GarminFoodDeepLink`).
 
 ## 5. Theme (M)
 
-- [ ] 5.1 AppearanceKit `UnlockedTheme.partner`: pink/orange palettes (D3), the `brandGradient` token (flat accent for every other theme), `ContrastPolicy` tests light and dark, ΔE of macros vs both brand colours; picker visibility; share-code refusal; fallback to GF Teal.
+- [x] 5.1 AppearanceKit `UnlockedTheme.partner` (`UnlockedThemes.swift`): pink/orange palettes checked against D5 (no new token: the existing `accentSecondary` and header-gradient roles carry the orange and the pink→orange gradient), `over` moved to violet; `AppearanceEnvironment.unlockedThemeIDs` (without it a stored partner theme resolves as GF Teal); `ThemeCatalog.available(unlocked:)` for the picker; `ThemeShareCode.isShareable` and `.unshareableTheme` (the app shows "This theme can't be shared." and words the failure, en + cs). `PartnerThemeTests`.
 - [ ] 5.2 `PartnerMode.isActive`: one place, observed by Today, the scheduler, Gamification and the art resolver.
 - [ ] 5.3 `PartnerTheme/Resources/partner-theme.cs.json` and the `PartnerText` table (placeholders, lore tags): greeting, rank names over the 20 tiers, notification variants, achievement texts, empty states.
 - [ ] 5.4 `check-localizations.mjs`: the `PartnerTheme/` `Text(verbatim:)` exemption; the lore lint (tags on the allow-list, untagged capitalised words); tests for the lint.

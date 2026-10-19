@@ -13105,6 +13105,30 @@
         }
       }
     },
+    "This code names a theme that can't be shared. Nothing was changed.": {
+      "comment": "Import theme: the code names the partner theme, which is never shared (add-partner-love-theme).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenhle kód patří motivu, který nejde sdílet. Nic se nezměnilo."
+          }
+        }
+      }
+    },
+    "This theme can't be shared.": {
+      "comment": "Appearance settings: shown instead of Share theme while the partner theme is on (add-partner-love-theme).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenhle motiv nejde sdílet."
+          }
+        }
+      }
+    },
     "That isn't a Jirka's Arc theme code. Nothing was changed.": {
       "comment": "Import theme: the pasted text is not a theme code.",
       "extractionState": "manual",

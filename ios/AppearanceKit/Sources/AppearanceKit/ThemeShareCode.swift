@@ -50,6 +50,9 @@ public enum ThemeShareCode {
         case tooLong
         /// Right prefix, but truncated, tampered with or unreadable.
         case corrupted
+        /// add-partner-love-theme D2: the code names an unlockable theme
+        /// (the partner theme), which is never shared.
+        case unshareableTheme
     }
 
     public enum Warning: Equatable, Hashable, Sendable {
@@ -74,6 +77,12 @@ public enum ThemeShareCode {
 
     /// The share code for `settings` (its theme, accent, style, macro set
     /// and appearance; `version` is not part of the code).
+    /// add-partner-love-theme D2: an unlockable theme is never put into a
+    /// share code; the app says so instead of offering "Share theme".
+    public static func isShareable(_ settings: AppearanceSettings) -> Bool {
+        !ThemeCatalog.isUnlockable(id: settings.themeID)
+    }
+
     public static func encode(_ settings: AppearanceSettings) -> String {
         let payload = Payload(
             t: settings.themeID,
@@ -135,6 +144,7 @@ public enum ThemeShareCode {
               let rawThemeID = object["t"] as? String,
               !rawThemeID.isEmpty
         else { return .failure(.corrupted) }
+        guard !ThemeCatalog.isUnlockable(id: rawThemeID) else { return .failure(.unshareableTheme) }
 
         return .success(settings(from: object, themeID: rawThemeID))
     }

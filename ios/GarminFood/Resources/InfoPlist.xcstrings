@@ -22,6 +22,18 @@
           }
         }
       }
+    },
+    "Jirka's Arc love pack" : {
+      "comment" : "The love pack file type, from Info.plist (UTTypeDescription and CFBundleTypeName in ios/project.yml; add-partner-love-theme D1). Shown by Files and AirDrop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balíček lásky Jirka's Arc"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

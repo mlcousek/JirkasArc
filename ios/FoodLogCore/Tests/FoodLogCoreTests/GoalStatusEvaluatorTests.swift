@@ -188,4 +188,25 @@ final class GoalStatusEvaluatorTests: XCTestCase {
 
         XCTAssertNil(GoalStatusEvaluator.evaluate(noGoals), "wave 4 supplies local goals; until then no goal status, like Garmin with no goals")
     }
+
+    // MARK: - Active calories (owner decision 2026-10-19)
+
+    /// 3400 kcal eaten on a 2500 goal after burning 900: on target with the
+    /// burned calories added, "over" without them -- the same Target the
+    /// Today ring shows.
+    func testTheDaysActiveCaloriesAreAddedToTheCalorieGoal() throws {
+        let day = try log(#"{ "dailyNutritionGoals": { "calories": 2500, "protein": 120 }, "dailyNutritionContent": { "calories": 3400, "protein": 130 } }"#)
+
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, activeKcal: 900)?.metCalorieGoal, true)
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day)?.metCalorieGoal, false, "without active calories the base goal alone")
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, fuel: nil, excludingLogIds: [], activeKcal: 900)?.metCalorieGoal, true, "the engine's entry point passes them through")
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, activeKcal: 900)?.metProteinGoal, true, "macros are not moved")
+    }
+
+    /// Eating only the base goal on a 900 kcal day is under the Target.
+    func testEatingOnlyTheBaseGoalOnABigDayIsNotMet() throws {
+        let day = try log(#"{ "dailyNutritionGoals": { "calories": 2500 }, "dailyNutritionContent": { "calories": 2500 } }"#)
+
+        XCTAssertEqual(GoalStatusEvaluator.evaluate(day, activeKcal: 900)?.metCalorieGoal, false)
+    }
 }

@@ -1,13 +1,14 @@
 // FuelSummaryCard.swift
 //
-// add-winter-arc-nutrition-and-rewards (A1): the Today summary in the
-// training experience on a plan day with a carb band. It leads with what
-// the plan asks for -- carbs against the day's g/kg band (x weight) and
-// protein against about 1.6 g/kg -- and shows calories only as a
-// secondary line. Nothing here is ever a warning colour: eating above the
-// band or the calorie target on a training day is fine, and a day clearly
-// under the band late in the evening gets one gentle, secondary note
-// (FuelDayEvaluator's rule).
+// add-winter-arc-nutrition-and-rewards (A1): what the plan asks to eat on
+// a training-experience plan day with a carb band -- carbs against the
+// day's g/kg band (x weight) and protein against about 1.6 g/kg. Since
+// 2026-10-19 (owner request) it sits UNDER the calorie ring
+// (`DaySummaryCard`) instead of replacing it, so it no longer repeats the
+// calories or the loading/stale line; the card above shows both. Nothing
+// here is ever a warning colour: eating above the band on a training day
+// is fine, and a day clearly under the band late in the evening gets one
+// gentle, secondary note (FuelDayEvaluator's rule).
 //
 // improve-food-day-flow (C3): a carb-load day's title names its race
 // ("Carb-load day for <race>") when the plan does, and a day with a single
@@ -16,21 +17,15 @@
 //
 // Every number and judgement comes from FoodLogCore's `FuelDaySummary`;
 // this view only lays it out. Without a band (a rest day, no weight known,
-// food-first) TodayView keeps `DaySummaryCard`, whose ring then only
-// softens "over" on a training day (`FuelDayEvaluator.displayBand`).
+// food-first) TodayView shows `DaySummaryCard` alone.
 //
-// Depends on: FoodLogCore (FuelDaySummary, MacroProgress), the design
-// system. Depended on by: TodayView (`.summary` slot).
+// Depends on: FoodLogCore (FuelDaySummary), the design system. Depended on by: TodayView (`.summary` slot).
 
 import SwiftUI
 import FoodLogCore
 
 struct FuelSummaryCard: View {
     let summary: FuelDaySummary
-    let calories: MacroProgress
-    let isStale: Bool
-    let isLoading: Bool
-    let hasGarminData: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
@@ -43,10 +38,6 @@ struct FuelSummaryCard: View {
             carbs
             protein
 
-            Text(caloriesText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
             if summary.showsUnderFuellingNote {
                 Label {
                     Text("Carbs are well under today's range. A carb-rich dinner helps you recover for tomorrow.", comment: "Gentle note late in the day when carbs are clearly below the training day's range.")
@@ -56,8 +47,6 @@ struct FuelSummaryCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
-
-            statusLine
         }
         .card()
     }
@@ -79,13 +68,12 @@ struct FuelSummaryCard: View {
     private var carbs: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs) {
-                Text(String(localized: "\(summary.carbsG.wholeNumberText) g"))
-                    .heroNumberFont()
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
                 Text("Carbs")
-                    .font(.heroUnit)
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
+                Text(String(localized: "\(summary.carbsG.wholeNumberText) g"))
+                    .font(.macroValue)
+                    .lineLimit(1)
                 Spacer(minLength: Theme.Spacing.xs)
                 Text(statusText)
                     .font(.caption.weight(.semibold))
@@ -165,32 +153,5 @@ struct FuelSummaryCard: View {
             }
         }
         .accessibilityElement(children: .combine)
-    }
-
-    // MARK: Calories (secondary)
-
-    private var caloriesText: String {
-        let eaten = calories.consumed.wholeNumberText
-        guard let goal = calories.goal, goal > 0 else {
-            return String(localized: "\(eaten) kcal eaten", comment: "Training day summary: calories eaten, secondary line without a target.")
-        }
-        return String(localized: "\(eaten) kcal eaten · target \(goal.wholeNumberText) kcal", comment: "Training day summary: calories eaten and the calorie target, a secondary line only.")
-    }
-
-    @ViewBuilder
-    private var statusLine: some View {
-        if isLoading {
-            Label("Updating…", systemImage: "arrow.triangle.2.circlepath")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else if isStale {
-            Label("Showing the last loaded numbers", systemImage: "wifi.exclamationmark")
-                .font(.caption)
-                .foregroundStyle(Theme.warning)
-        } else if !hasGarminData {
-            Label("Not loaded from Garmin yet", systemImage: "icloud.slash")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
     }
 }

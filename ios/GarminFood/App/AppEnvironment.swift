@@ -374,6 +374,12 @@ final class AppEnvironment {
             let deletions = await deletionOutbox.allDeletions()
             return MealDashboard.removedLogIds(in: deletions, date: day)
         }
+        // 2026-10-19: "goal met" uses the Target the ring shows -- the base
+        // goal plus the day's active kcal, which DayLogLoader caches here.
+        let activityCache = services.activityCacheStore
+        gamificationEngine.activeKcalProvider = { day in
+            await activityCache.day(day)?.activeKcal
+        }
         // add-winter-arc-nutrition-and-rewards: the plan's food targets,
         // reward facts and paused fasting days, in the training experience
         // only (AppEnvironment+TrainingNutrition.swift).

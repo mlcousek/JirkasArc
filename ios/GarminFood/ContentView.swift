@@ -58,6 +58,8 @@ struct ContentView: View {
         // inputs for the theme (replaces `.tint(Theme.accent)`).
         .themed(environment.themeStore)
         .overlay { MomentOverlay() }
+        // add-partner-love-theme D4: the heart burst after a log.
+        .overlay { HeartBurstOverlay() }
         // add-standalone-mode 5.1: a fresh install chooses Garmin or
         // "just on this phone" first. Never shown on an existing install.
         .fullScreenCover(isPresented: Binding(

@@ -27,4 +27,17 @@ enum Haptics {
         guard isEnabled else { return }
         UISelectionFeedbackGenerator().selectionChanged()
     }
+
+    /// add-partner-love-theme D4: two soft taps, like a heartbeat -- the
+    /// partner theme's log confirmation.
+    static func heartbeat() {
+        guard isEnabled else { return }
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.prepare()
+        generator.impactOccurred(intensity: 0.7)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(140))
+            generator.impactOccurred(intensity: 1.0)
+        }
+    }
 }

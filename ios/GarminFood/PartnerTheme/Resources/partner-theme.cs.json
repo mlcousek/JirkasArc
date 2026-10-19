@@ -54,6 +54,8 @@
     "box.all": { "text": "Všechny", "lore": [] },
     "box.open": { "text": "Krabička vzkazů 💌", "lore": [] },
     "love.signedBy": { "text": "– {signature}", "lore": [] },
+    "scrolls.title": { "text": "Otevři, až…", "lore": [] },
+    "scrolls.sealed": { "text": "Zapečetěný svitek – ťukni, až přijde ta chvíle ❤️", "lore": ["scroll"] },
     "countdown.today": { "text": "{title}: dnes! ❤️", "lore": [] },
     "countdown.days": { "text": "{title}: za {count}", "lore": [] },
     "hearts.balance": { "text": "Máš {count} ❤️", "lore": [] },

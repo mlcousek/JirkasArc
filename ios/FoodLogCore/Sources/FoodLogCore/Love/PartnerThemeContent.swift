@@ -77,6 +77,8 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
         public static let allMessages = "box.all"
         public static let openMessageBox = "box.open"
         public static let signedBy = "love.signedBy"
+        public static let scrollsTitle = "scrolls.title"
+        public static let scrollSealed = "scrolls.sealed"
         public static let countdownToday = "countdown.today"
         public static let countdownDays = "countdown.days"
         public static let heartBalance = "hearts.balance"
@@ -85,6 +87,7 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
         public static let all = [
             greetingMorning, greetingAfternoon, greetingEvening, messageArrives, allMessagesKnown,
             picturesMissing, messageBoxTitle, messageBoxEmpty, favorites, allMessages, openMessageBox, signedBy,
+            scrollsTitle, scrollSealed,
             countdownToday, countdownDays,
             heartBalance, couponMissing
         ]

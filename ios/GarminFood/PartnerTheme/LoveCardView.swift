@@ -88,6 +88,22 @@ struct LoveCardView: View {
                 }
                 .buttonStyle(.borderless)
                 .tint(Theme.accent)
+
+                // Only when the pack has "Otevři, až…" scrolls.
+                if !pack.openWhen.isEmpty {
+                    NavigationLink {
+                        OpenWhenView()
+                    } label: {
+                        Label {
+                            Text(verbatim: content.text(PartnerThemeContent.TextKey.scrollsTitle))
+                        } icon: {
+                            Image(systemName: "scroll")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.borderless)
+                    .tint(Theme.accentSecondary)
+                }
             }
             .card()
             .overlay {

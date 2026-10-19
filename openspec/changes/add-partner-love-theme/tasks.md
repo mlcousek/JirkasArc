@@ -72,8 +72,8 @@ Section 9 stays open until CI and her phone have said so.
 - [x] 7.2 Today: `LoveCardView` -- the greeting by time of day, the love card (pink→orange gradient border, the message or "dorazí dopoledne" and nothing of its text before the minute, the favourite heart, the signature, the picture of the day, the optional countdown, the way into the message box), revealing by itself when the minute comes while Today is open. Level titles become ninja ranks (`PartnerThemeModel.levelTitle`: the level card, the level detail, the level-up moment). **Deviation:** pinned at the top of Today rather than a layout card id (a new id would appear in every layout editor); the evening sky waits for the art (section 6).
 - [ ] 7.2b The love card as a movable layout card id, shown in the layout editor only while the theme is on.
 - [x] 7.3 `MessageBoxView` ("Krabička vzkazů"): revealed messages newest first with Czech dates, the favourites filter, scrolled to a tapped notification's day. Header art waits for section 6.
-- [ ] 7.4 "Otevři, až…" scrolls (only with pack content): sealed and opened states, unrolling animation (Reduce Motion: fade).
-- [ ] 7.5 Heart burst with petals and shuriken on confirm, `heartbeat` haptic, the rank emblem on level-up; Reduce Motion static frames; VoiceOver labels.
+- [x] 7.4 `OpenWhenView` ("Otevři, až…", only with pack content, linked from the love card): sealed and opened states, opened for good, unrolling reveal (Reduce Motion: fade).
+- [x] 7.5 `HeartBurstOverlay` on the root: after every confirmed log (`AppEnvironment.logConfirmed`), a heart with seven sakura petals and a spinning shuriken heart (both shapes drawn in code), 700 ms, never taking a touch; `Haptics.heartbeat()` (two soft taps); Reduce Motion: one still heart that fades; decorative, hidden from VoiceOver. The rank emblem on level-up waits for the art (6.4).
 
 ## 8. Partner achievements and hearts (M)
 

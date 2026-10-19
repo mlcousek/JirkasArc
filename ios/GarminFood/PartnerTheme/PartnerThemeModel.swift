@@ -152,6 +152,13 @@ final class PartnerThemeModel {
         await mutate { _, state in state.setFavorite(messageId, isFavorite) }
     }
 
+    /// Opens an "Otevři, až…" scroll for good (the first opening is kept).
+    func openScroll(_ id: String, now: Date = Date()) async {
+        await mutate { _, state in
+            if state.openedScrolls[id] == nil { state.openedScrolls[id] = now }
+        }
+    }
+
     /// The love notifications to keep pending (empty while the theme is
     /// off); records the planned days' messages.
     func plannedNotifications(clashMinutes: [Int], now: Date = Date()) async -> [PlannedLoveNotification] {
@@ -181,6 +188,15 @@ final class PartnerThemeModel {
               let index = LevelTiers.all.firstIndex(of: tier),
               let rank = content.rank(forTier: index + 1) else { return tier.title }
         return rank.name
+    }
+
+    /// A heart burst to play (HeartBurstOverlay); a new id per log.
+    private(set) var heartBurst: UUID?
+
+    /// A log was confirmed: with the theme on, the burst and the heartbeat.
+    func celebrateLog() {
+        guard isActive else { return }
+        heartBurst = UUID()
     }
 
     /// The theme's reminder wording, or `nil` while the theme is off.

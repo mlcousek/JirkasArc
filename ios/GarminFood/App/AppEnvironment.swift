@@ -625,6 +625,9 @@ final class AppEnvironment {
     /// (local-first), the Siri donation is recorded, and delivery starts
     /// without the confirm flow waiting for it.
     func logConfirmed(food: Food?, date: String) async {
+        // add-partner-love-theme D4: the heart burst, after the durable
+        // commit and over the success state (HeartBurstOverlay).
+        partner.celebrateLog()
         if let food {
             await donations.didLog(food: food, date: date)
         }

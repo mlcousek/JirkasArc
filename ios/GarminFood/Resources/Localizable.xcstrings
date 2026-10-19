@@ -13477,6 +13477,462 @@
         }
       }
     },
+    "Running": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Běh"
+          }
+        }
+      }
+    },
+    "Walking": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chůze"
+          }
+        }
+      }
+    },
+    "Cycling": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolo"
+          }
+        }
+      }
+    },
+    "Swimming": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plavání"
+          }
+        }
+      }
+    },
+    "Gym": {
+      "comment": "Manual activity type: strength training (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posilovna"
+          }
+        }
+      }
+    },
+    "Yoga": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jóga"
+          }
+        }
+      }
+    },
+    "Other": {
+      "comment": "Manual activity type (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jiné"
+          }
+        }
+      }
+    },
+    "%lld kcal from Apple Health": {
+      "comment": "Activity screen: today's active calories as reported by Apple Health (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kcal ze Zdraví"
+          }
+        }
+      }
+    },
+    "%lld kcal entered by hand": {
+      "comment": "Activity screen: today's active calories from manual activities (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kcal zadáno ručně"
+          }
+        }
+      }
+    },
+    "Nothing recorded today": {
+      "comment": "Activity screen: no active calories today (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dnes zatím nic"
+          }
+        }
+      }
+    },
+    "Today's active calories are added to your calorie target.": {
+      "comment": "Activity screen footer (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dnešní aktivní kalorie se přičítají k tvému kalorickému cíli."
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "comment": "Activity screen: a manual activity's duration (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld kcal": {
+      "comment": "Activity screen: a manual activity's calories (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kcal"
+          }
+        }
+      }
+    },
+    "Add activity": {
+      "comment": "Button and sheet title: add a manual activity (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidat aktivitu"
+          }
+        }
+      }
+    },
+    "Activities": {
+      "comment": "Activity screen: the section of manual activities (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivity"
+          }
+        }
+      }
+    },
+    "Apple Health already counts these.": {
+      "comment": "Activity screen: manual entries on a day Apple Health reported (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdraví už je započítává."
+          }
+        }
+      }
+    },
+    "Last report": {
+      "comment": "Activity screen: when the Apple Health shortcut last sent active calories (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslední hlášení"
+          }
+        }
+      }
+    },
+    "No report from Apple Health yet.": {
+      "comment": "Activity screen (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ze Zdraví zatím nic nepřišlo."
+          }
+        }
+      }
+    },
+    "1. In the Shortcuts app, make a shortcut: Find Health Samples (Active Energy, start date is today), then Calculate Statistics (Sum), then Record Active Calories from Jirka's Arc with that sum.": {
+      "comment": "Activity screen: the Apple Health set-up guide, step 1. Use the Czech names of the Shortcuts actions (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. V aplikaci Zkratky vytvoř zkratku: Najít vzorky ze Zdraví (Aktivní energie, datum začátku je dnes), pak Vypočítat statistiku (Součet), pak Zapsat aktivní kalorie z Jirka's Arc s tímto součtem."
+          }
+        }
+      }
+    },
+    "2. In Automation, add Time of Day automations (for example 10:00, 14:00, 18:00 and 21:30) that run it, and turn on Run Immediately.": {
+      "comment": "Activity screen: the Apple Health set-up guide, step 2 (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. V Automatizaci přidej automatizace Denní doba (třeba v 10:00, 14:00, 18:00 a 21:30), které ji spustí, a zapni Spustit okamžitě."
+          }
+        }
+      }
+    },
+    "3. Optional: an automation for when Jirka's Arc is opened, so Today is always current.": {
+      "comment": "Activity screen: the Apple Health set-up guide, step 3 (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Nepovinně: automatizace při otevření Jirka's Arc, aby byl Dnes vždy aktuální."
+          }
+        }
+      }
+    },
+    "Apple Health": {
+      "comment": "Activity screen: the section about the Apple Health shortcut (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdraví (Apple Health)"
+          }
+        }
+      }
+    },
+    "Your Apple Watch's active calories include every workout, so there is no need to enter them by hand as well.": {
+      "comment": "Activity screen footer (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivní kalorie z Apple Watch obsahují každý trénink, takže je není potřeba zadávat ještě ručně."
+          }
+        }
+      }
+    },
+    "Type": {
+      "comment": "Add activity sheet: the activity type picker (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typ"
+          }
+        }
+      }
+    },
+    "Minutes (optional)": {
+      "comment": "Add activity sheet: duration field (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minuty (nepovinné)"
+          }
+        }
+      }
+    },
+    "Enter 1 to 3000 kcal.": {
+      "comment": "Add activity sheet: the calories are out of range (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadej 1 až 3000 kcal."
+          }
+        }
+      }
+    },
+    "Couldn't save the activity. Try again.": {
+      "comment": "Add activity sheet: saving failed (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivitu se nepodařilo uložit. Zkus to znovu."
+          }
+        }
+      }
+    },
+    "Apple Health hasn't reported for 2 days.": {
+      "comment": "Today: the Apple Health shortcut has been silent for two days (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdraví se 2 dny neozvalo."
+          }
+        }
+      }
+    },
+    "Add an activity, or let Apple Health send your active calories.": {
+      "comment": "Today: the activity row when nothing is recorded yet (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidej aktivitu, nebo nech Zdraví posílat aktivní kalorie."
+          }
+        }
+      }
+    },
+    "Record Active Calories": {
+      "comment": "Shortcuts action title (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat aktivní kalorie"
+          }
+        }
+      }
+    },
+    "Saves a day's active calories from Apple Health in Jirka's Arc. Meant for a Shortcuts automation.": {
+      "comment": "Shortcuts action description (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloží aktivní kalorie dne ze Zdraví do Jirka's Arc. Pro automatizaci ve Zkratkách."
+          }
+        }
+      }
+    },
+    "Active calories": {
+      "comment": "Shortcuts action parameter (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivní kalorie"
+          }
+        }
+      }
+    },
+    "Record ${calories} active kcal in Jirka's Arc": {
+      "comment": "Shortcuts action summary (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat ${calories} aktivních kcal do Jirka's Arc"
+          }
+        }
+      }
+    },
+    "This phone reads active calories from Garmin, so nothing was saved.": {
+      "comment": "Shortcuts reply on a Garmin-connected install (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenhle telefon bere aktivní kalorie z Garminu, takže se nic neuložilo."
+          }
+        }
+      }
+    },
+    "That isn't a number of calories. Nothing was saved.": {
+      "comment": "Shortcuts reply: the input is not a number (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tohle není počet kalorií. Nic se neuložilo."
+          }
+        }
+      }
+    },
+    "Only today and the last 7 days can be recorded. Nothing was saved.": {
+      "comment": "Shortcuts reply: the date is in the future or too old (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapsat jde jen dnešek a posledních 7 dní. Nic se neuložilo."
+          }
+        }
+      }
+    },
+    "That number of calories can't be right. Nothing was saved.": {
+      "comment": "Shortcuts reply: negative or above 10 000 kcal (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takový počet kalorií nemůže být správně. Nic se neuložilo."
+          }
+        }
+      }
+    },
+    "Saved %lld active kcal.": {
+      "comment": "Shortcuts reply: recorded (add-health-active-calories).",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloženo: %lld aktivních kcal."
+          }
+        }
+      }
+    },
     "That isn't a Jirka's Arc theme code. Nothing was changed.": {
       "comment": "Import theme: the pasted text is not a theme code.",
       "extractionState": "manual",

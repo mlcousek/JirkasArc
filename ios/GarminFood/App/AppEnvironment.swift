@@ -117,6 +117,9 @@ final class AppEnvironment {
     /// add-partner-love-theme D2: the love pack, the partner's state and
     /// THE "theme is on" switch (PartnerTheme/PartnerThemeModel.swift).
     let partner: PartnerThemeModel
+    /// add-health-active-calories: a standalone install's active calories
+    /// (Activity/ActiveCaloriesModel.swift).
+    let activeCalories: ActiveCaloriesModel
     /// add-themes-and-layout D8: the Today (and later Log Food / Progress)
     /// card order, visibility and variants (Layout/LayoutStore.swift).
     let layoutStore: LayoutStore
@@ -271,6 +274,7 @@ final class AppEnvironment {
             coordinator: services.logEntryCoordinator,
             digestStore: services.dayLogDigestStore,
             activityCache: services.activityCacheStore,
+            localActive: services.activeCaloriesStore,
             dataMode: AppServices.currentDataMode
         )
         self.foodDayClose = FoodDayCloseController(store: services.foodDayCloseStore)
@@ -278,6 +282,7 @@ final class AppEnvironment {
         let themeStore = ThemeStore()
         self.themeStore = themeStore
         self.partner = PartnerThemeModel(store: services.loveStore, themeStore: themeStore)
+        self.activeCalories = ActiveCaloriesModel(store: services.activeCaloriesStore)
         let vault = VaultController(services: VaultServices.shared)
         self.vault = vault
         let training = TrainingModel(store: VaultServices.shared.projectionStore, vault: vault, events: TrainingEventsService.shared)
@@ -339,6 +344,12 @@ final class AppEnvironment {
         }
         // A slot ticked from its reminder's "Taken" button while the app
         // runs: show it, and drop that slot's other pending reminder.
+        // add-health-active-calories: a manual activity moves Today's
+        // "Active today" line and Target at once, and may earn hearts.
+        activeCalories.onChange = { [weak self] in
+            await self?.dayLog.rebuild()
+            await self?.evaluatePartnerAchievements()
+        }
         // add-partner-love-theme D7: a love notification was opened.
         SupplementNotificationHandler.shared.onLoveNotificationOpened = { [weak self] day in
             guard let self else { return }
@@ -388,8 +399,13 @@ final class AppEnvironment {
         // 2026-10-19: "goal met" uses the Target the ring shows -- the base
         // goal plus the day's active kcal, which DayLogLoader caches here.
         let activityCache = services.activityCacheStore
+        let localActive = services.activeCaloriesStore
         gamificationEngine.activeKcalProvider = { day in
-            await activityCache.day(day)?.activeKcal
+            // add-health-active-calories D5: standalone's own source.
+            if AppServices.currentDataMode() == .standalone {
+                return await localActive.total(day: day)
+            }
+            return await activityCache.day(day)?.activeKcal
         }
         // add-winter-arc-nutrition-and-rewards: the plan's food targets,
         // reward facts and paused fasting days, in the training experience
@@ -415,6 +431,7 @@ final class AppEnvironment {
         // add-partner-love-theme: the pack (unlocks the theme) and today's
         // message once its minute has come; local only, every mode.
         await partner.reload()
+        await activeCalories.reload()
         if let day = SupplementNotificationHandler.shared.consumePendingLoveDay() {
             await partner.openedNotification(day: day, clashMinutes: loveClashMinutes)
         }
@@ -650,9 +667,14 @@ final class AppEnvironment {
     /// hold (hearts, never XP) and shows each unlock through the moment
     /// overlay. Nothing while the theme is off.
     func evaluatePartnerAchievements() async {
+        let activeDays = await activeCalories.daysWithTotal(
+            atLeast: PartnerAchievements.activeDayKcal,
+            from: partner.state?.importDay ?? ""
+        )
         let unlocked = await partner.evaluateAchievements(
             signals: gamificationEngine.signals,
-            streakLength: gamificationEngine.streakStatus.length
+            streakLength: gamificationEngine.streakStatus.length,
+            activeDays: activeDays
         )
         guard let content = partner.content else { return }
         for definition in unlocked {

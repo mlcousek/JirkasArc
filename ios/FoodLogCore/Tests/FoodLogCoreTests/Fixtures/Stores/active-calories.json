@@ -1,0 +1,29 @@
+[
+  {
+    "day" : "2030-03-13",
+    "manual" : [
+      {
+        "createdAt" : "2030-03-13T18:20:00Z",
+        "id" : "manual-0001",
+        "kcal" : 180,
+        "minutes" : 45,
+        "type" : "walking"
+      }
+    ]
+  },
+  {
+    "day" : "2030-03-14",
+    "health" : {
+      "kcal" : 412.5,
+      "reportedAt" : "2030-03-14T17:00:00Z"
+    },
+    "manual" : [
+      {
+        "createdAt" : "2030-03-14T07:30:00Z",
+        "id" : "manual-0002",
+        "kcal" : 300,
+        "type" : "running"
+      }
+    ]
+  }
+]

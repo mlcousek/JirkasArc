@@ -173,11 +173,11 @@ final class PartnerThemeModel {
 
     /// Pays the hearts of every partner achievement that now holds and
     /// returns the newly unlocked ones (nothing while the theme is off).
-    func evaluateAchievements(signals: SignalsSnapshot?, streakLength: Int, now: Date = Date()) async -> [PartnerAchievementDefinition] {
+    func evaluateAchievements(signals: SignalsSnapshot?, streakLength: Int, activeDays: Int = 0, now: Date = Date()) async -> [PartnerAchievementDefinition] {
         guard isActive, let importDay = state?.importDay else { return [] }
         let facts = signals.map {
-            PartnerAchievementFacts.from(snapshot: $0, importDay: importDay, streakLength: streakLength)
-        } ?? PartnerAchievementFacts()
+            PartnerAchievementFacts.from(snapshot: $0, importDay: importDay, streakLength: streakLength, activeGoalMetDays: activeDays)
+        } ?? PartnerAchievementFacts(activeGoalMetDays: activeDays)
         var unlocked: [PartnerAchievementDefinition] = []
         do {
             unlocked = try await store.update { pack, state in

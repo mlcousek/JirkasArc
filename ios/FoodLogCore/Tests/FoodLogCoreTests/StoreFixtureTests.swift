@@ -83,6 +83,7 @@ final class StoreFixtureTests: XCTestCase {
         "food-day-closes.json",
         "love-pack.json",
         "love-state.json",
+        "active-calories.json",
     ]
 
     /// Store files whose names are interpolated, which the literal-name
@@ -1043,6 +1044,30 @@ final class StoreFixtureTests: XCTestCase {
         // The fixture has no picture files: a restored phone.
         let missing = await store.isMissingPictures()
         XCTAssertTrue(missing)
+    }
+
+    // MARK: - active-calories.json (ActiveCaloriesStore, .iso8601)
+
+    // add-health-active-calories D2: a manual-only day and a day with both
+    // a Health report and a manual entry (Health wins the total).
+    func testActiveCaloriesFixtureDecodesThroughTheRealStore() async throws {
+        let copy = try copyFixture("active-calories.json")
+
+        let store = ActiveCaloriesStore(fileURL: copy.file)
+        let walkDay = await store.day("2030-03-13")
+        let runDay = await store.day("2030-03-14")
+        let lastReport = await store.lastHealthReportAt()
+
+        assertNotQuarantined(copy)
+        XCTAssertEqual(walkDay.manual.first?.type, .walking)
+        XCTAssertEqual(walkDay.manual.first?.minutes, 45)
+        XCTAssertEqual(walkDay.total, 180)
+        XCTAssertEqual(walkDay.source, .manual)
+        XCTAssertEqual(runDay.health?.kcal, 412.5)
+        XCTAssertNil(runDay.manual.first?.minutes)
+        XCTAssertEqual(runDay.total, 412.5)
+        XCTAssertEqual(runDay.source, .health)
+        XCTAssertEqual(lastReport, iso("2030-03-14T17:00:00Z"))
     }
 
     // MARK: - Coverage of the fixture set itself

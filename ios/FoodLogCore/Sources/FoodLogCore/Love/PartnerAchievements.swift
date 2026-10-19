@@ -14,8 +14,9 @@
 // this file has ids, rules and amounts only.
 //
 // "Same food on five days" stands in for the design's "same meal preset":
-// the day signals carry foods, not presets. `p.active` waits for
-// add-health-active-calories (the app passes `activeGoalMetDays`).
+// the day signals carry foods, not presets. `p.active` counts days with at
+// least `activeDayKcal` active kcal (add-health-active-calories; the app
+// passes them as `activeGoalMetDays`).
 //
 // Pure. Depended on by the app's PartnerThemeModel. Tests:
 // PartnerAchievementsTests.
@@ -119,6 +120,9 @@ public enum PartnerAchievements {
         /// The message box opened after 23:00.
         public static let nightBox = "nightBox"
     }
+
+    /// A day counts for "Ohnivá vůle" (`p.active`) with this many active kcal.
+    public static let activeDayKcal: Double = 300
 
     public static let all: [PartnerAchievementDefinition] = [
         .init("p.firstnote", hearts: 5, symbol: "envelope.open.fill"),

@@ -134,6 +134,9 @@ public enum StoreCatalog {
         // state travel (her export is the only off-phone copy of the
         // message history); the pack's pictures under Love/Images are not
         // JSON, so BackupExclusions leaves them out by itself.
+        // add-health-active-calories D2: a standalone install's active
+        // calories (Health bridge reports and manual activities).
+        StoreCatalogEntry(id: "foodlog.active-calories", location: .file("FoodLogCore/active-calories.json"), schemaVersion: 1, area: .history),
         StoreCatalogEntry(id: "foodlog.love", location: .directory("FoodLogCore/Love", fileNames: ["love-pack.json", "love-state.json"]), schemaVersion: 1, area: .other),
 
         // Gamification

@@ -94,7 +94,7 @@
     "p.ramen": { "title": "Ichiraku s láskou", "description": "Zapiš ramen nebo nudle.", "lore": ["ichiraku", "ramen"] },
     "p.water": { "title": "Živá voda", "description": "Splň cíl pitného režimu v sedmi dnech.", "lore": [] },
     "p.clone": { "title": "Technika stínových klonů", "description": "Zapiš stejné jídlo v pěti různých dnech.", "lore": ["shadow-clone"] },
-    "p.active": { "title": "Ohnivá vůle", "description": "Splň cíl aktivních kalorií v pěti dnech.", "lore": ["will-of-fire"] },
+    "p.active": { "title": "Ohnivá vůle", "description": "Spal aspoň 300 aktivních kalorií v pěti dnech.", "lore": ["will-of-fire"] },
     "p.scroll": { "title": "Otevřený svitek", "description": "Otevři svitek „Otevři, až…“.", "lore": ["scroll"] },
     "p.coupon": { "title": "První kupón", "description": "Uplatni svůj první kupón.", "lore": [] },
     "p.heart10": { "title": "Dattebayo!", "description": "Ťukni na srdíčko desetkrát za sebou.", "lore": ["dattebayo"] },

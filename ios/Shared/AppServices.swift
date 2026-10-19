@@ -125,6 +125,9 @@ final class AppServices {
     /// add-partner-love-theme D1: the love pack and the partner's state
     /// (FoodLogCore/Love). Created on every phone; empty without a pack.
     let loveStore: LoveStore
+    /// add-health-active-calories D2: a standalone install's active
+    /// calories (the Health bridge's reports and manual activities).
+    let activeCaloriesStore: ActiveCaloriesStore
 
     /// Set by the app at launch. Stays `nil` in the widget extension.
     weak var logObserver: LogObserving?
@@ -206,6 +209,7 @@ final class AppServices {
         self.supplementIntakeStore = SupplementIntakeStore()
         self.supplementLimitsStore = SupplementLimitsStore()
         self.loveStore = LoveStore()
+        self.activeCaloriesStore = ActiveCaloriesStore()
         self.logRewards = ConfirmedLogRelay()
     }
 

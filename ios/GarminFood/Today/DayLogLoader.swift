@@ -65,6 +65,10 @@ final class DayLogLoader {
     /// (no new request). `nil` in previews/tests.
     @ObservationIgnored private let digestStore: DayLogDigestStore?
     @ObservationIgnored private let activityCache: ActivityCacheStore?
+    /// add-health-active-calories D5: a standalone install's own active
+    /// calories (the Health bridge and manual activities) -- its only
+    /// source, since it never asks Garmin.
+    @ObservationIgnored private let localActive: ActiveCaloriesStore?
     /// add-standalone-mode 2.5: the effective data mode, read per call.
     /// In standalone mode the day log is the LOCAL food log, so `rebuild()`
     /// re-reads it (a file read, no network) and a just-confirmed entry
@@ -113,6 +117,7 @@ final class DayLogLoader {
         coordinator: any FoodLogging,
         digestStore: DayLogDigestStore? = nil,
         activityCache: ActivityCacheStore? = nil,
+        localActive: ActiveCaloriesStore? = nil,
         dataMode: @escaping @Sendable () -> DataMode = { .garminConnected },
         now: Date = Date()
     ) {
@@ -122,6 +127,7 @@ final class DayLogLoader {
         self.coordinator = coordinator
         self.digestStore = digestStore
         self.activityCache = activityCache
+        self.localActive = localActive
         self.dataMode = dataMode
         let day = Calendar.current.startOfDay(for: now)
         self.selectedDate = day
@@ -247,10 +253,14 @@ final class DayLogLoader {
     /// call, e.g. right after a log is confirmed.
     func rebuild() async {
         let date = dateString
-        if dropCachesIfModeChanged() == .standalone,
-           let local = try? await reader.dailyFoodLog(date: date) {
-            // A failed local read (e.g. before first unlock) keeps the copy.
-            logsByDate[date] = local
+        if dropCachesIfModeChanged() == .standalone {
+            if let local = try? await reader.dailyFoodLog(date: date) {
+                // A failed local read (e.g. before first unlock) keeps the copy.
+                logsByDate[date] = local
+            }
+            // add-health-active-calories: a manual activity or a Health
+            // report shows at once, like a log.
+            activeByDate[date] = await localActive?.total(day: date)
         }
         let entries = await outbox.allEntries()
         let deletions = await outbox.allDeletions()
@@ -299,6 +309,11 @@ final class DayLogLoader {
     /// "Route unavailable" scenario. Never throws: this is an optional
     /// extra and must not affect the rest of the day's refresh.
     private func loadActiveCalories(date: String) async {
+        // add-health-active-calories D5: standalone never asks Garmin.
+        if dataMode() == .standalone {
+            activeByDate[date] = await localActive?.total(day: date)
+            return
+        }
         if let summary = try? await reader.dailyUserSummary(date: date),
            let active = summary.activeKilocalories {
             activeByDate[date] = active

@@ -93,6 +93,15 @@ struct SettingsView: View {
                 } label: {
                     Label("Data", systemImage: "externaldrive")
                 }
+                // add-health-active-calories: active calories from Apple
+                // Health and by hand, on standalone installs only.
+                if isStandalone {
+                    NavigationLink {
+                        ActiveCaloriesView()
+                    } label: {
+                        Label("Activity", systemImage: "figure.run")
+                    }
+                }
                 // add-vault-connection D10: the vault connection, on
                 // Garmin-connected installs only (owner decision 0.3).
                 if !isStandalone {

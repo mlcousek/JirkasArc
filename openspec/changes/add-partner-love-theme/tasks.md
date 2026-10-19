@@ -77,9 +77,9 @@ Section 9 stays open until CI and her phone have said so.
 
 ## 8. Partner achievements and hearts (M)
 
-- [ ] 8.1 Gamification `PartnerAchievementSet` (design D9 table): evaluated only while active, counted from the import date, secret ones through the reveal moment, scroll and coupon ones only with pack content.
-- [ ] 8.2 Hearts ledger (earned, spent; derived balance) and coupons (redeem, "Uplatněné", the stamped scroll).
-- [ ] 8.3 Tests: hidden on another theme; no burst on day one; XP unchanged (`XPBudgetTests` untouched and green); not enough hearts; redemption.
+- [x] 8.1 `PartnerAchievements` in FoodLogCore (not Gamification: its feature seam pays XP and puts badges in every phone's catalog): the D9 rules over the love state and the day signals, counted from the import day, the streak capped at the days since import, scroll and coupon ones only with pack content; evaluated only while the theme is on, after every log and foreground (`AppEnvironment.evaluatePartnerAchievements`), each unlock shown through the existing moment overlay (`GamificationEngine.enqueue`). "Same meal preset" became "same food on five days" (the signals carry foods); `p.active` waits for add-health-active-calories.
+- [x] 8.2 Hearts ledger (an unlock IS its `achievement:<id>` line; spent `coupon:<id>`; derived balance) and `PartnerAchievementsView` ("Svitky srdce": balance, achievements with secret ones sealed, coupons redeemed into a stamped, dated scroll), linked from the love card. Marks for the timing and secret rules (`LoveState.marks`: a quick notification open, ten heart taps in a row, the box after 23:00).
+- [x] 8.3 Tests (`PartnerAchievementsTests`, `LoveRevealTests`): paid once; nothing before the import day; no burst on day one (streak capped); the food, water, ramen, secret and content-gated rules; every id worded in the table; not enough hearts; redemption. XP is never touched (no Gamification change), so `XPBudgetTests` stay as they were.
 
 ## 9. Ship to her phone (S)
 

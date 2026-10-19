@@ -138,6 +138,11 @@ final class PartnerThemeModel {
         guard pack != nil else { return }
         await mutate { pack, state in
             _ = LoveReveal.reveal(day: day, pack: pack, state: &state, now: now, otherReminderMinutes: clashMinutes, openedFromNotification: true)
+            // "Ranní ninja": opened within a quarter of an hour of arriving.
+            if let due = LoveReveal.dueDate(day: day, pack: pack, otherReminderMinutes: clashMinutes),
+               now >= due, now.timeIntervalSince(due) <= 15 * 60 {
+                state.mark(PartnerAchievements.Mark.quickOpen(day), at: now)
+            }
         }
         pendingMessageDay = day
     }
@@ -150,6 +155,45 @@ final class PartnerThemeModel {
 
     func setFavorite(_ messageId: String, _ isFavorite: Bool) async {
         await mutate { _, state in state.setFavorite(messageId, isFavorite) }
+    }
+
+    // MARK: Achievements and hearts (D9)
+
+    /// Pays the hearts of every partner achievement that now holds and
+    /// returns the newly unlocked ones (nothing while the theme is off).
+    func evaluateAchievements(signals: SignalsSnapshot?, streakLength: Int, now: Date = Date()) async -> [PartnerAchievementDefinition] {
+        guard isActive, let importDay = state?.importDay else { return [] }
+        let facts = signals.map {
+            PartnerAchievementFacts.from(snapshot: $0, importDay: importDay, streakLength: streakLength)
+        } ?? PartnerAchievementFacts()
+        var unlocked: [PartnerAchievementDefinition] = []
+        do {
+            unlocked = try await store.update { pack, state in
+                PartnerAchievements.award(pack: pack, facts: facts, state: &state, now: now)
+            } ?? []
+        } catch {
+            DiagnosticsLog.log(.error, category: "LovePack", "couldn't save partner achievements: \(error)")
+        }
+        state = await store.state()
+        return unlocked
+    }
+
+    /// A small fact for a partner achievement (PartnerAchievements.Mark).
+    func mark(_ key: String, now: Date = Date()) async {
+        guard isActive else { return }
+        await mutate { _, state in state.mark(key, at: now) }
+    }
+
+    func redeem(couponId: String, now: Date = Date()) async -> LoveCouponRedemption? {
+        guard let coupon = pack?.coupons.first(where: { $0.id == couponId }) else { return nil }
+        var result: LoveCouponRedemption?
+        do {
+            result = try await store.update { _, state in state.redeem(coupon, at: now) }
+        } catch {
+            DiagnosticsLog.log(.error, category: "LovePack", "couldn't save a coupon redemption: \(error)")
+        }
+        state = await store.state()
+        return result
     }
 
     /// Opens an "Otevři, až…" scroll for good (the first opening is kept).

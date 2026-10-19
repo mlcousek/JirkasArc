@@ -79,6 +79,12 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
         public static let signedBy = "love.signedBy"
         public static let scrollsTitle = "scrolls.title"
         public static let scrollSealed = "scrolls.sealed"
+        public static let achievementsTitle = "achievements.title"
+        public static let achievementsLink = "achievements.link"
+        public static let achievementSecret = "achievements.secret"
+        public static let couponsTitle = "coupons.title"
+        public static let couponRedeem = "coupons.redeem"
+        public static let couponRedeemed = "coupons.redeemed"
         public static let countdownToday = "countdown.today"
         public static let countdownDays = "countdown.days"
         public static let heartBalance = "hearts.balance"
@@ -87,7 +93,8 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
         public static let all = [
             greetingMorning, greetingAfternoon, greetingEvening, messageArrives, allMessagesKnown,
             picturesMissing, messageBoxTitle, messageBoxEmpty, favorites, allMessages, openMessageBox, signedBy,
-            scrollsTitle, scrollSealed,
+            scrollsTitle, scrollSealed, achievementsTitle, achievementsLink, achievementSecret,
+            couponsTitle, couponRedeem, couponRedeemed,
             countdownToday, countdownDays,
             heartBalance, couponMissing
         ]

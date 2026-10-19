@@ -72,6 +72,9 @@ public struct LoveState: Codable, Sendable, Equatable {
     /// Scroll id -> when it was opened.
     public var openedScrolls: [String: Date]
     public private(set) var hearts: [LoveHeartEntry]
+    /// Small facts the partner achievements read (PartnerAchievements.Mark):
+    /// key -> when it first happened. Additive (add-partner-love-theme D9).
+    public var marks: [String: Date]
 
     public init(packId: String, importDay: String) {
         self.packId = packId
@@ -81,10 +84,11 @@ public struct LoveState: Codable, Sendable, Equatable {
         self.favorites = []
         self.openedScrolls = [:]
         self.hearts = []
+        self.marks = [:]
     }
 
     private enum CodingKeys: String, CodingKey {
-        case packId, importDay, assignments, revealed, favorites, openedScrolls, hearts
+        case packId, importDay, assignments, revealed, favorites, openedScrolls, hearts, marks
     }
 
     /// Lenient on everything but the identity, so a state file written by
@@ -98,6 +102,12 @@ public struct LoveState: Codable, Sendable, Equatable {
         favorites = Array(Set(try container.decodeIfPresent([String].self, forKey: .favorites) ?? [])).sorted()
         openedScrolls = try container.decodeIfPresent([String: Date].self, forKey: .openedScrolls) ?? [:]
         hearts = try container.decodeIfPresent([LoveHeartEntry].self, forKey: .hearts) ?? []
+        marks = try container.decodeIfPresent([String: Date].self, forKey: .marks) ?? [:]
+    }
+
+    /// Records `key` the first time it happens.
+    public mutating func mark(_ key: String, at date: Date) {
+        if marks[key] == nil { marks[key] = date }
     }
 
     // MARK: Favourites

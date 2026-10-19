@@ -71,7 +71,16 @@ struct MessageBoxView: View {
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
             .background(Theme.groupedBackground)
-            .onAppear { scrollToPending(proxy) }
+            .onAppear {
+                scrollToPending(proxy)
+                // The secret "Noční hlídka": the box opened after 23:00.
+                if Calendar.current.component(.hour, from: Date()) >= 23 {
+                    Task {
+                        await partner.mark(PartnerAchievements.Mark.nightBox)
+                        await environment.evaluatePartnerAchievements()
+                    }
+                }
+            }
             .onChange(of: partner.pendingMessageDay) { _, _ in scrollToPending(proxy) }
         }
     }

@@ -89,6 +89,21 @@ struct LoveCardView: View {
                 .buttonStyle(.borderless)
                 .tint(Theme.accent)
 
+                NavigationLink {
+                    PartnerAchievementsView()
+                } label: {
+                    Label {
+                        Text(verbatim: content.text(PartnerThemeContent.TextKey.achievementsLink, [
+                            "count": String(partner.state?.heartBalance ?? 0)
+                        ]))
+                    } icon: {
+                        Image(systemName: "scroll.fill")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+                .tint(Theme.accent)
+
                 // Only when the pack has "Otevři, až…" scrolls.
                 if !pack.openWhen.isEmpty {
                     NavigationLink {
@@ -208,12 +223,22 @@ struct LoveCardView: View {
 struct FavoriteHeartButton: View {
     let messageId: String
     @Environment(AppEnvironment.self) private var environment
+    /// Taps in a row, for the secret "Dattebayo!" (ten of them).
+    @State private var taps = 0
 
     var body: some View {
         let isFavorite = environment.partner.state?.isFavorite(messageId) ?? false
         Button {
             Haptics.success()
-            Task { await environment.partner.setFavorite(messageId, !isFavorite) }
+            taps += 1
+            let tenInARow = taps == 10
+            Task {
+                await environment.partner.setFavorite(messageId, !isFavorite)
+                if tenInARow {
+                    await environment.partner.mark(PartnerAchievements.Mark.heartTaps)
+                    await environment.evaluatePartnerAchievements()
+                }
+            }
         } label: {
             Image(systemName: isFavorite ? "heart.fill" : "heart")
                 .font(.title3)

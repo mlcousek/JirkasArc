@@ -462,6 +462,7 @@ final class AppEnvironment {
         async let supplementsReload: Void = supplements.reload()
         _ = await (day, gamification, goals, garminProfile, weightAndWater, signalReads, supplementsReload)
         await syncNotifications()
+        await evaluatePartnerAchievements()
         // Low priority and never awaited by anything the user sees.
         if plan.allows(.usageMealBackfill) {
             Task(priority: .background) { await self.backfillUsageMealsIfNeeded() }
@@ -635,7 +636,27 @@ final class AppEnvironment {
         await dayLog.rebuild()
         await foodDayChanged(day: date)
         await syncNotifications()
+        await evaluatePartnerAchievements()
         Task { await self.drainAndReconcile() }
+    }
+
+    /// add-partner-love-theme D9: pays the partner achievements that now
+    /// hold (hearts, never XP) and shows each unlock through the moment
+    /// overlay. Nothing while the theme is off.
+    func evaluatePartnerAchievements() async {
+        let unlocked = await partner.evaluateAchievements(
+            signals: gamificationEngine.signals,
+            streakLength: gamificationEngine.streakStatus.length
+        )
+        guard let content = partner.content else { return }
+        for definition in unlocked {
+            let title = content.achievements[definition.id]?.title ?? definition.id
+            gamificationEngine.enqueue(.achievementUnlocked(
+                title: title,
+                badgeSymbol: definition.symbol,
+                rarity: definition.hearts >= 40 ? .epic : (definition.isSecret ? .rare : .uncommon)
+            ))
+        }
     }
 
     /// Right after logging a weigh-in (AddWeightSheet's own confirm

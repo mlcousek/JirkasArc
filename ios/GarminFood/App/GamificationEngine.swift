@@ -129,6 +129,12 @@ final class GamificationEngine {
     /// once it has been shown.
     private(set) var pendingMoments: [GamificationMoment] = []
 
+    /// add-partner-love-theme D9: a partner achievement's unlock, shown by
+    /// the same overlay as every other moment (PartnerThemeModel decides).
+    func enqueue(_ moment: GamificationMoment) {
+        pendingMoments.append(moment)
+    }
+
     /// Kept in sync with the on-disk usage history so `handleLogConfirmed`
     /// can diff "streak before this log" against "streak after" even
     /// though `LogEntryCoordinator.confirm` has already appended the new

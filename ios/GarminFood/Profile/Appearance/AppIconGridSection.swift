@@ -14,6 +14,7 @@
 
 import SwiftUI
 import UIKit
+import AppearanceKit
 
 @MainActor
 struct AppIconGridSection: View {
@@ -27,7 +28,7 @@ struct AppIconGridSection: View {
         Section {
             Toggle("Match app icon to theme", isOn: $store.matchesAppIcon)
             LazyVGrid(columns: columns, spacing: Theme.Spacing.md) {
-                ForEach(AppIconOption.allCases) { option in
+                ForEach(AppIconOption.allCases.filter { $0 != .partner || store.unlockedThemeIDs.contains(UnlockedTheme.partner.rawValue) }) { option in
                     Button {
                         select(option)
                     } label: {

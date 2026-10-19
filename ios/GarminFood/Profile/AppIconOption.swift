@@ -41,6 +41,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     case gold = "AppIcon-Gold"
     case pastel = "AppIcon-Pastel"
     case citrus = "AppIcon-Citrus"
+    /// add-partner-love-theme D4: the partner theme's icon, offered only
+    /// while the theme is unlocked (AppIconGridSection).
+    case partner = "AppIcon-Partner"
 
     var id: String { rawValue }
 
@@ -65,6 +68,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .gold: return String(localized: "Gold")
         case .pastel: return String(localized: "Pastel")
         case .citrus: return String(localized: "Citrus")
+        // The partner theme's name, Czech in every language like the theme.
+        case .partner: return PartnerText.content?.themeName ?? rawValue
         }
     }
 

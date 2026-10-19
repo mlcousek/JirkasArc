@@ -59,7 +59,7 @@ Section 9 stays open until CI and her phone have said so.
 ## 6. Art (L)
 
 - [ ] 6.1 Style sheet in `ios/PartnerArt/README.md` (D4: outline colour, palette, proportions, sizes) and a contact-sheet page built by `tools/docs/` for review in the browser.
-- [ ] 6.2 App icon: a pink→orange heart with a spiral cut-out and shuriken, @2x/@3x, as an alternate icon.
+- [x] 6.2 App icon `AppIcon-Partner` (@2x/@3x), drawn procedurally by `tools/love-pack/generate-partner-icon.py` (`--check` mode): a white heart with a swirl cut-out and a small shuriken on the pink→orange gradient. Registered as an alternate (project.yml), `AppIconOption.partner`, offered in the icon grid only while the theme is unlocked; "Match app icon to theme" picks it with the theme.
 - [ ] 6.3 Illustrations: chibi fox with heart, two chibi ninjas with heart, ramen with heart fish-cake, scroll (closed and open), toad with heart, sakura branch with kunai, shuriken heart, night sky.
 - [ ] 6.4 Seven rank emblems.
 - [ ] 6.5 Badges for every partner achievement (D9), in the existing frames and rarity borders.

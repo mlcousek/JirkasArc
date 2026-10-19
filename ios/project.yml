@@ -241,6 +241,12 @@ targets:
               CFBundleIconFiles:
                 - AppIcon-Citrus
               UIPrerenderedIcon: false
+            # add-partner-love-theme D4: drawn by
+            # tools/love-pack/generate-partner-icon.py.
+            AppIcon-Partner:
+              CFBundleIconFiles:
+                - AppIcon-Partner
+              UIPrerenderedIcon: false
             AppIcon-Ocean:
               CFBundleIconFiles:
                 - AppIcon-Ocean

@@ -11,7 +11,7 @@
 // prove every reminder kind, rank and achievement has its words: the app
 // target has no unit tests.
 //
-// Placeholders: `{nickname}`, `{signature}`, `{count}`, `{title}`.
+// Placeholders: `{nickname}`, `{signature}`, `{count}`, `{title}`, `{date}`.
 //
 // Pure. Depended on by the app's PartnerText. Tests: PartnerThemeContentTests.
 

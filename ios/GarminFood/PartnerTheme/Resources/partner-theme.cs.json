@@ -1,5 +1,5 @@
 {
-  "about": "add-partner-love-theme D5: the partner theme's own Czech text. Czech only, never translated. Every series reference is tagged in lore and must be on tools/love-pack/lore-allowlist.json (CI: tools/love-pack/lint-theme-content.mjs). No plot, no pairings, no fates. Placeholders: {nickname}, {signature}, {count}, {title}.",
+  "about": "add-partner-love-theme D5: the partner theme's own Czech text. Czech only, never translated. Every series reference is tagged in lore and must be on tools/love-pack/lore-allowlist.json (CI: tools/love-pack/lint-theme-content.mjs). No plot, no pairings, no fates. Placeholders: {nickname}, {signature}, {count}, {title}, {date}.",
   "themeName": "Srdce ninji",
   "loveNotificationTitle": { "text": "Pro {nickname} ❤️", "lore": [] },
   "notifications": {

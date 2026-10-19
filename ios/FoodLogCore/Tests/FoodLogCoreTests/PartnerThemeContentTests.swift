@@ -73,7 +73,7 @@ final class PartnerThemeContentTests: XCTestCase {
         let names = Set(pattern.matches(in: raw, range: NSRange(raw.startIndex..., in: raw)).compactMap {
             Range($0.range(at: 1), in: raw).map { String(raw[$0]) }
         })
-        XCTAssertTrue(names.isSubset(of: ["nickname", "signature", "count", "title"]), "\(names.sorted())")
+        XCTAssertTrue(names.isSubset(of: ["nickname", "signature", "count", "title", "date"]), "\(names.sorted())")
     }
 
     func testTheTableBecomesThemedNotificationTexts() throws {

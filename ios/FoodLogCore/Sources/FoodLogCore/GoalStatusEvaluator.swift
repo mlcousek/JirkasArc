@@ -9,9 +9,10 @@
 //
 // The rules, exactly as they were:
 //   - no goals or no content on the day: no judgement (nothing recorded);
-//   - the FIXED goal is used, `adjusted*` only as a fallback for a payload
-//     with no base value (today-dashboard spec, owner decision 2026-09-23:
-//     burned calories must not move "goal met");
+//   - the base goal is used, `adjusted*` only as a fallback for a payload
+//     with no base value; for calories the day's active kcal is added to
+//     it (`ActiveCalorieGoal`, owner decision 2026-10-19), the same Target
+//     the Today ring shows -- `nil` active kcal judges the base goal alone;
 //   - calories: met when the day lands in `CalorieBand.onTarget`;
 //   - protein/carbs/fat: met when at least the goal, and a goal of 0 or
 //     less is no goal.
@@ -47,12 +48,12 @@ public struct DayGoalJudgement: Sendable, Equatable {
 public enum GoalStatusEvaluator {
     /// The day's judgement, or `nil` when the log carries no goals or no
     /// content -- then nothing is recorded, as before.
-    public static func evaluate(_ log: DailyFoodLog) -> DayGoalJudgement? {
+    public static func evaluate(_ log: DailyFoodLog, activeKcal: Double? = nil) -> DayGoalJudgement? {
         guard let goals = log.dailyNutritionGoals,
               let content = log.dailyNutritionContent
         else { return nil }
         return DayGoalJudgement(
-            metCalorieGoal: CalorieBand.isGoalMet(consumed: content.calories, goal: goals.calories ?? goals.adjustedCalories),
+            metCalorieGoal: CalorieBand.isGoalMet(consumed: content.calories, goal: calorieGoal(goals, activeKcal: activeKcal)),
             metProteinGoal: metAtLeast(actual: content.protein, goal: goals.protein ?? goals.adjustedProtein),
             metCarbGoal: metAtLeast(actual: content.carbs, goal: goals.carbs ?? goals.adjustedCarbs),
             metFatGoal: metAtLeast(actual: content.fat, goal: goals.fat ?? goals.adjustedFat)
@@ -63,8 +64,8 @@ public enum GoalStatusEvaluator {
     /// target, a day with content but no Garmin goals is still judged when
     /// the target has a carb band (the band IS the goal); otherwise the
     /// same `nil` rule as `evaluate(_:)`.
-    public static func evaluate(_ log: DailyFoodLog, fuel: FuelDayTarget?) -> DayGoalJudgement? {
-        guard let fuel else { return evaluate(log) }
+    public static func evaluate(_ log: DailyFoodLog, fuel: FuelDayTarget?, activeKcal: Double? = nil) -> DayGoalJudgement? {
+        guard let fuel else { return evaluate(log, activeKcal: activeKcal) }
         guard let content = log.dailyNutritionContent else { return nil }
         let goals = log.dailyNutritionGoals
         guard goals != nil || fuel.carbBand != nil else { return nil }
@@ -73,7 +74,7 @@ public enum GoalStatusEvaluator {
             protein: content.protein,
             carbs: content.carbs,
             fat: content.fat,
-            calorieGoal: goals.flatMap { $0.calories ?? $0.adjustedCalories },
+            calorieGoal: goals.flatMap { calorieGoal($0, activeKcal: activeKcal) },
             proteinGoal: goals.flatMap { $0.protein ?? $0.adjustedProtein },
             carbGoal: goals.flatMap { $0.carbs ?? $0.adjustedCarbs },
             fatGoal: goals.flatMap { $0.fat ?? $0.adjustedFat },
@@ -93,10 +94,10 @@ public enum GoalStatusEvaluator {
     ///
     /// With nothing to leave out -- no ids, or none of them listed in this
     /// log -- it is exactly `evaluate(_:fuel:)`.
-    public static func evaluate(_ log: DailyFoodLog, fuel: FuelDayTarget?, excludingLogIds: Set<String>) -> DayGoalJudgement? {
+    public static func evaluate(_ log: DailyFoodLog, fuel: FuelDayTarget?, excludingLogIds: Set<String>, activeKcal: Double? = nil) -> DayGoalJudgement? {
         let removed = MealDashboard.syncedEntries(MealDashboard.loggedFoods(in: log, withLogIds: excludingLogIds))
         guard !removed.isEmpty, let content = log.dailyNutritionContent else {
-            return evaluate(log, fuel: fuel)
+            return evaluate(log, fuel: fuel, activeKcal: activeKcal)
         }
         let calories = remaining(content.calories, minus: MealDashboard.sum(removed, \.calories))
         let protein = remaining(content.protein, minus: MealDashboard.sum(removed, \.protein))
@@ -111,7 +112,7 @@ public enum GoalStatusEvaluator {
                 protein: protein,
                 carbs: carbs,
                 fat: fat,
-                calorieGoal: goals.flatMap { $0.calories ?? $0.adjustedCalories },
+                calorieGoal: goals.flatMap { calorieGoal($0, activeKcal: activeKcal) },
                 proteinGoal: goals.flatMap { $0.protein ?? $0.adjustedProtein },
                 carbGoal: goals.flatMap { $0.carbs ?? $0.adjustedCarbs },
                 fatGoal: goals.flatMap { $0.fat ?? $0.adjustedFat },
@@ -120,11 +121,17 @@ public enum GoalStatusEvaluator {
         }
         guard let goals else { return nil }
         return DayGoalJudgement(
-            metCalorieGoal: CalorieBand.isGoalMet(consumed: calories, goal: goals.calories ?? goals.adjustedCalories),
+            metCalorieGoal: CalorieBand.isGoalMet(consumed: calories, goal: calorieGoal(goals, activeKcal: activeKcal)),
             metProteinGoal: metAtLeast(actual: protein, goal: goals.protein ?? goals.adjustedProtein),
             metCarbGoal: metAtLeast(actual: carbs, goal: goals.carbs ?? goals.adjustedCarbs),
             metFatGoal: metAtLeast(actual: fat, goal: goals.fat ?? goals.adjustedFat)
         )
+    }
+
+    /// The day's calorie Target: the base goal plus the day's active kcal
+    /// (`ActiveCalorieGoal`), exactly what `MealDashboard.build` shows.
+    static func calorieGoal(_ goals: NutritionGoals, activeKcal: Double?) -> Double? {
+        ActiveCalorieGoal.target(adjusted: goals.adjustedCalories, base: goals.calories, activeKcal: activeKcal)
     }
 
     /// `total` less `part`, never below 0; an unknown total stays unknown.

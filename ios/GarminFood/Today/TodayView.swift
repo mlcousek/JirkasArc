@@ -448,30 +448,18 @@ struct TodayView: View {
         }
     }
 
-    /// add-winter-arc-nutrition-and-rewards (A1): in the training experience
-    /// a plan day with a carb band leads with carbs and protein
-    /// (`FuelSummaryCard`); any other day keeps `DaySummaryCard`, whose ring
-    /// never shows "over" as a warning on a training day. Food-first: no
-    /// fuel target, so exactly the card it always had.
+    /// The day's calories always lead (`DaySummaryCard`, owner request
+    /// 2026-10-19: the carbs card had replaced them on plan days). In the
+    /// training experience a plan day with a carb band adds the plan's
+    /// carbs and protein under it (`FuelSummaryCard`,
+    /// add-winter-arc-nutrition-and-rewards A1), and the ring never shows
+    /// "over" as a warning on a training day. Food-first: no fuel target,
+    /// so exactly the card it always had.
     @ViewBuilder
     private func summaryCard(variant: String?) -> some View {
         let dayLog = environment.dayLog
         let fuelTarget = environment.trainingFuelTarget(for: dayLog.selectedDate)
-        if let fuel = FuelDayEvaluator.summary(
-            carbsG: dayLog.dashboard.totals.carbs.consumed,
-            proteinG: dayLog.dashboard.totals.protein.consumed,
-            target: fuelTarget,
-            isToday: dayLog.isToday,
-            now: Date()
-        ) {
-            FuelSummaryCard(
-                summary: fuel,
-                calories: dayLog.dashboard.totals.calories,
-                isStale: dayLog.isStale,
-                isLoading: dayLog.isLoading,
-                hasGarminData: dayLog.dashboard.hasGarminData
-            )
-        } else {
+        VStack(spacing: Theme.Spacing.md) {
             DaySummaryCard(
                 dashboard: dayLog.dashboard,
                 isStale: dayLog.isStale,
@@ -481,6 +469,15 @@ struct TodayView: View {
                 style: variant.flatMap(SummaryVariant.init(rawValue:)) ?? .ring,
                 fuelTarget: fuelTarget
             )
+            if let fuel = FuelDayEvaluator.summary(
+                carbsG: dayLog.dashboard.totals.carbs.consumed,
+                proteinG: dayLog.dashboard.totals.protein.consumed,
+                target: fuelTarget,
+                isToday: dayLog.isToday,
+                now: Date()
+            ) {
+                FuelSummaryCard(summary: fuel)
+            }
         }
     }
 
@@ -598,16 +595,18 @@ struct TodayView: View {
 
 /// The day against its target: a calorie ring and the three macro bars.
 ///
-/// The Target is the fixed base goal and the ring is coloured by
-/// `CalorieBand`'s stepped scale (fix-testing-feedback-quick-wins,
-/// today-dashboard spec). Active calories are shown under the Target for
-/// information only -- they never change the Target (no eat-back).
+/// The Target is the base goal plus the day's active calories from Garmin
+/// (`ActiveCalorieGoal`, owner decision 2026-10-19: eat back what a run
+/// burned) and the ring is coloured by `CalorieBand`'s stepped scale
+/// (fix-testing-feedback-quick-wins, today-dashboard spec). The line under
+/// the Target says how much of it is burned calories.
 struct DaySummaryCard: View {
     let dashboard: DayDashboard
     let isStale: Bool
     let isLoading: Bool
-    /// The selected day's active kcal, or `nil` to hide the line (not
-    /// loaded yet, or the read failed -- never shown as an error).
+    /// The selected day's active kcal, already inside the dashboard's
+    /// calorie Target, or `nil` to hide the line (not loaded yet, or the
+    /// read failed -- never shown as an error).
     var activeKilocalories: Double? = nil
     /// Picks the line's wording: "Active today" vs. a past day's "Active".
     var isToday: Bool = true
@@ -814,13 +813,29 @@ struct DaySummaryCard: View {
         return "\(base), \(band.accessibilityDescription)"
     }
 
+    /// With a Target the burned calories are part of it
+    /// (`ActiveCalorieGoal`); without one they are only information.
+    private var activeIsInTarget: Bool {
+        (dashboard.totals.calories.goal ?? 0) > 0
+    }
+
     private func activeText(_ kilocalories: Double) -> String {
         let value = kilocalories.wholeNumberText
+        if activeIsInTarget {
+            return isToday
+                ? String(localized: "Includes \(value) kcal burned today", comment: "Line under the calorie Target: the active calories Garmin reports for today, already added to the Target; %@ = kcal.")
+                : String(localized: "Includes \(value) kcal burned that day", comment: "Line under the calorie Target for a past day: that day's active calories, already added to the Target; %@ = kcal.")
+        }
         return isToday ? String(localized: "Active today: \(value) kcal") : String(localized: "Active: \(value) kcal")
     }
 
     private func activeAccessibility(_ kilocalories: Double) -> String {
         let value = kilocalories.wholeNumberText
+        if activeIsInTarget {
+            return isToday
+                ? String(localized: "Active calories burned today: \(value) kilocalories, added to the target.", comment: "VoiceOver for the line under the calorie Target: today's active calories, already added to the Target; %@ = kcal.")
+                : String(localized: "Active calories burned that day: \(value) kilocalories, added to the target.", comment: "VoiceOver for the line under the calorie Target for a past day: that day's active calories, already added to the Target; %@ = kcal.")
+        }
         return isToday
             ? String(localized: "Active calories burned today: \(value) kilocalories. For information only, not added to the target.")
             : String(localized: "Active calories burned that day: \(value) kilocalories. For information only, not added to the target.")

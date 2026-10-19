@@ -139,18 +139,45 @@ final class MealDashboardTests: XCTestCase {
         XCTAssertEqual(lunch.totals.calories.goal, 560)
     }
 
-    // today-dashboard spec, "A run does not move the target": 600 kcal
-    // burned on a 2300 base goal -- the Target stays 2300 and the ring
-    // fraction is consumed / 2300.
-    func testARunDoesNotMoveTheDayTarget() throws {
+    // today-dashboard spec, "A run raises the target" (owner decision
+    // 2026-10-19): 600 active kcal on a 2300 base goal -- the Target is
+    // 2900 and the ring fraction is consumed / 2900. Garmin's own adjusted
+    // value is not what moves it.
+    func testARunRaisesTheDayTargetByItsActiveCalories() throws {
+        let extra = "\"dailyNutritionGoals\": { \"calories\": 2300, \"adjustedCalories\": 2700 }, "
+            + "\"dailyNutritionContent\": { \"calories\": 1450 }"
+
+        let dashboard = MealDashboard.build(date: day, log: try dayLog(meals: [], extra: extra), outboxEntries: [], foods: [:], activeKilocalories: 600)
+
+        XCTAssertEqual(dashboard.totals.calories.goal, 2900)
+        XCTAssertEqual(try XCTUnwrap(dashboard.totals.calories.fraction), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(dashboard.totals.calories.remaining, 1450)
+    }
+
+    // "Active calories unknown": no read yet (or it failed) -- the base goal.
+    func testWithoutActiveCaloriesTheDayTargetIsTheBaseGoal() throws {
         let extra = "\"dailyNutritionGoals\": { \"calories\": 2300, \"adjustedCalories\": 2900 }, "
             + "\"dailyNutritionContent\": { \"calories\": 1150 }"
 
         let dashboard = MealDashboard.build(date: day, log: try dayLog(meals: [], extra: extra), outboxEntries: [], foods: [:])
 
         XCTAssertEqual(dashboard.totals.calories.goal, 2300)
-        XCTAssertEqual(try XCTUnwrap(dashboard.totals.calories.fraction), 0.5, accuracy: 0.0001)
         XCTAssertEqual(dashboard.totals.calories.remaining, 1150)
+    }
+
+    // Only the day's calories move: macro goals and the meal split stay
+    // Garmin's base values.
+    func testActiveCaloriesMoveOnlyTheDaysCalorieTarget() throws {
+        let lunchJSON = mealJSON("LUNCH", goals: "{\"calories\": 500, \"protein\": 30}")
+        let extra = "\"dailyNutritionGoals\": { \"calories\": 2300, \"protein\": 115 }, "
+            + "\"dailyNutritionContent\": { \"calories\": 1000 }"
+
+        let dashboard = MealDashboard.build(date: day, log: try dayLog(meals: [lunchJSON], extra: extra), outboxEntries: [], foods: [:], activeKilocalories: 1000)
+        let lunch = try XCTUnwrap(dashboard.section(for: .lunch))
+
+        XCTAssertEqual(dashboard.totals.calories.goal, 3300)
+        XCTAssertEqual(dashboard.totals.protein.goal, 115)
+        XCTAssertEqual(lunch.totals.calories.goal, 500)
     }
 
     // 2026-09-21 bug fix: `remaining` used to guard only `goal != nil`

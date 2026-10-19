@@ -10,9 +10,11 @@
 // meal immediately, before any network call.
 //
 // Also carries the selected day's active calories (`activeKilocalories`,
-// fix-testing-feedback-quick-wins) for the summary card's informational
-// "Active today" line -- one extra read per refresh, run concurrently with
-// the food log and silently dropped on failure.
+// fix-testing-feedback-quick-wins) -- one extra read per refresh, run
+// concurrently with the food log and silently dropped on failure. Since
+// 2026-10-19 they are added to the day's calorie Target
+// (`MealDashboard.build(activeKilocalories:)`, `ActiveCalorieGoal`), and
+// the summary card's "Active today" line says so.
 //
 // add-standalone-mode 2.5: in standalone mode `reader` answers from the
 // local food log, deletes go to the local coordinator, and `rebuild()`
@@ -80,8 +82,9 @@ final class DayLogLoader {
     /// today-dashboard spec). Read from GET /usersummary-service/usersummary/
     /// daily (calorie fields confirmed live 2026-09-23). `nil` whenever the
     /// last read for this day failed or had no value -- the spec says hide
-    /// the line then, never show an error. Informational only: it never
-    /// feeds the Target (owner decision 2026-09-23, no eat-back).
+    /// the line then, never show an error, and the Target is the base goal
+    /// alone. Otherwise it is added to the Target (owner decision
+    /// 2026-10-19, eat-back; it was information only before).
     private(set) var activeKilocalories: Double?
     /// 2026-09-21 bug fix: this used to be a single loader-wide `Bool`, so
     /// `refresh()`'s reentrancy guard (needed to stop two concurrent
@@ -258,7 +261,8 @@ final class DayLogLoader {
             meals: mealsByDate[date] ?? [],
             outboxEntries: entries,
             foods: foods,
-            deletions: deletions
+            deletions: deletions,
+            activeKilocalories: activeByDate[date]
         )
         guard date == dateString else { return }
         dashboard = built

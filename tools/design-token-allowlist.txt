@@ -13,3 +13,4 @@ GarminFood/Profile/ProfileView.swift:tint\(\.white\)  # loading spinner drawn ov
 GarminFood/Profile/SettingsView.swift:foregroundStyle\(\.white\)  # sync-queue count badge on the warning fill
 GarminFood/Profile/Appearance/ThemeDisplayName.swift:case \.(teal|indigo)  # BuiltInTheme case names, not colors
 GarminFoodWidget/WidgetTheme.swift:\.(teal|indigo)  # WidgetThemeOption / BuiltInTheme case names, not colors
+GarminFood/PartnerTheme/LoveTicketView.swift:background\(Color\.white  # QR code backing: scanners need dark-on-white in every theme

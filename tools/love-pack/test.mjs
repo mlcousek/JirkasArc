@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPack, buildFolder, pictureHeader, PackError, readAllowlist } from './lib.mjs';
 import { midSentenceCapitals } from './lint-theme-content.mjs';
+import { ticketPayload, verifyTicket } from './ticket.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const allowlist = readAllowlist();
@@ -95,6 +96,15 @@ test('the theme lint flags a mid-sentence name and lets sentence starts through'
   assert.deepEqual(midSentenceCapitals('Ramen se taky počítá 😄 Zapiš oběd'), []);
   assert.deepEqual(midSentenceCapitals('Otevři svitek „Otevři, až…“.'), []);
   assert.deepEqual(midSentenceCapitals('Dobré ráno, {nickname} ☀️'), []);
+});
+
+test('tickets match the app (shared vector) and edited ones fail', () => {
+  assert.equal(ticketPayload('sample-seed-0001', 'sample-pack-0001', 'c001', '203003141015'), 'LASKA1:c001:203003141015:K6KP-JHN8');
+  const pack = { seed: 'sample-seed-0001', packId: 'sample-pack-0001', coupons: [{ id: 'c001', title: 'x', price: 1 }] };
+  assert.equal(verifyTicket(pack, 'LASKA1:c001:203003141015:K6KP-JHN8').valid, true);
+  assert.equal(verifyTicket(pack, 'LASKA1:c001:203003141016:K6KP-JHN8').valid, false);
+  assert.equal(verifyTicket(pack, 'LASKA1:c999:203003141015:K6KP-JHN8').valid, false);
+  assert.equal(verifyTicket(pack, 'nonsense').valid, false);
 });
 
 if (failures > 0) {

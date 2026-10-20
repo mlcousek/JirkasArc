@@ -85,6 +85,10 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
         public static let couponsTitle = "coupons.title"
         public static let couponRedeem = "coupons.redeem"
         public static let couponRedeemed = "coupons.redeemed"
+        public static let ticketTitle = "ticket.title"
+        public static let ticketShow = "ticket.show"
+        public static let ticketHint = "ticket.hint"
+        public static let couponConfirm = "coupon.confirm"
         public static let countdownToday = "countdown.today"
         public static let countdownDays = "countdown.days"
         public static let heartBalance = "hearts.balance"
@@ -94,7 +98,7 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
             greetingMorning, greetingAfternoon, greetingEvening, messageArrives, allMessagesKnown,
             picturesMissing, messageBoxTitle, messageBoxEmpty, favorites, allMessages, openMessageBox, signedBy,
             scrollsTitle, scrollSealed, achievementsTitle, achievementsLink, achievementSecret,
-            couponsTitle, couponRedeem, couponRedeemed,
+            couponsTitle, couponRedeem, couponRedeemed, ticketTitle, ticketShow, ticketHint, couponConfirm,
             countdownToday, countdownDays,
             heartBalance, couponMissing
         ]

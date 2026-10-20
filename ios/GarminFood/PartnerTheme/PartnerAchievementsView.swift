@@ -16,6 +16,9 @@ import FoodLogCore
 @MainActor
 struct PartnerAchievementsView: View {
     @Environment(AppEnvironment.self) private var environment
+    /// The coupon waiting for "really redeem?" and the ticket on screen.
+    @State private var confirming: LovePackCoupon?
+    @State private var ticket: LoveTicketRequest?
     private var partner: PartnerThemeModel { environment.partner }
 
     var body: some View {
@@ -60,6 +63,39 @@ struct PartnerAchievementsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .background(Theme.groupedBackground)
+        .sheet(item: $ticket) { request in
+            LoveTicketView(request: request)
+        }
+        .confirmationDialog(
+            Text(verbatim: confirming.flatMap { coupon in
+                content?.text(PartnerThemeContent.TextKey.couponConfirm, [
+                    "title": coupon.title,
+                    "count": content?.counted(coupon.price, PartnerThemeContent.PluralKey.hearts) ?? ""
+                ])
+            } ?? ""),
+            isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
+            titleVisibility: .visible
+        ) {
+            if let coupon = confirming, let content {
+                Button {
+                    redeem(coupon)
+                } label: {
+                    Text(verbatim: content.text(PartnerThemeContent.TextKey.couponRedeem))
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    /// Spends the hearts, then shows the coupon's ticket.
+    private func redeem(_ coupon: LovePackCoupon) {
+        Task {
+            guard case .redeemed = await partner.redeem(couponId: coupon.id) else { return }
+            Haptics.heartbeat()
+            let at = partner.state?.redeemedCoupons.first { $0.couponId == coupon.id }?.at ?? Date()
+            ticket = LoveTicketRequest(coupon: coupon, redeemedAt: at)
+            await environment.evaluatePartnerAchievements()
+        }
     }
 
     private func achievementRow(_ definition: PartnerAchievementDefinition, content: PartnerThemeContent, state: LoveState) -> some View {
@@ -116,14 +152,17 @@ struct PartnerAchievementsView: View {
                             .strokeBorder(Theme.accent, style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
                     )
                     .rotationEffect(.degrees(-3))
+                Button {
+                    ticket = LoveTicketRequest(coupon: coupon, redeemedAt: redeemedAt)
+                } label: {
+                    Text(verbatim: content.text(PartnerThemeContent.TextKey.ticketShow))
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.accent)
             } else if state.heartBalance >= coupon.price {
                 Button {
-                    Task {
-                        if case .redeemed = await partner.redeem(couponId: coupon.id) {
-                            Haptics.heartbeat()
-                            await environment.evaluatePartnerAchievements()
-                        }
-                    }
+                    confirming = coupon
                 } label: {
                     Text(verbatim: content.text(PartnerThemeContent.TextKey.couponRedeem))
                         .font(.subheadline.weight(.semibold))

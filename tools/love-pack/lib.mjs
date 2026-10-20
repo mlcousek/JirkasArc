@@ -131,6 +131,14 @@ export function buildPack(pack, readPicture, allowlist) {
   if (length(pack.nickname) > LIMITS.maxShortTextLength) fail('nickname is too long');
   if (pack.signature !== undefined && (typeof pack.signature !== 'string' || length(pack.signature) > LIMITS.maxShortTextLength)) fail('signature is too long');
   if (pack.themeName !== undefined && (typeof pack.themeName !== 'string' || length(pack.themeName) > LIMITS.maxShortTextLength)) fail('themeName is too long');
+  for (const list of ['nicknames', 'signatures']) {
+    if (pack[list] === undefined) continue;
+    if (!Array.isArray(pack[list]) || pack[list].length > 20) fail(`${list} must be a list of at most 20 names`);
+    for (const name of pack[list]) {
+      if (!nonEmpty(name)) fail(`${list} has a blank name`);
+      if (length(name) > LIMITS.maxShortTextLength) fail(`${list}: "${name}" is too long`);
+    }
+  }
   if (!isValidDay(pack.startDate)) fail(`startDate "${pack.startDate}" is not a yyyy-MM-dd date`);
   if (length(pack.seed) > LIMITS.maxShortTextLength) fail('seed is too long');
   if (pack.daily === undefined) fail('daily is missing');
@@ -195,6 +203,8 @@ export function buildPack(pack, readPicture, allowlist) {
     nickname: pack.nickname,
     signature: pack.signature ?? '',
     ...(nonEmpty(pack.themeName) ? { themeName: pack.themeName } : {}),
+    ...(pack.nicknames?.length ? { nicknames: pack.nicknames } : {}),
+    ...(pack.signatures?.length ? { signatures: pack.signatures } : {}),
     startDate: pack.startDate,
     seed: pack.seed,
     daily: pack.daily,

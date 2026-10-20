@@ -120,11 +120,13 @@ public struct PartnerThemeContent: Codable, Sendable, Equatable {
     }
 
     /// The table's reminder variants, filled with the pack's names.
-    public func notificationTexts(seed: String, nickname: String, signature: String) -> ThemedNotificationTexts {
+    public func notificationTexts(seed: String, nickname: String, signature: String, nicknames: [String] = [], signatures: [String] = []) -> ThemedNotificationTexts {
         ThemedNotificationTexts(
             seed: seed,
             nickname: nickname,
             signature: signature,
+            nicknames: nicknames,
+            signatures: signatures,
             variants: notifications.mapValues { variants in
                 variants.map { NotificationTextVariant(title: $0.title, body: $0.body) }
             }

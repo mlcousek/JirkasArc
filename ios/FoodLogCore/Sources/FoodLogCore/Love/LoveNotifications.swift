@@ -53,11 +53,24 @@ public struct ThemedNotificationTexts: Sendable, Equatable {
     /// Kind (a `PlannedNotification.id` such as `mealReminder.breakfast`,
     /// or a `Kind` key) -> its variants.
     public let variants: [String: [NotificationTextVariant]]
+    /// The pack's rotating names (empty: always `nickname` / `signature`),
+    /// picked per day like `LovePack.nickname(for:)`.
+    public let nicknames: [String]
+    public let signatures: [String]
 
-    public init(seed: String, nickname: String, signature: String, variants: [String: [NotificationTextVariant]]) {
+    public init(
+        seed: String,
+        nickname: String,
+        signature: String,
+        nicknames: [String] = [],
+        signatures: [String] = [],
+        variants: [String: [NotificationTextVariant]]
+    ) {
         self.seed = seed
         self.nickname = nickname
         self.signature = signature
+        self.nicknames = nicknames
+        self.signatures = signatures
         self.variants = variants
     }
 
@@ -67,16 +80,18 @@ public struct ThemedNotificationTexts: Sendable, Equatable {
         guard let options = variants[kind], !options.isEmpty else { return standard }
         let variant = options[Int(LoveMinute.stableHash(seed, day, kind) % UInt64(options.count))]
         return NotificationPlanning.NotificationText(
-            title: fill(variant.title),
-            body: variant.body.map(fill) ?? standard.body
+            title: fill(variant.title, day: day),
+            body: variant.body.map { fill($0, day: day) } ?? standard.body
         )
     }
 
-    /// `{nickname}` and `{signature}` replaced.
-    public func fill(_ template: String) -> String {
-        template
-            .replacingOccurrences(of: "{nickname}", with: nickname)
-            .replacingOccurrences(of: "{signature}", with: signature)
+    /// `{nickname}` and `{signature}` replaced with `day`'s names.
+    public func fill(_ template: String, day: String = "") -> String {
+        let name = LovePack.dailyChoice(nicknames, seed: seed, day: day, salt: "nickname") ?? nickname
+        let sign = LovePack.dailyChoice(signatures, seed: seed, day: day, salt: "signature") ?? signature
+        return template
+            .replacingOccurrences(of: "{nickname}", with: name)
+            .replacingOccurrences(of: "{signature}", with: sign)
     }
 }
 
@@ -182,7 +197,8 @@ public enum LoveNotificationPlanning {
     /// revealed, and today once its minute has passed. Assigns each day's
     /// message in `state` (the caller saves it: LoveStore.update).
     ///
-    /// - Parameter title: the theme's title with `{nickname}` already filled.
+    /// - Parameter title: the theme's title; a `{nickname}` in it becomes
+    ///   that day's nickname (`LovePack.nickname(for:)`).
     public static func plan(
         pack: LovePack,
         state: inout LoveState,
@@ -207,7 +223,7 @@ public enum LoveNotificationPlanning {
             result.append(PlannedLoveNotification(
                 day: day,
                 minute: minute,
-                title: title,
+                title: title.replacingOccurrences(of: "{nickname}", with: pack.nickname(for: day)),
                 body: message.text,
                 pictureId: PictureRotation.pictureId(slot: LovePictureSlot.pictureOfDay, day: day, pack: pack, available: availablePictures)
             ))

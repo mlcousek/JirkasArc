@@ -64,6 +64,38 @@ final class LovePackTests: XCTestCase {
         XCTAssertNil(pack.themeName)
     }
 
+    func testNicknamesAndSignaturesRotateDailyAndStayFixedForTheDay() throws {
+        var object = Support.wirePack()
+        object["nicknames"] = ["Ninjo", "Lásko", "Srdíčko", "Poklade"]
+        object["signatures"] = ["Tvůj J.", "Tvůj ninja"]
+        let pack = try read(object).get().pack
+
+        XCTAssertEqual(pack.nicknames.count, 4)
+        XCTAssertEqual(pack.nickname(for: "2030-03-14"), pack.nickname(for: "2030-03-14"))
+        var seen = Set<String>()
+        var day = "2030-03-01"
+        for _ in 0..<60 {
+            seen.insert(pack.nickname(for: day))
+            day = LoveDay.adding(1, to: day)!
+        }
+        XCTAssertEqual(seen, ["Ninjo", "Lásko", "Srdíčko", "Poklade"])
+        XCTAssertTrue(["Tvůj J.", "Tvůj ninja"].contains(pack.signature(for: "2030-03-14")))
+
+        // The reminders call her the same name as the love card that day.
+        let texts = ThemedNotificationTexts(
+            seed: pack.seed, nickname: pack.nickname, signature: pack.signature,
+            nicknames: pack.nicknames, signatures: pack.signatures, variants: [:]
+        )
+        XCTAssertEqual(texts.fill("{nickname}", day: "2030-03-14"), pack.nickname(for: "2030-03-14"))
+
+        // Without lists: the single names.
+        let plain = try read(Support.wirePack()).get().pack
+        XCTAssertEqual(plain.nickname(for: "2030-03-14"), "Ninja")
+
+        object["nicknames"] = ["Ninjo", " "]
+        XCTAssertEqual(problem(object), .missingField("nicknames[]"))
+    }
+
     func testTheThemeNameComesFromThePack() throws {
         var object = Support.wirePack()
         object["themeName"] = "Ukázkový motiv"

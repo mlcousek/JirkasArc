@@ -43,7 +43,7 @@ struct LoveCardView: View {
         let today = LoveDay.key(of: now)
         let dayState = partner.todayState(clashMinutes: environment.loveClashMinutes, now: now)
         return VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            Text(verbatim: greeting(content: content, nickname: pack.nickname, now: now))
+            Text(verbatim: greeting(content: content, nickname: pack.nickname(for: today), now: now))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.primary)
 
@@ -58,7 +58,7 @@ struct LoveCardView: View {
                         .accessibilityLabel(Text(verbatim: "Obrázek dne"))
                 }
 
-                message(dayState, pack: pack, content: content)
+                message(dayState, pack: pack, content: content, day: today)
 
                 if let countdown = countdownText(pack: pack, content: content, today: today) {
                     Label {
@@ -137,7 +137,7 @@ struct LoveCardView: View {
     }
 
     @ViewBuilder
-    private func message(_ dayState: LoveReveal.DayState, pack: LovePack, content: PartnerThemeContent) -> some View {
+    private func message(_ dayState: LoveReveal.DayState, pack: LovePack, content: PartnerThemeContent, day: String) -> some View {
         switch dayState {
         case .revealed(let revealed):
             VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
@@ -153,8 +153,8 @@ struct LoveCardView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     FavoriteHeartButton(messageId: revealed.messageId)
                 }
-                if !pack.signature.isEmpty {
-                    Text(verbatim: content.text(PartnerThemeContent.TextKey.signedBy, ["signature": pack.signature]))
+                if !pack.signature(for: day).isEmpty {
+                    Text(verbatim: content.text(PartnerThemeContent.TextKey.signedBy, ["signature": pack.signature(for: day)]))
                         .font(.subheadline.italic())
                         .foregroundStyle(Theme.accent)
                 }

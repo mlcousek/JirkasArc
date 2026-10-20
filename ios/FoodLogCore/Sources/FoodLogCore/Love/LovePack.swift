@@ -118,6 +118,11 @@ public struct LovePack: Codable, Sendable, Equatable {
     /// without it the theme table's own name is used. In the pack, not the
     /// code, because the repository is public.
     public let themeName: String?
+    /// Optional lists that rotate daily (one pick per day, the same all
+    /// day: `nickname(for:)`, `signature(for:)`). Empty: the single
+    /// `nickname` / `signature` above.
+    public let nicknames: [String]
+    public let signatures: [String]
     /// Day 0 of the daily sequence (`yyyy-MM-dd`).
     public let startDate: String
     /// Decides each day's minute and the order of the messages (design D6).
@@ -133,6 +138,8 @@ public struct LovePack: Codable, Sendable, Equatable {
         nickname: String,
         signature: String,
         themeName: String? = nil,
+        nicknames: [String] = [],
+        signatures: [String] = [],
         startDate: String,
         seed: String,
         daily: [LovePackDaily],
@@ -145,6 +152,8 @@ public struct LovePack: Codable, Sendable, Equatable {
         self.nickname = nickname
         self.signature = signature
         self.themeName = themeName
+        self.nicknames = nicknames
+        self.signatures = signatures
         self.startDate = startDate
         self.seed = seed
         self.daily = daily
@@ -155,7 +164,7 @@ public struct LovePack: Codable, Sendable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case format, version, packId, nickname, signature, themeName, startDate, seed, daily, openWhen, coupons, countdown, images
+        case format, version, packId, nickname, signature, themeName, nicknames, signatures, startDate, seed, daily, openWhen, coupons, countdown, images
     }
 
     /// The stored file is written by this code; the optional lists are
@@ -166,6 +175,8 @@ public struct LovePack: Codable, Sendable, Equatable {
         nickname = try container.decode(String.self, forKey: .nickname)
         signature = try container.decodeIfPresent(String.self, forKey: .signature) ?? ""
         themeName = try container.decodeIfPresent(String.self, forKey: .themeName)
+        nicknames = try container.decodeIfPresent([String].self, forKey: .nicknames) ?? []
+        signatures = try container.decodeIfPresent([String].self, forKey: .signatures) ?? []
         startDate = try container.decode(String.self, forKey: .startDate)
         seed = try container.decode(String.self, forKey: .seed)
         daily = try container.decode([LovePackDaily].self, forKey: .daily)
@@ -183,6 +194,8 @@ public struct LovePack: Codable, Sendable, Equatable {
         try container.encode(nickname, forKey: .nickname)
         try container.encode(signature, forKey: .signature)
         try container.encodeIfPresent(themeName, forKey: .themeName)
+        if !nicknames.isEmpty { try container.encode(nicknames, forKey: .nicknames) }
+        if !signatures.isEmpty { try container.encode(signatures, forKey: .signatures) }
         try container.encode(startDate, forKey: .startDate)
         try container.encode(seed, forKey: .seed)
         try container.encode(daily, forKey: .daily)
@@ -194,6 +207,25 @@ public struct LovePack: Codable, Sendable, Equatable {
 
     public func daily(id: String) -> LovePackDaily? {
         daily.first { $0.id == id }
+    }
+
+    /// The nickname she is called on `day` (`yyyy-MM-dd`; `""` for
+    /// text that never changes, like a repeating reminder).
+    public func nickname(for day: String) -> String {
+        Self.dailyChoice(nicknames, seed: seed, day: day, salt: "nickname") ?? nickname
+    }
+
+    /// How the owner signs on `day`.
+    public func signature(for day: String) -> String {
+        Self.dailyChoice(signatures, seed: seed, day: day, salt: "signature") ?? signature
+    }
+
+    /// One option per day, stable all day and after a restore; `nil` for no
+    /// options. ThemedNotificationTexts picks the same way, so a reminder and
+    /// the love card call her the same name on the same day.
+    public static func dailyChoice(_ options: [String], seed: String, day: String, salt: String) -> String? {
+        guard !options.isEmpty else { return nil }
+        return options[Int(LoveMinute.stableHash(seed, salt, day) % UInt64(options.count))]
     }
 }
 
@@ -246,6 +278,8 @@ public enum LovePackLimits {
     public static let maxPictureSide = 4_096
     public static let maxIdLength = 64
     public static let maxCouponPrice = 10_000
+    /// Nicknames and signatures.
+    public static let maxNames = 20
 
     /// Ids name picture files and state keys, so they are kept to a safe,
     /// short alphabet.
@@ -335,6 +369,10 @@ public enum LovePackReader {
         guard nickname.count <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "nickname", id: "")) }
         let signature = wire.signature ?? ""
         guard signature.count <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "signature", id: "")) }
+        let nicknames = wire.nicknames ?? []
+        if let problem = checkNames("nicknames", nicknames) { return .failure(problem) }
+        let signatures = wire.signatures ?? []
+        if let problem = checkNames("signatures", signatures) { return .failure(problem) }
         let themeName = nonEmpty(wire.themeName)
         guard (themeName?.count ?? 0) <= LovePackLimits.maxShortTextLength else { return .failure(.textTooLong(list: "themeName", id: "")) }
         guard let startDate = nonEmpty(wire.startDate) else { return .failure(.missingField("startDate")) }
@@ -429,6 +467,8 @@ public enum LovePackReader {
             nickname: nickname,
             signature: signature,
             themeName: themeName,
+            nicknames: nicknames,
+            signatures: signatures,
             startDate: startDate,
             seed: seed,
             daily: daily,
@@ -438,6 +478,16 @@ public enum LovePackReader {
             images: images
         )
         return .success(LoadedLovePack(pack: pack, pictures: pictures))
+    }
+
+    /// A list of names: at most `maxNames`, none blank or too long.
+    private static func checkNames(_ list: String, _ names: [String]) -> LovePackProblem? {
+        guard names.count <= LovePackLimits.maxNames else { return .tooManyItems(list: list) }
+        for name in names {
+            guard nonEmpty(name) != nil else { return .missingField(list + "[]") }
+            guard name.count <= LovePackLimits.maxShortTextLength else { return .textTooLong(list: list, id: name) }
+        }
+        return nil
     }
 
     /// The list-wide rules: size, every id present and valid, no repeats.
@@ -469,6 +519,8 @@ public enum LovePackReader {
         var packId: String?
         var nickname: String?
         var themeName: String?
+        var nicknames: [String]?
+        var signatures: [String]?
         var signature: String?
         var startDate: String?
         var seed: String?

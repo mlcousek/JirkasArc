@@ -219,7 +219,7 @@ final class PartnerThemeModel {
     /// off); records the planned days' messages.
     func plannedNotifications(clashMinutes: [Int], now: Date = Date()) async -> [PlannedLoveNotification] {
         guard isActive, let pack, let content else { return [] }
-        let title = PartnerThemeContent.fill(content.loveNotificationTitle.text, ["nickname": pack.nickname])
+        let title = content.loveNotificationTitle.text
         let available = await store.availablePictureIds()
         var planned: [PlannedLoveNotification] = []
         do {
@@ -258,7 +258,7 @@ final class PartnerThemeModel {
     /// The theme's reminder wording, or `nil` while the theme is off.
     var notificationTexts: ThemedNotificationTexts? {
         guard isActive, let pack, let content else { return nil }
-        return content.notificationTexts(seed: pack.seed, nickname: pack.nickname, signature: pack.signature)
+        return content.notificationTexts(seed: pack.seed, nickname: pack.nickname, signature: pack.signature, nicknames: pack.nicknames, signatures: pack.signatures)
     }
 
     func pictureURL(id: String) async -> URL? {

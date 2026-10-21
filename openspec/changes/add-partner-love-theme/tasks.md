@@ -20,7 +20,7 @@ Section 9 stays open until CI and her phone have said so.
 
 - [x] 1.1 `proposal.md`, `design.md`, the spec deltas and this file; `openspec validate add-partner-love-theme --strict`.
 - [x] 1.2 Owner decisions 2026-10-19: one message a day, 08:00–13:00 every day, no special dates, theme-only, pink + orange, stay free.
-- [ ] 1.3 **Owner reviews `tools/love-pack/lore-allowlist.json`** (design D11, boundary Shippuden 30). Can't be ticked by code.
+- [x] 1.3 **Owner reviews `tools/love-pack/lore-allowlist.json`** (reviewed 2026-10-21) (design D11, boundary Shippuden 30). Can't be ticked by code.
 - [ ] 1.4 Owner answers design Open Questions 1–3 (starter messages, extras, home-screen name).
 
 ## 2. The pack, pure, and its tools (M)

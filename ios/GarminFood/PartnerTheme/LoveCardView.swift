@@ -15,6 +15,7 @@
 
 import SwiftUI
 import UIKit
+import ImageIO
 import FoodLogCore
 
 @MainActor
@@ -196,14 +197,29 @@ struct LoveCardView: View {
     }
 
     private func loadPicture(pack: LovePack, day: String) async {
-        let available = Set(pack.images.map(\.id))
+        // Only pictures whose files are on the phone (after a restore
+        // without pictures, none are), so the day's pick is never blank.
+        let available = await partner.availablePictureIds()
         guard let id = PictureRotation.pictureId(slot: LovePictureSlot.pictureOfDay, day: day, pack: pack, available: available)
                 ?? PictureRotation.pictureId(slot: LovePictureSlot.loveCard, day: day, pack: pack, available: available),
               let url = await partner.pictureURL(id: id) else {
             picture = nil
             return
         }
-        picture = UIImage(contentsOfFile: url.path)
+        picture = Self.thumbnail(url, maxPixels: 1200)
+    }
+
+    /// The picture decoded at most `maxPixels` on its longer side: a tall
+    /// 1200×2900 photo shown in a 180-pt card needs nowhere near its full size.
+    static func thumbnail(_ url: URL, maxPixels: Int) -> UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixels
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: image)
     }
 
     /// Today stays open past the minute: reveal then, without a refresh.

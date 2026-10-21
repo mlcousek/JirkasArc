@@ -261,6 +261,11 @@ final class PartnerThemeModel {
         return content.notificationTexts(seed: pack.seed, nickname: pack.nickname, signature: pack.signature, nicknames: pack.nicknames, signatures: pack.signatures)
     }
 
+    /// The pack pictures whose files are on this phone.
+    func availablePictureIds() async -> Set<String> {
+        await store.availablePictureIds()
+    }
+
     func pictureURL(id: String) async -> URL? {
         await store.pictureURL(id: id)
     }

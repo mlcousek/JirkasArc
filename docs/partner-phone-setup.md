@@ -6,6 +6,21 @@ under her own Apple ID, the 7-day refresh, and keeping her data safe. This
 page covers what comes after that: turning on the partner theme
 ("Srdce ninji", `openspec/changes/add-partner-love-theme`).
 
+## 0. The build
+
+Install the unsigned `.ipa` from the latest green "Build iOS app" run of
+the branch (Actions > the run > Artifacts) with AltStore or SideStore
+under **her** Apple ID, as in [install-second-phone.md](install-second-phone.md).
+The app needs a refresh every 7 days on a free account; let AltStore do it
+in the background.
+
+## 0b. After installing: Apple Health active calories
+
+Settings > Activity (Nastavení > Aktivita) shows the three steps: a shortcut
+that sums today's Active Energy and runs "Record Active Calories", and
+Time of Day automations with "Run Immediately". Do this together the first
+time; the first report shows under "Last report".
+
 ## 1. First launch: just on this phone
 
 On the first launch the app asks how it will be used. Pick **"Just on this

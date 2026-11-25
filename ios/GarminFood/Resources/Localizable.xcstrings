@@ -1,6 +1,30 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Add photos": {
+      "comment": "Daily motivation card: opens the photo picker to add the owner's own photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidat fotky"
+          }
+        }
+      }
+    },
+    "Daily photo and quote": {
+      "comment": "Settings toggle: shows Today's photo and motivational line.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotka a citát dne"
+          }
+        }
+      }
+    },
     "0": {
       "comment": "Format-only text (numbers, names, separators) the compiler extracts from interpolation-only Text literals; nothing to translate.",
       "extractionState": "manual",

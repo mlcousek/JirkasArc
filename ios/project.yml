@@ -162,6 +162,10 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        # add-daily-motivation D2: Documents/Motivation is where the owner's
+        # photos live; these two keys show Documents in the Files app.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         # add-localization D1/D2: declaring both localizations is what makes
         # iOS show Settings > GarminFood > Language, and makes system UI
         # inside the app (pickers, share sheets, permission alerts) follow the

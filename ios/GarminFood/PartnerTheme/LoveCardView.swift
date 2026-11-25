@@ -50,12 +50,10 @@ struct LoveCardView: View {
 
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                 if let picture {
-                    Image(uiImage: picture)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous))
+                    // The whole picture in a frame of one fixed height, never
+                    // a cropped strip (DesignSystem/WholePhotoFrame.swift).
+                    WholePhotoFrame(image: picture)
+                        .accessibilityElement()
                         .accessibilityLabel(Text(verbatim: "Obrázek dne"))
                 }
 
@@ -210,7 +208,7 @@ struct LoveCardView: View {
     }
 
     /// The picture decoded at most `maxPixels` on its longer side: a tall
-    /// 1200×2900 photo shown in a 180-pt card needs nowhere near its full size.
+    /// 1200×2900 photo shown on a phone needs nowhere near its full size.
     static func thumbnail(_ url: URL, maxPixels: Int) -> UIImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [

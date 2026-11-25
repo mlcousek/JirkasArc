@@ -88,6 +88,9 @@ struct TodayView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Density.stackSpacing) {
+                // add-daily-motivation: the photo (whole) and the line of the
+                // day, above the layout cards; Settings can switch it off.
+                DailyMotivationCard()
                 // Each card is a direct child of this stack (a ForEach
                 // element's views flatten into it), so spacing is exactly
                 // what the fixed stack had.

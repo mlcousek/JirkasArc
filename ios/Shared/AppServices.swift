@@ -91,6 +91,9 @@ final class AppServices {
     /// header) -- one shared instance per process, same reason as
     /// `fastingStore` above.
     let dayNoteStore: DayNoteStore
+    /// add-workout-tracker: the weights logged per planned gym session. Purely
+    /// local (WorkoutLog.swift's header); one instance per process.
+    let workoutLogStore: WorkoutLogStore
     /// improve-food-day-flow (A2): which days' food logs were closed
     /// ("That's everything today"). Purely local, one instance per process
     /// like `dayNoteStore`.
@@ -164,6 +167,7 @@ final class AppServices {
         self.favoriteFoodStore = FavoriteFoodStore()
         self.fastingStore = FastingSessionStore()
         self.dayNoteStore = DayNoteStore()
+        self.workoutLogStore = WorkoutLogStore()
         self.foodDayCloseStore = FoodDayCloseStore()
         // `foodCache` so an edited/duplicated/copied entry can be named in
         // its meal before Garmin reads it back (add-log-entry-editing).

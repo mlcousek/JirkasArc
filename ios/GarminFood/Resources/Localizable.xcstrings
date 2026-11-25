@@ -1,6 +1,126 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Start workout": {
+      "comment": "Session detail: opens the gym workout screen to log weights.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začít trénink"
+          }
+        }
+      }
+    },
+    "Set %lld": {
+      "comment": "Workout screen: one set row, e.g. Set 2.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Série %lld"
+          }
+        }
+      }
+    },
+    "reps": {
+      "comment": "Workout screen: unit after the reps field.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opak."
+          }
+        }
+      }
+    },
+    "Last time: %@": {
+      "comment": "Workout screen: what was lifted in the previous session, e.g. 60 kg × 8.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minule: %@"
+          }
+        }
+      }
+    },
+    "Tempo %@": {
+      "comment": "Workout screen: the plan's tempo, e.g. Tempo 3-0-3.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo %@"
+          }
+        }
+      }
+    },
+    "Each side": {
+      "comment": "Workout screen: the plan says to do the exercise on each side.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každá strana"
+          }
+        }
+      }
+    },
+    "How to do it": {
+      "comment": "Workout screen: expands the exercise's pictures and cues.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jak na to"
+          }
+        }
+      }
+    },
+    "Watch how": {
+      "comment": "Workout screen: opens a video of the exercise form.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukázat video"
+          }
+        }
+      }
+    },
+    "Add photos": {
+      "comment": "Daily motivation card: opens the photo picker to add the owner's own photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidat fotky"
+          }
+        }
+      }
+    },
+    "Daily photo and quote": {
+      "comment": "Settings toggle: shows Today's photo and motivational line.",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotka a citát dne"
+          }
+        }
+      }
+    },
     "0": {
       "comment": "Format-only text (numbers, names, separators) the compiler extracts from interpolation-only Text literals; nothing to translate.",
       "extractionState": "manual",

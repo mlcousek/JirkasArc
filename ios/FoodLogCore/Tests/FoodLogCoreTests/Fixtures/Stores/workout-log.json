@@ -1,0 +1,28 @@
+[
+  {
+    "exerciseKey" : "bench-press",
+    "id" : "6E3B1C52-0A64-4C2E-9B1A-2D7F5A9C1E01",
+    "loggedAt" : "2026-11-23T17:40:00Z",
+    "reps" : 8,
+    "sessionID" : "2026-w48-mon-pm",
+    "setNumber" : 1,
+    "weightKg" : 60
+  },
+  {
+    "exerciseKey" : "bench-press",
+    "id" : "6E3B1C52-0A64-4C2E-9B1A-2D7F5A9C1E02",
+    "loggedAt" : "2026-11-23T17:46:00Z",
+    "reps" : 6,
+    "sessionID" : "2026-w48-mon-pm",
+    "setNumber" : 2,
+    "weightKg" : 62.5
+  },
+  {
+    "exerciseKey" : "zercher carry",
+    "id" : "6E3B1C52-0A64-4C2E-9B1A-2D7F5A9C1E03",
+    "loggedAt" : "2026-11-23T18:05:00Z",
+    "sessionID" : "2026-w48-mon-pm",
+    "setNumber" : 1,
+    "weightKg" : 40
+  }
+]

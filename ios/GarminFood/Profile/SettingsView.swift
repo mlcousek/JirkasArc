@@ -22,6 +22,8 @@ import AppearanceKit
 @MainActor
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
+    // add-daily-motivation D5: the switch of Today's photo-and-line card.
+    @AppStorage(DailyMotivationCard.enabledKey) private var dailyMotivation = true
     @Environment(\.openURL) private var openURL
     @State private var isPresentingSignIn = false
     @State private var isConfirmingSignOut = false
@@ -157,6 +159,7 @@ struct SettingsView: View {
             Section("Preferences") {
                 Toggle("Haptic feedback", isOn: $preferences.hapticsEnabled)
                 Toggle("Celebration animations", isOn: $preferences.celebrationsEnabled)
+                Toggle("Daily photo and quote", isOn: $dailyMotivation)
                 if !isStandalone {
                     Toggle("Default meal from Garmin's schedule", isOn: $preferences.useGarminMealWindows)
                 }

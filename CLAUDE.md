@@ -346,6 +346,10 @@ Two smaller cross-cutting pieces worth knowing about:
     `n == 1 ? … : …`; no sentences glued from translated fragments; stores
     persist ids, never display text; `DiagnosticsLog` stays English.
   - `node tools/check-localizations.mjs` (CI job `localization`) must pass.
+- **Exercise catalog** (workout screen pictures and cues): to give a plan's
+  new exercise pictures, run `tools/exercise-catalog/add-exercise.mjs` --
+  see [`docs/exercise-catalog.md`](docs/exercise-catalog.md). Pictures only
+  from the public-domain free-exercise-db.
 - **Test file/helper conventions**: see `FoodLogCoreTests/LogEntryCoordinatorTests.swift`
   for the pattern — real `GarminKit.Outbox`/store instances pointed at a
   unique temp file per test (never mocked), `XCTest`, one assertion group per

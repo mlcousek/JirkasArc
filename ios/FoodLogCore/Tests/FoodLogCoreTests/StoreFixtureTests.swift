@@ -1007,7 +1007,7 @@ final class StoreFixtureTests: XCTestCase {
         let sets = await store.sets(session: "2026-w48-mon-pm")
 
         assertNotQuarantined(copy)
-        XCTAssertEqual(sets.map(.setNumber), [1, 2, 1])
+        XCTAssertEqual(sets.map(\.setNumber), [1, 2, 1])
         guard sets.count == 3 else { return }
         XCTAssertEqual(sets[0].exerciseKey, "bench-press")
         XCTAssertEqual(sets[0].weightKg, 60)

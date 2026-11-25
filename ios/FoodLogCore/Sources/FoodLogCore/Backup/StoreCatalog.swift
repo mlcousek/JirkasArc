@@ -108,6 +108,8 @@ public enum StoreCatalog {
         StoreCatalogEntry(id: "foodlog.favorite-foods", location: .file("FoodLogCore/favorite-foods.json"), schemaVersion: 1, area: .favorites),
         StoreCatalogEntry(id: "foodlog.fasting-sessions", location: .file("FoodLogCore/fasting-sessions.json"), schemaVersion: 1, area: .fasting),
         StoreCatalogEntry(id: "foodlog.day-notes", location: .file("FoodLogCore/day-notes.json"), schemaVersion: 1, area: .dayNotes),
+        // add-workout-tracker: the owner's own gym diary (sets and weights per planned session).
+        StoreCatalogEntry(id: "foodlog.workout-log", location: .file("FoodLogCore/workout-log.json"), schemaVersion: 1, area: .history),
         // improve-food-day-flow (A2): which days' food logs were closed
         // ("That's everything today"). The owner's own statement, so it
         // travels with a backup; `history`, not `foodLog`, because the

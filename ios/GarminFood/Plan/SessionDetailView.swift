@@ -62,6 +62,19 @@ struct SessionDetailView: View {
         VStack(alignment: .leading, spacing: Theme.Density.stackSpacing) {
             headerCard(detail)
 
+            // add-workout-tracker: a gym session opens its workout screen.
+            if environment.training.planBuilder().strengthWorkout(sessionId: target.sessionID, option: target.option) != nil {
+                NavigationLink {
+                    StrengthWorkoutView(sessionID: target.sessionID, option: target.option)
+                } label: {
+                    Label("Start workout", systemImage: "dumbbell.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+            }
+
             if !detail.options.isEmpty {
                 let index = min(selectedIndex ?? detail.initialOptionIndex, detail.options.count - 1)
                 Picker("Option", selection: Binding(

@@ -67,6 +67,7 @@ final class StoreFixtureTests: XCTestCase {
         "favorite-foods.json",
         "fasting-sessions.json",
         "day-notes.json",
+        "workout-log.json",
         "weight-entries.json",
         "local-goals.json",
         "hydration-entries.json",
@@ -995,6 +996,26 @@ final class StoreFixtureTests: XCTestCase {
         XCTAssertEqual(late.slot, .custom(name: "Po tréninku", minute: 1260))
         XCTAssertEqual(late.servings, 2)
         XCTAssertEqual(late.recordedOn, "2026-09-29")
+    }
+
+    // MARK: - workout-log.json (WorkoutLogStore: [LoggedSet], .iso8601, synthesized Codable)
+
+    func testWorkoutLogFixtureDecodesThroughTheRealStore() async throws {
+        let copy = try copyFixture("workout-log.json")
+
+        let store = WorkoutLogStore(fileURL: copy.file)
+        let sets = await store.sets(session: "2026-w48-mon-pm")
+
+        assertNotQuarantined(copy)
+        XCTAssertEqual(sets.map(.setNumber), [1, 2, 1])
+        guard sets.count == 3 else { return }
+        XCTAssertEqual(sets[0].exerciseKey, "bench-press")
+        XCTAssertEqual(sets[0].weightKg, 60)
+        XCTAssertEqual(sets[1].reps, 6)
+        XCTAssertEqual(sets[1].weightKg, 62.5)
+        XCTAssertEqual(sets[2].exerciseKey, "zercher carry")
+        XCTAssertNil(sets[2].reps, "reps is optional")
+        XCTAssertEqual(sets[0].loggedAt, iso("2026-11-23T17:40:00Z"))
     }
 
     // MARK: - Coverage of the fixture set itself

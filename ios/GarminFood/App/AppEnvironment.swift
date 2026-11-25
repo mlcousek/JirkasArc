@@ -44,6 +44,9 @@ final class AppEnvironment {
     /// add-day-notes: purely local, see DayNote.swift's header. Written by
     /// `DayNoteCard` (Today), read by `TrendsView` for its chart markers.
     let dayNoteStore: DayNoteStore
+    /// add-workout-tracker: the weights logged per planned gym session. Purely
+    /// local (WorkoutLog.swift's header); one instance per process.
+    let workoutLogStore: WorkoutLogStore
     /// rebuild-food-search: the one food search -- the user's own foods,
     /// Garmin and Open Food Facts, ranked together (FoodSearchEngine.swift).
     /// One instance per app process, so its remote term cache is shared by
@@ -209,6 +212,7 @@ final class AppEnvironment {
         self.fastingStore = services.fastingStore
         self.favoriteFoodStore = services.favoriteFoodStore
         self.dayNoteStore = services.dayNoteStore
+        self.workoutLogStore = services.workoutLogStore
         self.foodSearchEngine = FoodSearchEngine.standard(
             garmin: client,
             customFoods: services.customFoodStore,
